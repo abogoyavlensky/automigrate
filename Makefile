@@ -21,27 +21,27 @@ help:
 .PHONY: deps  # Install deps
 deps:
 	@$(INFO) "Install deps..."
-	@clojure -P -M:dev:test
+	@clojure -P -X:test
 
 
 .PHONY: build  # Build a deployable jar
 build:
 	@$(INFO) "Building jar..."
-	@clojure -M:build
+	@clojure -X:build
 
 
 .PHONY: install  # Build and install package locally
 install:
 	@$(MAKE) build
 	@$(INFO) "Installing jar locally..."
-	@clojure -M:install
+	@clojure -X:install
 
 
 .PHONY: deploy  # Build and deploy package to Clojars
 deploy:
 	@$(MAKE) build
 	@$(INFO) "Deploying jar to Clojars..."
-	@clojure -M:deploy
+	@clojure -X:deploy
 
 # TODO: remove cmd repition!
 
