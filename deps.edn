@@ -1,6 +1,10 @@
 {:paths ["src"]
  :deps {org.clojure/clojure {:mvn/version "1.10.2"}
-        org.clojure/spec.alpha {:mvn/version "0.2.194"}}
+        org.clojure/spec.alpha {:mvn/version "0.2.194"}
+        org.clojure/java.jdbc {:mvn/version "0.7.11"}
+        org.postgresql/postgresql {:mvn/version "42.2.14"}
+        honeysql/honeysql {:mvn/version "1.0.444"}
+        nilenso/honeysql-postgres {:mvn/version "0.2.6"}}
  :aliases
  {:test {:extra-paths ["test"]
          :extra-deps {abogoyavlensky/eftest-coverage {:mvn/version "0.1.1"}}
