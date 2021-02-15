@@ -1,0 +1,21 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.10.2"}
+        org.clojure/spec.alpha {:mvn/version "0.2.194"}}
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps {abogoyavlensky/eftest-coverage {:mvn/version "0.1.1"}}
+         :exec-fn eftest-coverage.runner/exec
+         :exec-args {:test-ns-path ["test"]
+                     :src-ns-path ["src"]}}
+
+  :jar {:replace-deps {seancorfield/depstar {:mvn/version "2.0.171"}}
+        :exec-fn hf.depstar/jar
+        :exec-args {:jar "tuna.jar" :sync-pom true}}
+
+  :install {:replace-deps {slipset/deps-deploy {:mvn/version "0.1.5"}}
+            :exec-fn deps-deploy.deps-deploy/deploy
+            :exec-args {:installer :local :artifact "tuna.jar"}}
+
+  :deploy {:replace-deps {slipset/deps-deploy {:mvn/version "0.1.5"}}
+           :exec-fn deps-deploy.deps-deploy/deploy
+           :exec-args {:installer :remote :artifact "tuna.jar"}}}}
