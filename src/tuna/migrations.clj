@@ -11,14 +11,9 @@
 
 ; Config
 
-(def ^:private MODELS-PATH
-  "Path to models' definitions file."
-  "src/rhino/models.edn")
-
-
-(def ^:private MIGRATION-DIR
-  "Root dir for migrations."
-  "src/rhino/migrations")
+;(def ^:private MIGRATION-DIR
+;  "Root dir for migrations."
+;  "src/rhino/migrations")
 
 
 (def ^:private MIGRATIONS-TABLE
@@ -28,23 +23,23 @@
 
 (defn- models
   "Return models' definitions."
-  []
-  (-> (slurp MODELS-PATH)
+  [model-path]
+  (-> (slurp model-path)
     (edn/read-string)))
 
 
 (defn- read-migration
   "Return models' definitions."
-  [file-name]
-  (-> (slurp (str MIGRATION-DIR "/" file-name))
+  [file-name migrations-dir]
+  (-> (slurp (str migrations-dir "/" file-name))
     (edn/read-string)))
 
 
 (defn- create-migrations-dir
   "Create migrations root dir if it is not exist."
-  []
-  (when-not (.isDirectory (io/file MIGRATION-DIR))
-    (.mkdir (java.io.File. MIGRATION-DIR))))
+  [migrations-dir]
+  (when-not (.isDirectory (io/file migrations-dir))
+    (.mkdir (java.io.File. migrations-dir))))
 
 
 (defn- db-conn
@@ -146,8 +141,8 @@
 
 (defn- migrations-list
   "Get migrations' files list."
-  []
-  (->> (file-seq (io/file MIGRATION-DIR))
+  [migrations-dir]
+  (->> (file-seq (io/file migrations-dir))
     (filter #(.isFile %))
     (map #(.getName %))))
 
@@ -167,18 +162,30 @@
     (-> (str action-name "_" model-name)
       (str/replace #"-" "_"))))
 
+(s/def :args/model-file string?)
+(s/def :args/migrations-dir string?)
+
+
+(s/def ::make-migrations-args
+  (s/keys
+    :req-un [:args/model-file
+             :args/migrations-dir]))
+
 
 (defn make-migrations
   "Make new migrations based on models' definitions automatically."
-  [_]
-  (create-migrations-dir)
-  (let [new-model (first (models))
+  [args]
+  (s/valid? ::make-migrations-args args)
+  (let [new-model (first (models (:model-file args)))
         migration (s/conform ::->migration new-model)
-        migration-names (migrations-list)
+        migrations-dir (:migrations-dir args)
+        _ (create-migrations-dir migrations-dir)
+        migration-names (migrations-list migrations-dir)
         migration-number (next-migration-number migration-names)
         migration-name (next-migration-name [migration])
-        migration-file-name (str migration-number "_" migration-name)]
-    (spit (str MIGRATION-DIR "/" migration-file-name ".edn")
+        migration-file-name (str migration-number "_" migration-name)
+        migration-file-name-full-path (str migrations-dir "/" migration-file-name ".edn")]
+    (spit migration-file-name-full-path
       (with-out-str
         (pprint/pprint [migration])))))
 
@@ -254,27 +261,35 @@
 
 (defn- sql
   "Generate raw sql from migration."
-  [_]
-  (let [migration-names (migrations-list)
+  [{:keys [migrations-dir]}]
+  (let [migration-names (migrations-list migrations-dir)
         file-name (first migration-names)
-        actions (read-migration file-name)
+        actions (read-migration file-name migrations-dir)
         action (first actions)]
     (s/conform ::action->sql action)))
 
 
 (defn migrate
   "Run migration on a db."
-  [_]
-  (let [migration-names (migrations-list)
+  [{:keys [migrations-dir]}]
+  (let [migration-names (migrations-list migrations-dir)
         file-name (first migration-names)
         migration-name (first (str/split file-name #"\."))
-        actions (read-migration file-name)
+        actions (read-migration file-name migrations-dir)
         action (first actions)
         migration-sql (s/conform ::action->sql action)]
     (create-migrations-table)
     (jdbc/with-db-transaction [tx (db-conn)]
       (jdbc/execute! tx migration-sql)
       (save-migration migration-name))))
+
+(defn run
+  "Main exec function with dispatcher for all commands."
+  [{:keys [action] :as args}]
+  (let [action-fn (case action
+                    :make make-migrations
+                    :migrate migrate)]
+    (action-fn (dissoc args :action))))
 
 
 (comment

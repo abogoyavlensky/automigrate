@@ -22,4 +22,9 @@
 
   :deploy {:replace-deps {slipset/deps-deploy {:mvn/version "0.1.5"}}
            :exec-fn deps-deploy.deps-deploy/deploy
-           :exec-args {:installer :remote :artifact "tuna.jar"}}}}
+           :exec-args {:installer :remote :artifact "tuna.jar"}}
+
+  :migrations {:exec-fn tuna.migrations/make-migrations
+               :exec-args {:action :make-migrations
+                           :model-file "src/tuna/models.edn"
+                           :migrations-dir "src/tuna/migrations"}}}}
