@@ -24,7 +24,7 @@
            :exec-fn deps-deploy.deps-deploy/deploy
            :exec-args {:installer :remote :artifact "tuna.jar"}}
 
-  :migrations {:exec-fn tuna.migrations/make-migrations
+  :migrations {:exec-fn tuna.migrations/run
                :exec-args {:action :make-migrations
                            :model-file "src/tuna/models.edn"
                            :migrations-dir "src/tuna/migrations"}}}}

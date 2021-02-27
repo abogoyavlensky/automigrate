@@ -85,3 +85,15 @@ lint-init-ci:
 test:
 	@$(INFO) "Running tests..."
 	@clojure -X:test
+
+# Testing commands
+
+.PHONY: make-migrations  # Make testing migrations
+make-migrations:
+	@$(INFO) "Make testing migrations..."
+	@clojure -X:migrations
+
+.PHONY: migrate  # Migrate testing migrations
+migrate:
+	@$(INFO) "Migrate testing migrations..."
+	@clojure -X:migrations :action :migrate

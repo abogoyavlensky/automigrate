@@ -11,11 +11,6 @@
 
 ; Config
 
-;(def ^:private MIGRATION-DIR
-;  "Root dir for migrations."
-;  "src/rhino/migrations")
-
-
 (def ^:private MIGRATIONS-TABLE
   "Default migrations table name."
   :migrations)
@@ -45,6 +40,7 @@
 (defn- db-conn
   "Return db connection for performing migration."
   []
+  ; TODO: remove defaults!
   (let [db-uri (or (System/getenv "RHINO_DB_URL")
                  "jdbc:postgresql://localhost:5432/rhino?user=rhino&password=rhino")]
     {:connection-uri db-uri}))
@@ -287,7 +283,7 @@
   "Main exec function with dispatcher for all commands."
   [{:keys [action] :as args}]
   (let [action-fn (case action
-                    :make make-migrations
+                    :make-migrations make-migrations
                     :migrate migrate)]
     (action-fn (dissoc args :action))))
 
