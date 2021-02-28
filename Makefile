@@ -91,7 +91,7 @@ test:
 .PHONY: make-migrations  # Make testing migrations
 make-migrations:
 	@$(INFO) "Make testing migrations..."
-	@clojure -X:migrations
+	@clojure -X:migrations :action :make-migrations
 
 .PHONY: migrate  # Migrate testing migrations
 migrate:
