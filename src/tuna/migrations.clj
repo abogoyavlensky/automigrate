@@ -43,8 +43,9 @@
   "Return db connection for performing migration."
   []
   ; TODO: remove defaults!
-  (let [db-uri (or (System/getenv "RHINO_DB_URL")
-                 "jdbc:postgresql://localhost:5432/rhino?user=rhino&password=rhino")]
+  ; TODO: move value to `run` fn params
+  (let [db-uri (or (System/getenv "DATABASE_URL")
+                 "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")]
     {:connection-uri db-uri}))
 
 
