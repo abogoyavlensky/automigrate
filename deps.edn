@@ -4,9 +4,11 @@
         org.clojure/java.jdbc {:mvn/version "0.7.11"}
         org.postgresql/postgresql {:mvn/version "42.2.14"}
         honeysql/honeysql {:mvn/version "1.0.444"}
-        nilenso/honeysql-postgres {:mvn/version "0.2.6"}}
+        nilenso/honeysql-postgres {:mvn/version "0.2.6"}
+        org.clojure/tools.namespace {:mvn/version "1.1.0"}}
  :aliases
- {:test {:extra-paths ["test"]
+ {:dev {:extra-paths ["dev"]}
+  :test {:extra-paths ["test"]
          :extra-deps {abogoyavlensky/eftest-coverage {:mvn/version "0.1.1"}}
          :exec-fn eftest-coverage.runner/exec
          :exec-args {:test-ns-path ["test"]
