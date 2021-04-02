@@ -1,5 +1,6 @@
 (ns tuna.models
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [tuna.sql :as sql]))
 
 ; Specs
 
@@ -41,7 +42,7 @@
 (s/def ::model->action
   (s/conformer
     (fn [value]
-      (assoc value :action :create-table))))
+      (assoc value :action sql/CREATE-TABLE-ACTION))))
 
 
 (s/def ::->action

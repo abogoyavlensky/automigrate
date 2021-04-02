@@ -9,7 +9,9 @@
             [honeysql-postgres.format :as phformat]
             [honeysql-postgres.helpers :as phsql]
             [tuna.models :as models]
-            [tuna.sql :as sql]))
+            [tuna.sql :as sql]
+            [tuna.schema :as schema]
+            [tuna.util.file :as util-file]))
 
 ; Config
 
@@ -72,8 +74,7 @@
 (defn- migrations-list
   "Get migrations' files list."
   [migrations-dir]
-  (->> (file-seq (io/file migrations-dir))
-    (filter #(.isFile %))
+  (->> (util-file/list-files migrations-dir)
     (map #(.getName %))))
 
 
@@ -95,19 +96,22 @@
 
 (defn make-migrations
   "Make new migrations based on models' definitions automatically."
-  [args]
-  (let [new-model (first (models (:model-file args)))
-        migration (s/conform ::models/->migration new-model)
-        migrations-dir (:migrations-dir args)
-        _ (create-migrations-dir migrations-dir)
-        migration-names (migrations-list migrations-dir)
-        migration-number (next-migration-number migration-names)
-        migration-name (next-migration-name [migration])
-        migration-file-name (str migration-number "_" migration-name)
-        migration-file-name-full-path (str migrations-dir "/" migration-file-name ".edn")]
-    (spit migration-file-name-full-path
-      (with-out-str
-        (pprint/pprint [migration])))))
+  [{:keys [model-file migrations-dir] :as _args}]
+  ; TODO: uncomment!
+  ;(let [new-model (first (models model-file))
+  ;      migration (s/conform ::models/->migration new-model)
+  ;      _ (create-migrations-dir migrations-dir)
+  ;      migration-names (migrations-list migrations-dir)]
+    ;    migration-number (next-migration-number migration-names)
+    ;    migration-name (next-migration-name [migration])
+    ;    migration-file-name (str migration-number "_" migration-name)
+    ;    migration-file-name-full-path (str migrations-dir "/" migration-file-name ".edn")]
+    ;(spit migration-file-name-full-path
+    ;  (with-out-str
+    ;    (pprint/pprint [migration])))))
+
+  (let [migrations-files (util-file/list-files migrations-dir)]
+    (schema/current-db-schema migrations-files)))
 
 
 (defn- sql
@@ -163,8 +167,8 @@
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
-    MIGRATIONS-TABLE))
-    ;(make-migrations config)))
+    ;MIGRATIONS-TABLE))
+    (make-migrations config)))
     ;(migrate config)))
 
 ;(table-exists? "migrations")))

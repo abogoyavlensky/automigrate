@@ -2,6 +2,10 @@
   (:require [clojure.spec.alpha :as s]
             [honeysql.core :as hsql]))
 
+; DB actions
+(def CREATE-TABLE-ACTION :create-table)
+
+
 (s/def :option->sql/type
   (s/conformer
     (fn [value]
@@ -22,8 +26,7 @@
     :req-un [:option->sql/type]
     :opt-un [:option->sql/null]))
 
-
-(s/def :action/action #{:create-table})
+(s/def :action/action #{CREATE-TABLE-ACTION})
 (s/def :action/name keyword?)
 
 
