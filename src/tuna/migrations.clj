@@ -165,28 +165,6 @@
           (println "Successfully migrated: " migration-name))))))
 
 
-; Public
-
-(s/def :args/model-file string?)
-(s/def :args/migrations-dir string?)
-
-
-(s/def ::make-migrations-args
-  (s/keys
-    :req-un [:args/model-file
-             :args/migrations-dir]))
-
-
-(defn run
-  "Main exec function with dispatcher for all commands."
-  [{:keys [action] :as args}]
-  (s/valid? ::make-migrations-args args)
-  (let [action-fn (case action
-                    :make-migrations make-migrations
-                    :migrate migrate)]
-    (action-fn (dissoc args :action))))
-
-
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"}]
