@@ -8,6 +8,7 @@
             [honeysql.core :as hsql]
             [honeysql-postgres.format :as phformat]
             [honeysql-postgres.helpers :as phsql]
+            [differ.core :as differ]
             [tuna.models :as models]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
@@ -80,10 +81,7 @@
 
 (defn- next-migration-number
   [file-names]
-  (if (empty? file-names)
-    "0000"
-    ; TODO: define next migration number
-    "0000"))
+  (util-file/zfill (count file-names)))
 
 
 (defn- next-migration-name
@@ -94,24 +92,38 @@
       (str/replace #"-" "_"))))
 
 
+(defn- make-migrations*
+  [migrations-files model-file]
+  (let [old-schema (schema/current-db-schema migrations-files)
+        new-schema (models model-file)
+        [alterations _removals] (differ/diff old-schema new-schema)]
+    (for [model alterations
+          :let [model-name (key model)]]
+      (when-not (contains? old-schema model-name)
+        [(s/conform ::models/->migration model)]))))
+
+
 (defn make-migrations
   "Make new migrations based on models' definitions automatically."
   [{:keys [model-file migrations-dir] :as _args}]
-  ; TODO: uncomment!
-  ;(let [new-model (first (models model-file))
-  ;      migration (s/conform ::models/->migration new-model)
-  ;      _ (create-migrations-dir migrations-dir)
-  ;      migration-names (migrations-list migrations-dir)]
-    ;    migration-number (next-migration-number migration-names)
-    ;    migration-name (next-migration-name [migration])
-    ;    migration-file-name (str migration-number "_" migration-name)
-    ;    migration-file-name-full-path (str migrations-dir "/" migration-file-name ".edn")]
-    ;(spit migration-file-name-full-path
-    ;  (with-out-str
-    ;    (pprint/pprint [migration])))))
-
-  (let [migrations-files (util-file/list-files migrations-dir)]
-    (schema/current-db-schema migrations-files)))
+  ; TODO: remove second level of let!
+  (let [migrations-files (util-file/list-files migrations-dir)
+        migrations (-> (make-migrations* migrations-files model-file)
+                       (flatten))]
+    (if (seq migrations)
+      (let [_ (create-migrations-dir migrations-dir)
+            migration-names (migrations-list migrations-dir)
+            migration-number (next-migration-number migration-names)
+            migration-name (next-migration-name migrations)
+            migration-file-name (str migration-number "_" migration-name)
+            migration-file-name-full-path (str migrations-dir "/" migration-file-name ".edn")]
+        (spit migration-file-name-full-path
+          (with-out-str
+            (pprint/pprint migrations)))
+        (println (str "Created migration: " migration-file-name)))
+        ; TODO: print all changes from migration
+      ; TODO: use some special tool for printing to console
+      (println "Nothing to migrate."))))
 
 
 (defn- sql
@@ -169,9 +181,9 @@
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     (make-migrations config)))
+    ;(first (models (:model-file config)))))
     ;(migrate config)))
 
-;(table-exists? "migrations")))
 
 ;(->> (get-in action [:model :fields])
 ;  (reduce (fn [acc [k v]]
