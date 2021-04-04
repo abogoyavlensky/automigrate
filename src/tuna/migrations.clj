@@ -123,7 +123,7 @@
         (println (str "Created migration: " migration-file-name)))
         ; TODO: print all changes from migration
       ; TODO: use some special tool for printing to console
-      (println "Nothing to migrate."))))
+      (println "There are no changes in models."))))
 
 
 (defn- sql
@@ -136,19 +136,33 @@
     (s/conform ::sql/action->sql action)))
 
 
+(defn- already-migrated
+  "Get names of previously migrated migrations from db."
+  []
+  (->> {:select [:name]
+        :from [MIGRATIONS-TABLE]}
+       (hsql/format)
+       (jdbc/query (db-conn))
+       (map :name)
+       (set)))
+
+
 (defn migrate
   "Run migration on a db."
   [{:keys [migrations-dir]}]
+  (create-migrations-table)
   (let [migration-names (migrations-list migrations-dir)
-        file-name (first migration-names)
-        migration-name (first (str/split file-name #"\."))
-        actions (read-migration file-name migrations-dir)
-        action (first actions)
-        migration-sql (s/conform ::sql/action->sql action)]
-    (create-migrations-table)
-    (jdbc/with-db-transaction [tx (db-conn)]
-      (jdbc/execute! tx migration-sql)
-      (save-migration migration-name))))
+        migrated (already-migrated)]
+    ; TODO: print if nothing to migrate!
+    (doseq [file-name migration-names
+            :let [migration-name (first (str/split file-name #"\."))]]
+      (when-not (contains? migrated migration-name)
+        (jdbc/with-db-transaction [tx (db-conn)]
+          (doseq [action (read-migration file-name migrations-dir)]
+            (->> (s/conform ::sql/action->sql action)
+              (jdbc/execute! tx)))
+          (save-migration migration-name)
+          (println "Successfully migrated: " migration-name))))))
 
 
 ; Public
@@ -180,10 +194,12 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    (make-migrations config)))
-    ;(first (models (:model-file config)))))
-    ;(migrate config)))
+    ;(make-migrations config)))
+    (migrate config)))
 
+    ;(create-migrations-table)
+
+    ;(already-migrated)))
 
 ;(->> (get-in action [:model :fields])
 ;  (reduce (fn [acc [k v]]
