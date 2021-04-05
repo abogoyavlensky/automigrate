@@ -85,3 +85,33 @@ lint-init-ci:
 test:
 	@$(INFO) "Running tests..."
 	@clojure -X:test
+
+# Docker-compose
+
+.PHONY: up  # Run db
+up:
+	@$(INFO) "Running db..."
+	@docker-compose up -d db adminer
+
+.PHONY: ps  # List docker containers
+ps:
+	@$(INFO) "List docker containers..."
+	@docker-compose ps
+
+.PHONY: stop  # Stop docker containers
+stop:
+	@$(INFO) "Stopping docker containers..."
+	@docker-compose stop
+
+
+# Testing commands
+
+.PHONY: make-migrations  # Make testing migrations
+make-migrations:
+	@$(INFO) "Make testing migrations..."
+	@clojure -X:migrations :action :make-migrations
+
+.PHONY: migrate  # Migrate testing migrations
+migrate:
+	@$(INFO) "Migrate testing migrations..."
+	@clojure -X:migrations :action :migrate

@@ -12,3 +12,9 @@
 .clj-kondo/.cache
 lsp/
 .vscode
+*.iml
+.idea/
+
+# for local testing
+src/tuna/models.edn
+src/tuna/migrations/

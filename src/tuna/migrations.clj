@@ -6,20 +6,15 @@
             [clojure.string :as str]
             [clojure.pprint :as pprint]
             [honeysql.core :as hsql]
-            [honeysql-postgres.format :as hformat]
-            [honeysql-postgres.helpers :as phsql]))
+            [honeysql-postgres.format :as phformat]
+            [honeysql-postgres.helpers :as phsql]
+            [differ.core :as differ]
+            [tuna.models :as models]
+            [tuna.sql :as sql]
+            [tuna.schema :as schema]
+            [tuna.util.file :as util-file]))
 
 ; Config
-
-(def ^:private MODELS-PATH
-  "Path to models' definitions file."
-  "src/rhino/models.edn")
-
-
-(def ^:private MIGRATION-DIR
-  "Root dir for migrations."
-  "src/rhino/migrations")
-
 
 (def ^:private MIGRATIONS-TABLE
   "Default migrations table name."
@@ -28,57 +23,44 @@
 
 (defn- models
   "Return models' definitions."
-  []
-  (-> (slurp MODELS-PATH)
+  [model-path]
+  (-> (slurp model-path)
     (edn/read-string)))
 
 
 (defn- read-migration
   "Return models' definitions."
-  [file-name]
-  (-> (slurp (str MIGRATION-DIR "/" file-name))
+  [file-name migrations-dir]
+  (-> (slurp (str migrations-dir "/" file-name))
     (edn/read-string)))
 
 
 (defn- create-migrations-dir
   "Create migrations root dir if it is not exist."
-  []
-  (when-not (.isDirectory (io/file MIGRATION-DIR))
-    (.mkdir (java.io.File. MIGRATION-DIR))))
+  [migrations-dir]
+  (when-not (.isDirectory (io/file migrations-dir))
+    (.mkdir (java.io.File. migrations-dir))))
 
 
 (defn- db-conn
   "Return db connection for performing migration."
   []
-  (let [db-uri (or (System/getenv "RHINO_DB_URL")
-                 "jdbc:postgresql://localhost:5432/rhino?user=rhino&password=rhino")]
+  ; TODO: remove defaults!
+  ; TODO: move value to `run` fn params
+  (let [db-uri (or (System/getenv "DATABASE_URL")
+                 "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")]
     {:connection-uri db-uri}))
-
-
-(defn- table-exists?
-  "Check if table exists."
-  [table-name]
-  (->> {:select [:*]
-        :from [:information_schema.tables]
-        :where [:and
-                [:= :table_name table-name]
-                [:= :table_schema "public"]]}
-    (hsql/format)
-    (jdbc/query (db-conn))
-    (seq)
-    (some?)))
 
 
 (defn- create-migrations-table
   "Create table to keep migrations history."
   []
-  (when-not (table-exists? (name MIGRATIONS-TABLE))
-    (->> {:create-table [MIGRATIONS-TABLE]
-          :with-columns [[[:id :serial (hsql/call :not nil) (hsql/call :primary-key)]
-                          [:name (hsql/call :varchar (hsql/inline 256)) (hsql/call :not nil) (hsql/call :unique)]
-                          [:created_at :timestamp (hsql/call :default (hsql/call :now))]]]}
-      (hsql/format)
-      (jdbc/execute! (db-conn)))))
+  (->> {:create-table [MIGRATIONS-TABLE :if-not-exists? true]
+        :with-columns [[[:id :serial (hsql/call :not nil) (hsql/call :primary-key)]
+                        [:name (hsql/call :varchar (hsql/inline 256)) (hsql/call :not nil) (hsql/call :unique)]
+                        [:created_at :timestamp (hsql/call :default (hsql/call :now))]]]}
+    (hsql/format)
+    (jdbc/execute! (db-conn))))
 
 
 (defn- save-migration
@@ -90,74 +72,16 @@
     (jdbc/execute! (db-conn))))
 
 
-; Spec
-
-(s/def :field/type #{:int
-                     :serial
-                     :varchar
-                     :text
-                     :timestamp})
-
-
-(s/def :field/null boolean?)
-(s/def :field/primary boolean?)
-(s/def :field/max-length pos-int?)
-
-
-(s/def ::field
-  (s/keys
-    :req-un [:field/type]
-    :opt-un [:field/null
-             :field/primary
-             :field/max-length]))
-
-
-(s/def :model/fields
-  (s/map-of keyword? ::field))
-
-
-(s/def ::model
-  (s/keys
-    :req-un [:model/fields]))
-
-
-(s/def ::models
-  (s/map-of keyword? ::model))
-
-
-(s/def ::model->action
-  (s/conformer
-    (fn [value]
-      (assoc value :action :create-table))))
-
-
-(s/def ::->action
-  (s/and
-    (s/cat
-      :name keyword?
-      :model ::model)
-    ::model->action))
-
-
-(s/def ::->migration
-  (s/and
-    ::->action))
-
-
 (defn- migrations-list
   "Get migrations' files list."
-  []
-  (->> (file-seq (io/file MIGRATION-DIR))
-    (filter #(.isFile %))
+  [migrations-dir]
+  (->> (util-file/list-files migrations-dir)
     (map #(.getName %))))
 
 
 (defn- next-migration-number
   [file-names]
-  (if (empty? file-names)
-    "0000"
-    ; TODO: define next migration number
-    "0000"))
+  (util-file/zfill (count file-names)))
 
 
 (defn- next-migration-name
@@ -168,124 +92,92 @@
       (str/replace #"-" "_"))))
 
 
+(defn- make-migrations*
+  [migrations-files model-file]
+  (let [old-schema (schema/current-db-schema migrations-files)
+        new-schema (models model-file)
+        [alterations _removals] (differ/diff old-schema new-schema)]
+    (for [model alterations
+          :let [model-name (key model)]]
+      (when-not (contains? old-schema model-name)
+        [(s/conform ::models/->migration model)]))))
+
+
 (defn make-migrations
   "Make new migrations based on models' definitions automatically."
-  [_]
-  (create-migrations-dir)
-  (let [new-model (first (models))
-        migration (s/conform ::->migration new-model)
-        migration-names (migrations-list)
-        migration-number (next-migration-number migration-names)
-        migration-name (next-migration-name [migration])
-        migration-file-name (str migration-number "_" migration-name)]
-    (spit (str MIGRATION-DIR "/" migration-file-name ".edn")
-      (with-out-str
-        (pprint/pprint [migration])))))
-
-
-(s/def :option->sql/type
-  (s/conformer
-    (fn [value]
-      ;(hsql/call value)
-      (hsql/raw (name value)))))
-
-
-(s/def :option->sql/null
-  (s/conformer
-    (fn [value]
-      (if (true? value)
-        (hsql/call nil)
-        (hsql/call :not nil)))))
-
-
-(s/def ::options->sql
-  (s/keys
-    :req-un [:option->sql/type]
-    :opt-un [:option->sql/null]))
-
-
-(s/def :action/action #{:create-table})
-(s/def :action/name keyword?)
-
-
-(s/def :model->/fields
-  (s/map-of keyword? ::options->sql))
-
-
-(s/def :action/model
-  (s/keys
-    :req-un [:model->/fields]))
-
-
-(defn- fields->columns
-  [fields]
-  (->> fields
-    (reduce (fn [acc [k v]]
-              (conj acc (->> (vals v)
-                          (cons k)
-                          (vec)))) [])))
-
-
-(s/def ::create-model->sql
-  (s/conformer
-    (fn [value]
-      {(:action value) [(:name value)]
-       :with-columns [(fields->columns (-> value :model :fields))]})))
-
-
-(s/def ::->sql
-  (s/conformer
-    #(hsql/format %)))
-
-
-(s/def ::action->sql
-  (s/and
-    (s/keys
-      :req-un [:action/action
-               :action/name
-               :action/model])
-    ::create-model->sql
-    ::->sql))
-
-;(-> {:create-table [(:name action)]
-;     :with-columns [[[:id (hsql/raw "serial") (hsql/call :not nil)]]]}
-;    (hsql/format)))))
+  [{:keys [model-file migrations-dir] :as _args}]
+  ; TODO: remove second level of let!
+  (let [migrations-files (util-file/list-files migrations-dir)
+        migrations (-> (make-migrations* migrations-files model-file)
+                       (flatten))]
+    (if (seq migrations)
+      (let [_ (create-migrations-dir migrations-dir)
+            migration-names (migrations-list migrations-dir)
+            migration-number (next-migration-number migration-names)
+            migration-name (next-migration-name migrations)
+            migration-file-name (str migration-number "_" migration-name)
+            migration-file-name-full-path (str migrations-dir "/" migration-file-name ".edn")]
+        (spit migration-file-name-full-path
+          (with-out-str
+            (pprint/pprint migrations)))
+        (println (str "Created migration: " migration-file-name)))
+        ; TODO: print all changes from migration
+      ; TODO: use some special tool for printing to console
+      (println "There are no changes in models."))))
 
 
 (defn- sql
   "Generate raw sql from migration."
-  [_]
-  (let [migration-names (migrations-list)
+  [{:keys [migrations-dir]}]
+  (let [migration-names (migrations-list migrations-dir)
         file-name (first migration-names)
-        actions (read-migration file-name)
+        actions (read-migration file-name migrations-dir)
         action (first actions)]
-    (s/conform ::action->sql action)))
+    (s/conform ::sql/action->sql action)))
+
+
+(defn- already-migrated
+  "Get names of previously migrated migrations from db."
+  []
+  (->> {:select [:name]
+        :from [MIGRATIONS-TABLE]}
+       (hsql/format)
+       (jdbc/query (db-conn))
+       (map :name)
+       (set)))
 
 
 (defn migrate
   "Run migration on a db."
-  [_]
-  (let [migration-names (migrations-list)
-        file-name (first migration-names)
-        migration-name (first (str/split file-name #"\."))
-        actions (read-migration file-name)
-        action (first actions)
-        migration-sql (s/conform ::action->sql action)]
-    (create-migrations-table)
-    (jdbc/with-db-transaction [tx (db-conn)]
-      (jdbc/execute! tx migration-sql)
-      (save-migration migration-name))))
+  [{:keys [migrations-dir]}]
+  (create-migrations-table)
+  (let [migration-names (migrations-list migrations-dir)
+        migrated (already-migrated)]
+    ; TODO: print if nothing to migrate!
+    (doseq [file-name migration-names
+            :let [migration-name (first (str/split file-name #"\."))]]
+      (when-not (contains? migrated migration-name)
+        (jdbc/with-db-transaction [tx (db-conn)]
+          (doseq [action (read-migration file-name migrations-dir)]
+            (->> (s/conform ::sql/action->sql action)
+              (jdbc/execute! tx)))
+          (save-migration migration-name)
+          (println "Successfully migrated: " migration-name))))))
 
 
 (comment
-  (let [x 1]
+  (let [config {:model-file "src/tuna/models.edn"
+                :migrations-dir "src/tuna/migrations"}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
-    ;(make-migrations {})))
-    (migrate {})))
+    ;MIGRATIONS-TABLE))
+    ;(make-migrations config)))
+    (migrate config)))
 
-;(table-exists? "migrations")))
+    ;(create-migrations-table)
+
+    ;(already-migrated)))
 
 ;(->> (get-in action [:model :fields])
 ;  (reduce (fn [acc [k v]]

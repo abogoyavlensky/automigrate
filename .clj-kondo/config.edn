@@ -1,0 +1,2 @@
+{:linters {:single-key-in {:level :warning}
+           :shadowed-var {:level :warning}}}
