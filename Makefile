@@ -93,6 +93,12 @@ up:
 	@$(INFO) "Running db..."
 	@docker-compose up -d db adminer
 
+.PHONY: up-test  # Run db
+up-test:
+	@$(INFO) "Running testing dbs..."
+	@docker-compose up -d test-postgres
+
+
 .PHONY: ps  # List docker containers
 ps:
 	@$(INFO) "List docker containers..."
