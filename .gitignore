@@ -18,3 +18,4 @@ lsp/
 # for local testing
 src/tuna/models.edn
 src/tuna/migrations/
+test/tuna/migrations/
