@@ -16,10 +16,12 @@
  :aliases
  {:dev {:extra-paths ["dev"]}
   :test {:extra-paths ["test"]
-         :extra-deps {abogoyavlensky/eftest-coverage {:mvn/version "0.1.1"}}
-         :exec-fn eftest-coverage.runner/exec
+         :extra-deps {eftest/eftest {:mvn/version "0.5.9"}
+                      cloverage/cloverage {:mvn/version "1.2.2"}}
+         :exec-fn     cloverage.coverage/run-project
          :exec-args {:test-ns-path ["test"]
-                     :src-ns-path ["src"]}}
+                     :src-ns-path ["src"]
+                     :runner :eftest}}
 
   :build {:replace-deps {seancorfield/depstar {:mvn/version "2.0.171"}}
           :exec-fn hf.depstar/jar
