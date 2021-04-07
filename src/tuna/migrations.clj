@@ -44,12 +44,14 @@
 
 (defn- db-conn
   "Return db connection for performing migration."
-  []
-  ; TODO: remove defaults!
-  ; TODO: move value to `run` fn params
-  (let [db-uri (or (System/getenv "DATABASE_URL")
-                 "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")]
-    {:connection-uri db-uri}))
+  ([]
+   (db-conn nil))
+  ([db-url]
+   (let [db-uri (or db-url
+                  (System/getenv "DATABASE_URL")
+                  ; TODO: remove defaults!
+                  "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")]
+     {:connection-uri db-uri})))
 
 
 (defn- create-migrations-table

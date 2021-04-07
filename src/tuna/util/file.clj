@@ -25,3 +25,9 @@
    (zfill number DEFAULT-ZERO-COUNT))
   ([number zero-count]
    (format (str "%0" zero-count "d") number)))
+
+
+(defn delete-recursively
+  [dir-name]
+  (doseq [f (reverse (file-seq (clojure.java.io/file dir-name)))]
+    (clojure.java.io/delete-file f)))
