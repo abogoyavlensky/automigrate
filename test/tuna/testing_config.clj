@@ -5,4 +5,6 @@
 
 (def MODELS-DIR "test/tuna/models/")
 
-(def DB-URI "jdbc:postgresql://localhost:5555/tuna?user=tuna&password=tuna")
+(def DATABASE-URL "jdbc:postgresql://localhost:5555/tuna?user=tuna&password=tuna")
+
+(def DATABASE-CONN {:connection-uri DATABASE-URL})

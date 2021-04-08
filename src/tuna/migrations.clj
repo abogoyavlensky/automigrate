@@ -12,11 +12,12 @@
             [tuna.models :as models]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
-            [tuna.util.file :as util-file]))
+            [tuna.util.file :as util-file]
+            [tuna.util.file :as util-db]))
 
 ; Config
 
-(def ^:private MIGRATIONS-TABLE
+(def MIGRATIONS-TABLE
   "Default migrations table name."
   :migrations)
 
@@ -46,32 +47,32 @@
   "Return db connection for performing migration."
   ([]
    (db-conn nil))
-  ([db-url]
-   (let [db-uri (or db-url
-                  (System/getenv "DATABASE_URL")
-                  ; TODO: remove defaults!
-                  "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")]
-     {:connection-uri db-uri})))
+  ([db-uri]
+   (let [uri (or db-uri
+               (System/getenv "DATABASE_URL")
+               ; TODO: remove defaults!
+               "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")]
+     {:connection-uri uri})))
 
 
 (defn- create-migrations-table
   "Create table to keep migrations history."
-  []
+  [db]
   (->> {:create-table [MIGRATIONS-TABLE :if-not-exists? true]
         :with-columns [[[:id :serial (hsql/call :not nil) (hsql/call :primary-key)]
                         [:name (hsql/call :varchar (hsql/inline 256)) (hsql/call :not nil) (hsql/call :unique)]
                         [:created_at :timestamp (hsql/call :default (hsql/call :now))]]]}
     (hsql/format)
-    (jdbc/execute! (db-conn))))
+    (jdbc/execute! db)))
 
 
 (defn- save-migration
   "Save migration to db after applying it."
-  [migration-name]
+  [db migration-name]
   (->> {:insert-into MIGRATIONS-TABLE
         :values [{:name migration-name}]}
     (hsql/format)
-    (jdbc/execute! (db-conn))))
+    (jdbc/execute! db)))
 
 
 (defn- migrations-list
@@ -140,30 +141,31 @@
 
 (defn- already-migrated
   "Get names of previously migrated migrations from db."
-  []
+  [db]
   (->> {:select [:name]
         :from [MIGRATIONS-TABLE]}
        (hsql/format)
-       (jdbc/query (db-conn))
+       (jdbc/query db)
        (map :name)
        (set)))
 
 
 (defn migrate
   "Run migration on a db."
-  [{:keys [migrations-dir]}]
-  (create-migrations-table)
+  [{:keys [migrations-dir db-uri]}]
   (let [migration-names (migrations-list migrations-dir)
-        migrated (already-migrated)]
+        db (db-conn db-uri)
+        _ (create-migrations-table db)
+        migrated (already-migrated db)]
     ; TODO: print if nothing to migrate!
     (doseq [file-name migration-names
             :let [migration-name (first (str/split file-name #"\."))]]
       (when-not (contains? migrated migration-name)
-        (jdbc/with-db-transaction [tx (db-conn)]
+        (jdbc/with-db-transaction [tx db]
           (doseq [action (read-migration file-name migrations-dir)]
             (->> (s/conform ::sql/action->sql action)
               (jdbc/execute! tx)))
-          (save-migration migration-name)
+          (save-migration db migration-name)
           (println "Successfully migrated: " migration-name))))))
 
 

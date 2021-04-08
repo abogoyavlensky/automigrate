@@ -3,9 +3,15 @@
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [tuna.migrations :as migrations]
-            [tuna.util.file :as util-file]
+            [tuna.util.db :as util-db]
+            [tuna.util.test :as util-test]
             [tuna.testing-config :as config])
   (:import [java.io FileNotFoundException]))
+
+
+(use-fixtures :each
+  (util-test/with-drop-tables config/DATABASE-CONN)
+  (util-test/with-delete-dir config/MIGRATIONS-DIR))
 
 
 (deftest test-reading-models-from-file-ok
@@ -25,12 +31,10 @@
 (deftest test-create-migrations-dir-ok
   (is (false? (.isDirectory (io/file config/MIGRATIONS-DIR))))
   (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
-  (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR))))
-  (io/delete-file config/MIGRATIONS-DIR))
+  (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR)))))
 
 
 (deftest test-make-single-migrations-for-basic-model-ok
-  (is (false? (.isDirectory (io/file config/MIGRATIONS-DIR))))
   (#'migrations/make-migrations {:model-file (str config/MODELS-DIR "feed_basic.edn")
                                  :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:name :feed,
@@ -38,15 +42,17 @@
             :action :create-table})
         (-> (str config/MIGRATIONS-DIR "0000_create_table_feed.edn")
           (slurp)
-          (edn/read-string))))
-  (util-file/delete-recursively config/MIGRATIONS-DIR))
+          (edn/read-string)))))
 
 
-; TODO: remove!
-;(prn (:db-url (config)))
-;(let [db-uri (:db-uri (config))]
-;  (->> {:select [:*]
-;        :from [:pg_catalog.pg_tables]}
-;    (hsql/format)
-;    (jdbc/query {:connection-uri db-uri})
-;    (prn))))
+(deftest test-migrate-single-migrations-for-basic-model-ok
+  (#'migrations/make-migrations {:model-file (str config/MODELS-DIR "feed_basic.edn")
+                                 :migrations-dir config/MIGRATIONS-DIR})
+  (#'migrations/migrate {:migrations-dir config/MIGRATIONS-DIR
+                         :db-uri config/DATABASE-URL})
+  (is (= '({:id 1
+            :name "0000_create_table_feed"})
+        (->> {:select [:*]
+              :from [migrations/MIGRATIONS-TABLE]}
+          (util-db/query config/DATABASE-CONN)
+          (map #(dissoc % :created_at))))))
