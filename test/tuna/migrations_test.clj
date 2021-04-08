@@ -3,6 +3,7 @@
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [tuna.migrations :as migrations]
+            [tuna.core :as core]
             [tuna.util.db :as util-db]
             [tuna.util.test :as util-test]
             [tuna.testing-config :as config])
@@ -46,10 +47,12 @@
 
 
 (deftest test-migrate-single-migrations-for-basic-model-ok
-  (#'migrations/make-migrations {:model-file (str config/MODELS-DIR "feed_basic.edn")
-                                 :migrations-dir config/MIGRATIONS-DIR})
-  (#'migrations/migrate {:migrations-dir config/MIGRATIONS-DIR
-                         :db-uri config/DATABASE-URL})
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_basic.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (core/run {:action :migrate
+             :migrations-dir config/MIGRATIONS-DIR
+             :db-uri config/DATABASE-URL})
   (is (= '({:id 1
             :name "0000_create_table_feed"})
         (->> {:select [:*]

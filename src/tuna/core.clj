@@ -6,12 +6,14 @@
 
 (s/def :args/model-file string?)
 (s/def :args/migrations-dir string?)
+(s/def :args/db-uri string?)
 
 
 (s/def ::make-migrations-args
   (s/keys
     :req-un [:args/model-file
-             :args/migrations-dir]))
+             :args/migrations-dir
+             :args/db-uri]))
 
 
 (defn run

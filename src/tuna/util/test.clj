@@ -28,8 +28,9 @@
 (defn- delete-recursively
   "Delete dir and files inside recursively."
   [path]
-  (doseq [f (reverse (file-seq (io/file path)))]
-    (io/delete-file f)))
+  (when (.isDirectory (io/file path))
+    (doseq [f (reverse (file-seq (io/file path)))]
+      (io/delete-file f))))
 
 
 (defn with-delete-dir
