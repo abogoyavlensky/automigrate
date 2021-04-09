@@ -1,5 +1,5 @@
 (ns tuna.migrations-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [is deftest use-fixtures]]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [tuna.migrations :as migrations]

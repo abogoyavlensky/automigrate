@@ -6,14 +6,16 @@
             [clojure.string :as str]
             [clojure.pprint :as pprint]
             [honeysql.core :as hsql]
+            ; TODO: rmeove or uncomment
+            #_:clj-kondo/ignore
             [honeysql-postgres.format :as phformat]
-            [honeysql-postgres.helpers :as phsql]
+            ;[honeysql-postgres.helpers :as phsql]
             [differ.core :as differ]
             [tuna.models :as models]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
             [tuna.util.file :as util-file]
-            [tuna.util.file :as util-db]))
+            [tuna.util.db :as util-db]))
 
 ; Config
 
@@ -62,8 +64,7 @@
         :with-columns [[[:id :serial (hsql/call :not nil) (hsql/call :primary-key)]
                         [:name (hsql/call :varchar (hsql/inline 256)) (hsql/call :not nil) (hsql/call :unique)]
                         [:created_at :timestamp (hsql/call :default (hsql/call :now))]]]}
-    (hsql/format)
-    (jdbc/execute! db)))
+    (util-db/exec! db)))
 
 
 (defn- save-migration
@@ -71,8 +72,7 @@
   [db migration-name]
   (->> {:insert-into MIGRATIONS-TABLE
         :values [{:name migration-name}]}
-    (hsql/format)
-    (jdbc/execute! db)))
+    (util-db/exec! db)))
 
 
 (defn- migrations-list
@@ -129,7 +129,8 @@
       (println "There are no changes in models."))))
 
 
-(defn- sql
+; TODO: make private
+(defn sql
   "Generate raw sql from migration."
   [{:keys [migrations-dir]}]
   (let [migration-names (migrations-list migrations-dir)
@@ -144,8 +145,7 @@
   [db]
   (->> {:select [:name]
         :from [MIGRATIONS-TABLE]}
-       (hsql/format)
-       (jdbc/query db)
+       (util-db/query db)
        (map :name)
        (set)))
 
