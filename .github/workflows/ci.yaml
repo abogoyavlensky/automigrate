@@ -21,5 +21,5 @@ jobs:
       - name: Fmt
         run: docker-compose run --rm check make fmt-check
 
-#      - name: Test
-#        run: docker-compose run --rm check bash -c "make deps && make test"
+      - name: Test
+        run: docker-compose run --rm test bash -c "make deps && make test-ci"

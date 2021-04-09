@@ -22,7 +22,17 @@ services:
     environment:
       ADMINER_DEFAULT_SERVER: db
 
+  # For testing in CI
+
+  test:
+    image: abogoyavlensky/clojure-openjdk11-build:0.1.3
+    depends_on:
+      - test-postgres
+    volumes:
+      - .:/app
+
   #  databases for testing
+
   test-postgres:
     image: postgres
     ports:
