@@ -112,7 +112,7 @@
   ; TODO: remove second level of let!
   (let [migrations-files (util-file/list-files migrations-dir)
         migrations (-> (make-migrations* migrations-files model-file)
-                       (flatten))]
+                     (flatten))]
     (if (seq migrations)
       (let [_ (create-migrations-dir migrations-dir)
             migration-names (migrations-list migrations-dir)
@@ -145,9 +145,9 @@
   [db]
   (->> {:select [:name]
         :from [MIGRATIONS-TABLE]}
-       (util-db/query db)
-       (map :name)
-       (set)))
+    (util-db/query db)
+    (map :name)
+    (set)))
 
 
 (defn migrate
@@ -179,9 +179,9 @@
     ;(make-migrations config)))
     (migrate config)))
 
-    ;(create-migrations-table)
+;(create-migrations-table)
 
-    ;(already-migrated)))
+;(already-migrated)))
 
 ;(->> (get-in action [:model :fields])
 ;  (reduce (fn [acc [k v]]

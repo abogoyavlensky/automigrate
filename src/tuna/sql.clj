@@ -26,6 +26,7 @@
     :req-un [:option->sql/type]
     :opt-un [:option->sql/null]))
 
+
 (s/def :action/action #{CREATE-TABLE-ACTION})
 (s/def :action/name keyword?)
 
@@ -42,10 +43,10 @@
 (defn- fields->columns
   [fields]
   (->> fields
-       (reduce (fn [acc [k v]]
-                 (conj acc (->> (vals v)
-                                (cons k)
-                                (vec)))) [])))
+    (reduce (fn [acc [k v]]
+              (conj acc (->> (vals v)
+                          (cons k)
+                          (vec)))) [])))
 
 
 (s/def ::create-model->sql
