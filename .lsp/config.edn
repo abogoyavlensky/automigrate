@@ -1,0 +1,4 @@
+{:auto-add-ns-to-new-files? false
+	:dependency-scheme "jar"
+ :project-specs [{:project-path "deps.edn"
+                  :classpath-cmd ["clojure" "-A:test:dev" "-Spath"]}]}
