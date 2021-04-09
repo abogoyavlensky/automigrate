@@ -21,7 +21,7 @@ help:
 .PHONY: deps  # Install deps
 deps:
 	@$(INFO) "Install deps..."
-	@clojure -P -X:test
+	@clojure -P -X:test:dev
 
 
 .PHONY: build  # Build a deployable jar
@@ -43,7 +43,6 @@ deploy:
 	@$(INFO) "Deploying jar to Clojars..."
 	@clojure -X:deploy
 
-# TODO: remove cmd repition!
 
 .PHONY: fmt-check  # Checking code formatting
 fmt-check:
@@ -57,12 +56,6 @@ fmt:
 	@cljstyle fix --report $(DIRS)
 
 
-.PHONY: fmt-check-ci  # Checking code formatting, should be used in CI
-fmt-check-ci:
-	@$(INFO) "Checking code formatting..."
-	@FMT_ACTION=check FMT_PATHS=$(SOURCE_PATHS) docker-compose run fmt
-
-
 .PHONY: lint  # Linting code
 lint:
 	@$(INFO) "Linting project..."
@@ -73,12 +66,6 @@ lint:
 lint-init:
 	@$(INFO) "Linting project's classpath..."
 	@clj-kondo --config .clj-kondo/config-ci.edn --lint $(shell clj -Spath)
-
-
-.PHONY: lint-init-ci  # Linting code with libraries, should be used in CI
-lint-init-ci:
-	@$(INFO) "Linting project's classpath..."
-	@LINT_PATHS=$(shell clj -Spath) docker-compose run lint || true
 
 
 .PHONY: test  # Run tests with coverage

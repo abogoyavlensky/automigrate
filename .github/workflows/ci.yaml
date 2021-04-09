@@ -1,0 +1,25 @@
+name: CI
+
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  checks:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Lint
+        run: docker-compose run --rm check bash -c "make deps && make lint-init > /dev/null 2>&1 || true && make lint"
+
+      - name: Fmt
+        run: docker-compose run --rm check make fmt-check
+
+#      - name: Test
+#        run: docker-compose run --rm check bash -c "make deps && make test"
