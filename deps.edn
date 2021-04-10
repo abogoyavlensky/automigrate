@@ -3,9 +3,11 @@
         org.clojure/spec.alpha {:mvn/version "0.2.194"}
         org.clojure/java.jdbc {:mvn/version "0.7.11"}
 
-        ; TODO: replace with honeysql=2.*
+        ; TODO: remove!
         honeysql/honeysql {:mvn/version "1.0.444"}
         nilenso/honeysql-postgres {:mvn/version "0.2.6"}
+
+        com.github.seancorfield/honeysql {:mvn/version "2.0.0-beta1"}
 
         differ/differ {:mvn/version "0.3.3"}}
 

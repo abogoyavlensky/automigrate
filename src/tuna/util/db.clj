@@ -1,4 +1,5 @@
 (ns tuna.util.db
+  "Utils for working with database."
   (:require [clojure.java.jdbc :as jdbc]
             [honeysql.core :as hsql]))
 

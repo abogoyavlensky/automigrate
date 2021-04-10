@@ -1,4 +1,5 @@
 (ns tuna.util.test
+  "Utils for simplifying tests."
   (:require [clojure.java.io :as io]
             [tuna.util.db :as util-db]))
 

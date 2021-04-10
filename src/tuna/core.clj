@@ -1,8 +1,8 @@
 (ns tuna.core
+  "Public interface for lib's users."
   (:require [clojure.spec.alpha :as s]
             [tuna.migrations :as migrations]))
 
-; Public interface
 
 (s/def :args/model-file string?)
 (s/def :args/migrations-dir string?)

@@ -1,4 +1,5 @@
 (ns tuna.sql
+  "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
             [honeysql.core :as hsql]))
 

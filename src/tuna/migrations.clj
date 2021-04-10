@@ -1,4 +1,7 @@
 (ns tuna.migrations
+  "Module for applying changes to migrations and db.
+  Also contains tools for inspection of db state by migrations
+  and state of migrations itself."
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.spec.alpha :as s]
             [clojure.edn :as edn]

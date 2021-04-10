@@ -1,4 +1,5 @@
 (ns tuna.schema
+  "Module for generating db schema from migrations."
   (:require [tuna.util.file :as util-file]
             [tuna.sql :as sql]))
 
