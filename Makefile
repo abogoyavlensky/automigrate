@@ -67,11 +67,16 @@ lint-init:
 	@$(INFO) "Linting project's classpath..."
 	@clj-kondo --config .clj-kondo/config-ci.edn --lint $(shell clj -Spath)
 
+.PHONY: check  # Check linting and formatting locally
+check:
+	@$(MAKE) lint
+	@$(MAKE) fmt-check
+
 
 .PHONY: test  # Run tests with coverage
 test:
 	@$(INFO) "Running tests..."
-	@clojure -X:test
+	@clojure -X:dev:test
 
 # Docker-compose
 

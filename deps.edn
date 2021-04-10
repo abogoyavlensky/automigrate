@@ -3,18 +3,17 @@
         org.clojure/spec.alpha {:mvn/version "0.2.194"}
         org.clojure/java.jdbc {:mvn/version "0.7.11"}
 
-        ; TODO: probably exclude in alpha release
-        org.postgresql/postgresql {:mvn/version "42.2.14"}
-
         ; TODO: replace with honeysql=2.*
         honeysql/honeysql {:mvn/version "1.0.444"}
         nilenso/honeysql-postgres {:mvn/version "0.2.6"}
 
-        org.clojure/tools.namespace {:mvn/version "1.1.0"}
         differ/differ {:mvn/version "0.3.3"}}
 
  :aliases
- {:dev {:extra-paths ["dev"]}
+ {:dev {:extra-paths ["dev"]
+        :extra-deps {org.clojure/tools.namespace {:mvn/version "1.1.0"}
+                     hashp/hashp {:mvn/version "0.2.1"}
+                     org.postgresql/postgresql {:mvn/version "42.2.14"}}}
   :test {:extra-paths ["test"]
          :extra-deps {eftest/eftest {:mvn/version "0.5.9"}
                       cloverage/cloverage {:mvn/version "1.2.2"}}

@@ -51,9 +51,9 @@
    (db-conn nil))
   ([db-uri]
    (let [uri (or db-uri
-               (System/getenv "DATABASE_URL")
-               ; TODO: remove defaults!
-               "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")]
+               ; TODO: add ability to read .end file
+               ; TODO: add ability to change env var name
+               (System/getenv "DATABASE_URL"))]
      {:connection-uri uri})))
 
 
@@ -129,7 +129,7 @@
       (println "There are no changes in models."))))
 
 
-; TODO: make private
+; TODO: update, use and make private
 (defn sql
   "Generate raw sql from migration."
   [{:keys [migrations-dir]}]
@@ -171,7 +171,8 @@
 
 (comment
   (let [config {:model-file "src/tuna/models.edn"
-                :migrations-dir "src/tuna/migrations"}]
+                :migrations-dir "src/tuna/migrations"
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
