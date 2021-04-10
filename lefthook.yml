@@ -1,0 +1,9 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "*.{clj,edn}"
+      run: make lint
+    fmt:
+      glob: "*.{clj,edn}"
+      run: make fmt-check
