@@ -1,2 +1,11 @@
 {:linters {:single-key-in {:level :warning}
-           :shadowed-var {:level :warning}}}
+           :shadowed-var {:level :warning}
+           :consistent-alias {:aliases {honey.sql honey
+                                        clojure.spec.alpha s
+                                        clojure.java.jdbc jdbc
+                                        tuna.util.db db-util
+                                        tuna.util.file file-util
+                                        tuna.util.test test-util
+                                        clojure.java.io io
+                                        clojure.edn edn
+                                        clojure.string str}}}}

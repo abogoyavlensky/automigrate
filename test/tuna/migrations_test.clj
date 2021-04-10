@@ -4,15 +4,15 @@
             [clojure.edn :as edn]
             [tuna.migrations :as migrations]
             [tuna.core :as core]
-            [tuna.util.db :as util-db]
-            [tuna.util.test :as util-test]
+            [tuna.util.db :as db-util]
+            [tuna.util.test :as test-util]
             [tuna.testing-config :as config])
   (:import [java.io FileNotFoundException]))
 
 
 (use-fixtures :each
-  (util-test/with-drop-tables config/DATABASE-CONN)
-  (util-test/with-delete-dir config/MIGRATIONS-DIR))
+  (test-util/with-drop-tables config/DATABASE-CONN)
+  (test-util/with-delete-dir config/MIGRATIONS-DIR))
 
 
 (deftest test-reading-models-from-file-ok
@@ -57,5 +57,5 @@
             :name "0000_create_table_feed"})
         (->> {:select [:*]
               :from [migrations/MIGRATIONS-TABLE]}
-          (util-db/query config/DATABASE-CONN)
+          (db-util/query config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))

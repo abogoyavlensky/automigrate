@@ -17,8 +17,8 @@
             [tuna.models :as models]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
-            [tuna.util.file :as util-file]
-            [tuna.util.db :as util-db]))
+            [tuna.util.file :as file-util]
+            [tuna.util.db :as db-util]))
 
 ; Config
 
@@ -67,7 +67,7 @@
         :with-columns [[[:id :serial (hsql/call :not nil) (hsql/call :primary-key)]
                         [:name (hsql/call :varchar (hsql/inline 256)) (hsql/call :not nil) (hsql/call :unique)]
                         [:created_at :timestamp (hsql/call :default (hsql/call :now))]]]}
-    (util-db/exec! db)))
+    (db-util/exec! db)))
 
 
 (defn- save-migration
@@ -75,19 +75,19 @@
   [db migration-name]
   (->> {:insert-into MIGRATIONS-TABLE
         :values [{:name migration-name}]}
-    (util-db/exec! db)))
+    (db-util/exec! db)))
 
 
 (defn- migrations-list
   "Get migrations' files list."
   [migrations-dir]
-  (->> (util-file/list-files migrations-dir)
+  (->> (file-util/list-files migrations-dir)
     (map #(.getName %))))
 
 
 (defn- next-migration-number
   [file-names]
-  (util-file/zfill (count file-names)))
+  (file-util/zfill (count file-names)))
 
 
 (defn- next-migration-name
@@ -113,7 +113,7 @@
   "Make new migrations based on models' definitions automatically."
   [{:keys [model-file migrations-dir] :as _args}]
   ; TODO: remove second level of let!
-  (let [migrations-files (util-file/list-files migrations-dir)
+  (let [migrations-files (file-util/list-files migrations-dir)
         migrations (-> (make-migrations* migrations-files model-file)
                      (flatten))]
     (if (seq migrations)
@@ -148,7 +148,7 @@
   [db]
   (->> {:select [:name]
         :from [MIGRATIONS-TABLE]}
-    (util-db/query db)
+    (db-util/query db)
     (map :name)
     (set)))
 

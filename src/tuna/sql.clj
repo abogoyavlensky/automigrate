@@ -1,7 +1,8 @@
 (ns tuna.sql
   "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
-            [honeysql.core :as hsql]))
+            [honeysql.core :as hsql]
+            #_[honey.sql :as honey]))
 
 ; DB actions
 (def CREATE-TABLE-ACTION :create-table)

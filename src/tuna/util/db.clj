@@ -1,7 +1,8 @@
 (ns tuna.util.db
   "Utils for working with database."
   (:require [clojure.java.jdbc :as jdbc]
-            [honeysql.core :as hsql]))
+            [honeysql.core :as hsql]
+            #_[honey.sql :as honey]))
 
 
 (defn exec!
