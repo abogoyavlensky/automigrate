@@ -2,6 +2,7 @@
  :deps {org.clojure/clojure {:mvn/version "1.10.2"}
         org.clojure/spec.alpha {:mvn/version "0.2.194"}
         org.clojure/java.jdbc {:mvn/version "0.7.11"}
+        slingshot/slingshot {:mvn/version "0.12.2"}
 
         ; TODO: remove!
         honeysql/honeysql {:mvn/version "1.0.444"}

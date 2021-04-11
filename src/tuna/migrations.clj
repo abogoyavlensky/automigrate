@@ -8,6 +8,7 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.pprint :as pprint]
+            [slingshot.slingshot :refer [throw+]]
             [honeysql.core :as hsql]
             ; TODO: rmeove or uncomment
             #_:clj-kondo/ignore
@@ -132,15 +133,38 @@
       (println "There are no changes in models."))))
 
 
-; TODO: update, use and make private
-(defn sql
+(defn- migration-number
+  [migration-name]
+  (first (str/split migration-name #"_")))
+
+
+(defn- get-migration-by-number
+  "Return migration file name by number.
+
+  migration-names [<str>]
+  number: <str>"
+  [migration-names number]
+  ; TODO: add args validation!
+  (->> migration-names
+    (filter #(= number (migration-number %)))
+    (first)))
+
+
+(defn explain
   "Generate raw sql from migration."
-  [{:keys [migrations-dir]}]
-  (let [migration-names (migrations-list migrations-dir)
-        file-name (first migration-names)
-        actions (read-migration file-name migrations-dir)
-        action (first actions)]
-    (s/conform ::sql/action->sql action)))
+  [{:keys [migrations-dir number] :as _args}]
+  (let [number* (file-util/zfill number)
+        migration-names (migrations-list migrations-dir)
+        file-name (get-migration-by-number migration-names number*)]
+    (when-not (some? file-name)
+      (throw+ {:type ::no-migration-by-number
+               :number number}))
+    (file-util/safe-println
+      [(format "SQL for migration %s:\n" file-name)])
+    (->> (read-migration file-name migrations-dir)
+      (mapv #(s/conform ::sql/action->sql %))
+      (flatten)
+      (file-util/safe-println))))
 
 
 (defn- already-migrated
@@ -175,13 +199,15 @@
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}]
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :number "0000"}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    (migrate config)))
+    ;(migrate config)
+    (explain config)))
 
 ;(create-migrations-table)
 

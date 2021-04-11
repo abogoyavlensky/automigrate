@@ -1,5 +1,7 @@
 {:linters {:single-key-in {:level :warning}
            :shadowed-var {:level :warning}
+           :refer-all {:exclude [clojure.test
+                                 slingshot.slingshot]}
            :consistent-alias {:aliases {honey.sql honey
                                         clojure.spec.alpha s
                                         clojure.java.jdbc jdbc
