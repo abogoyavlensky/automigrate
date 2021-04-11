@@ -10,4 +10,5 @@
                                         tuna.util.test test-util
                                         clojure.java.io io
                                         clojure.edn edn
-                                        clojure.string str}}}}
+                                        clojure.string str
+                                        bond.james bond}}}}

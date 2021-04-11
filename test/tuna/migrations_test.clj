@@ -2,9 +2,11 @@
   (:require [clojure.test :refer [is deftest use-fixtures]]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
+            [bond.james :as bond]
             [tuna.migrations :as migrations]
             [tuna.core :as core]
             [tuna.util.db :as db-util]
+            [tuna.util.file :as file-util]
             [tuna.util.test :as test-util]
             [tuna.testing-config :as config])
   (:import [java.io FileNotFoundException]))
@@ -59,3 +61,24 @@
               :from [migrations/MIGRATIONS-TABLE]}
           (db-util/query config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
+
+
+(deftest test-explain-basic-migration-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (bond/with-stub [[migrations/migrations-list (constantly ["0000_create_table_feed"])]
+                   [file-util/safe-println (constantly nil)]
+                   [migrations/read-migration (constantly
+                                                '({:name :feed,
+                                                   :model {:fields {:id {:type :serial, :null false}}},
+                                                   :action :create-table}
+                                                  {:name :account,
+                                                   :model {:fields {:id {:type :serial, :null false}}},
+                                                   :action :create-table}))]]
+    (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
+                         :number 0})
+    (is (= ["CREATE TABLE feed (id serial NOT NULL)"
+            "CREATE TABLE account (id serial NOT NULL)"]
+          (-> (bond/calls file-util/safe-println)
+            (last)
+            :args
+            (first))))))

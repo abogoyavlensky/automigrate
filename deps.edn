@@ -19,7 +19,8 @@
                      org.postgresql/postgresql {:mvn/version "42.2.14"}}}
   :test {:extra-paths ["test"]
          :extra-deps {eftest/eftest {:mvn/version "0.5.9"}
-                      cloverage/cloverage {:mvn/version "1.2.2"}}
+                      cloverage/cloverage {:mvn/version "1.2.2"}
+                      circleci/bond {:mvn/version "0.5.0"}}
          :exec-fn     cloverage.coverage/run-project
          :exec-args {:test-ns-path ["test"]
                      :src-ns-path ["src"]
