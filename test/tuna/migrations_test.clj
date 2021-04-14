@@ -76,12 +76,12 @@
                                                    :model {:fields {:id {:type :serial, :null false}}},
                                                    :action :create-table}
                                                   {:name :account,
-                                                   :model {:fields {:id {:type :serial, :null false}}},
+                                                   :model {:fields {:id {:type :serial, :null true}}},
                                                    :action :create-table}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
     (is (= ["CREATE TABLE feed (id SERIAL NOT NULL)"
-            "CREATE TABLE account (id SERIAL NOT NULL)"]
+            "CREATE TABLE account (id SERIAL NULL)"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args
