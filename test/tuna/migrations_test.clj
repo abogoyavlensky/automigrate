@@ -58,7 +58,7 @@
   (is (= '({:id 1
             :name "0000_create_table_feed"})
         (->> {:select [:*]
-              :from [migrations/MIGRATIONS-TABLE]}
+              :from [db-util/MIGRATIONS-TABLE]}
           (db-util/query config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 

@@ -10,6 +10,7 @@
 (s/def :args/model-file string?)
 (s/def :args/migrations-dir string?)
 (s/def :args/db-uri string?)
+; TODO: use conform str -> int!
 (s/def :args/number int?)
 
 

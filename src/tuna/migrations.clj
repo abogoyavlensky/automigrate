@@ -9,7 +9,7 @@
             [clojure.string :as str]
             [clojure.pprint :as pprint]
             [slingshot.slingshot :refer [throw+]]
-            [honeysql.core :as hsql]
+            ;[honeysql.core :as hsql]
             ; TODO: rmeove or uncomment
             #_:clj-kondo/ignore
             [honeysql-postgres.format :as phformat]
@@ -20,12 +20,6 @@
             [tuna.schema :as schema]
             [tuna.util.file :as file-util]
             [tuna.util.db :as db-util]))
-
-; Config
-
-(def MIGRATIONS-TABLE
-  "Default migrations table name."
-  :migrations)
 
 
 (defn- models
@@ -49,32 +43,10 @@
     (.mkdir (java.io.File. migrations-dir))))
 
 
-(defn- db-conn
-  "Return db connection for performing migration."
-  ([]
-   (db-conn nil))
-  ([db-uri]
-   (let [uri (or db-uri
-               ; TODO: add ability to read .end file
-               ; TODO: add ability to change env var name
-               (System/getenv "DATABASE_URL"))]
-     {:connection-uri uri})))
-
-
-(defn- create-migrations-table
-  "Create table to keep migrations history."
-  [db]
-  (->> {:create-table [MIGRATIONS-TABLE :if-not-exists? true]
-        :with-columns [[[:id :serial (hsql/call :not nil) (hsql/call :primary-key)]
-                        [:name (hsql/call :varchar (hsql/inline 256)) (hsql/call :not nil) (hsql/call :unique)]
-                        [:created_at :timestamp (hsql/call :default (hsql/call :now))]]]}
-    (db-util/exec! db)))
-
-
 (defn- save-migration
   "Save migration to db after applying it."
   [db migration-name]
-  (->> {:insert-into MIGRATIONS-TABLE
+  (->> {:insert-into db-util/MIGRATIONS-TABLE
         :values [{:name migration-name}]}
     (db-util/exec! db)))
 
@@ -171,7 +143,7 @@
   "Get names of previously migrated migrations from db."
   [db]
   (->> {:select [:name]
-        :from [MIGRATIONS-TABLE]}
+        :from [db-util/MIGRATIONS-TABLE]}
     (db-util/query db)
     (map :name)
     (set)))
@@ -181,8 +153,8 @@
   "Run migration on a db."
   [{:keys [migrations-dir db-uri]}]
   (let [migration-names (migrations-list migrations-dir)
-        db (db-conn db-uri)
-        _ (create-migrations-table db)
+        db (db-util/db-conn db-uri)
+        _ (db-util/create-migrations-table db)
         migrated (already-migrated db)]
     ; TODO: print if nothing to migrate!
     (doseq [file-name migration-names
@@ -200,7 +172,7 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number "0000"}]
+                :number 0}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))

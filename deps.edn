@@ -44,4 +44,5 @@
                :exec-args {:action :make-migrations
                            ; TODO: also add ability to set this names by default with params
                            :model-file "src/tuna/models.edn"
-                           :migrations-dir "src/tuna/migrations"}}}}
+                           :migrations-dir "src/tuna/migrations"
+                           :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}}}}
