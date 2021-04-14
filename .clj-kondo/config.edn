@@ -1,2 +1,14 @@
 {:linters {:single-key-in {:level :warning}
-           :shadowed-var {:level :warning}}}
+           :shadowed-var {:level :warning}
+           :refer-all {:exclude [clojure.test
+                                 slingshot.slingshot]}
+           :consistent-alias {:aliases {honey.sql honey
+                                        clojure.spec.alpha s
+                                        clojure.java.jdbc jdbc
+                                        tuna.util.db db-util
+                                        tuna.util.file file-util
+                                        tuna.util.test test-util
+                                        clojure.java.io io
+                                        clojure.edn edn
+                                        clojure.string str
+                                        bond.james bond}}}}

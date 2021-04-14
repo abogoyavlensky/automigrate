@@ -1,18 +1,20 @@
 (ns tuna.migrations-test
-  (:require [clojure.test :refer [is deftest use-fixtures]]
+  (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
+            [bond.james :as bond]
             [tuna.migrations :as migrations]
             [tuna.core :as core]
-            [tuna.util.db :as util-db]
-            [tuna.util.test :as util-test]
+            [tuna.util.db :as db-util]
+            [tuna.util.file :as file-util]
+            [tuna.util.test :as test-util]
             [tuna.testing-config :as config])
   (:import [java.io FileNotFoundException]))
 
 
 (use-fixtures :each
-  (util-test/with-drop-tables config/DATABASE-CONN)
-  (util-test/with-delete-dir config/MIGRATIONS-DIR))
+  (test-util/with-drop-tables config/DATABASE-CONN)
+  (test-util/with-delete-dir config/MIGRATIONS-DIR))
 
 
 (deftest test-reading-models-from-file-ok
@@ -30,9 +32,13 @@
 
 
 (deftest test-create-migrations-dir-ok
-  (is (false? (.isDirectory (io/file config/MIGRATIONS-DIR))))
-  (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
-  (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR)))))
+  (testing "test creating dir"
+    (is (false? (.isDirectory (io/file config/MIGRATIONS-DIR))))
+    (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
+    (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR)))))
+  (testing "test when dir already exists"
+    (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
+    (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR))))))
 
 
 (deftest test-make-single-migrations-for-basic-model-ok
@@ -56,6 +62,27 @@
   (is (= '({:id 1
             :name "0000_create_table_feed"})
         (->> {:select [:*]
-              :from [migrations/MIGRATIONS-TABLE]}
-          (util-db/query config/DATABASE-CONN)
+              :from [db-util/MIGRATIONS-TABLE]}
+          (db-util/query config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
+
+
+(deftest test-explain-basic-migration-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (bond/with-stub [[migrations/migrations-list (constantly ["0000_create_table_feed"])]
+                   [file-util/safe-println (constantly nil)]
+                   [migrations/read-migration (constantly
+                                                '({:name :feed,
+                                                   :model {:fields {:id {:type :serial, :null false}}},
+                                                   :action :create-table}
+                                                  {:name :account,
+                                                   :model {:fields {:id {:type :serial, :null false}}},
+                                                   :action :create-table}))]]
+    (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
+                         :number 0})
+    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL)"
+            "CREATE TABLE account (id SERIAL NOT NULL)"]
+          (-> (bond/calls file-util/safe-println)
+            (last)
+            :args
+            (first))))))

@@ -1,6 +1,8 @@
 (ns tuna.util.file
+  "Utils for working with file system."
   (:require [clojure.edn :as edn]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [clojure.string :as str]))
 
 
 (def DEFAULT-ZERO-COUNT 4)
@@ -25,3 +27,9 @@
    (zfill number DEFAULT-ZERO-COUNT))
   ([number zero-count]
    (format (str "%0" zero-count "d") number)))
+
+
+(defn safe-println
+  [more]
+  (.write *out*
+    (str (str/join ";\n" more) "\n")))

@@ -1,27 +1,20 @@
 (ns tuna.migrations
+  "Module for applying changes to migrations and db.
+  Also contains tools for inspection of db state by migrations
+  and state of migrations itself."
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.spec.alpha :as s]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.pprint :as pprint]
-            [honeysql.core :as hsql]
-            ; TODO: rmeove or uncomment
-            #_:clj-kondo/ignore
-            [honeysql-postgres.format :as phformat]
-            ;[honeysql-postgres.helpers :as phsql]
+            [slingshot.slingshot :refer [throw+]]
             [differ.core :as differ]
             [tuna.models :as models]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
-            [tuna.util.file :as util-file]
-            [tuna.util.db :as util-db]))
-
-; Config
-
-(def MIGRATIONS-TABLE
-  "Default migrations table name."
-  :migrations)
+            [tuna.util.file :as file-util]
+            [tuna.util.db :as db-util]))
 
 
 (defn- models
@@ -45,46 +38,24 @@
     (.mkdir (java.io.File. migrations-dir))))
 
 
-(defn- db-conn
-  "Return db connection for performing migration."
-  ([]
-   (db-conn nil))
-  ([db-uri]
-   (let [uri (or db-uri
-               ; TODO: add ability to read .end file
-               ; TODO: add ability to change env var name
-               (System/getenv "DATABASE_URL"))]
-     {:connection-uri uri})))
-
-
-(defn- create-migrations-table
-  "Create table to keep migrations history."
-  [db]
-  (->> {:create-table [MIGRATIONS-TABLE :if-not-exists? true]
-        :with-columns [[[:id :serial (hsql/call :not nil) (hsql/call :primary-key)]
-                        [:name (hsql/call :varchar (hsql/inline 256)) (hsql/call :not nil) (hsql/call :unique)]
-                        [:created_at :timestamp (hsql/call :default (hsql/call :now))]]]}
-    (util-db/exec! db)))
-
-
 (defn- save-migration
   "Save migration to db after applying it."
   [db migration-name]
-  (->> {:insert-into MIGRATIONS-TABLE
+  (->> {:insert-into db-util/MIGRATIONS-TABLE
         :values [{:name migration-name}]}
-    (util-db/exec! db)))
+    (db-util/exec! db)))
 
 
 (defn- migrations-list
   "Get migrations' files list."
   [migrations-dir]
-  (->> (util-file/list-files migrations-dir)
+  (->> (file-util/list-files migrations-dir)
     (map #(.getName %))))
 
 
 (defn- next-migration-number
   [file-names]
-  (util-file/zfill (count file-names)))
+  (file-util/zfill (count file-names)))
 
 
 (defn- next-migration-name
@@ -110,7 +81,7 @@
   "Make new migrations based on models' definitions automatically."
   [{:keys [model-file migrations-dir] :as _args}]
   ; TODO: remove second level of let!
-  (let [migrations-files (util-file/list-files migrations-dir)
+  (let [migrations-files (file-util/list-files migrations-dir)
         migrations (-> (make-migrations* migrations-files model-file)
                      (flatten))]
     (if (seq migrations)
@@ -129,23 +100,46 @@
       (println "There are no changes in models."))))
 
 
-; TODO: update, use and make private
-(defn sql
+(defn- migration-number
+  [migration-name]
+  (first (str/split migration-name #"_")))
+
+
+(defn- get-migration-by-number
+  "Return migration file name by number.
+
+  migration-names [<str>]
+  number: <str>"
+  [migration-names number]
+  ; TODO: add args validation!
+  (->> migration-names
+    (filter #(= number (migration-number %)))
+    (first)))
+
+
+(defn explain
   "Generate raw sql from migration."
-  [{:keys [migrations-dir]}]
-  (let [migration-names (migrations-list migrations-dir)
-        file-name (first migration-names)
-        actions (read-migration file-name migrations-dir)
-        action (first actions)]
-    (s/conform ::sql/action->sql action)))
+  [{:keys [migrations-dir number] :as _args}]
+  (let [number* (file-util/zfill number)
+        migration-names (migrations-list migrations-dir)
+        file-name (get-migration-by-number migration-names number*)]
+    (when-not (some? file-name)
+      (throw+ {:type ::no-migration-by-number
+               :number number}))
+    (file-util/safe-println
+      [(format "SQL for migration %s:\n" file-name)])
+    (->> (read-migration file-name migrations-dir)
+      (mapv #(s/conform ::sql/action->sql %))
+      (flatten)
+      (file-util/safe-println))))
 
 
 (defn- already-migrated
   "Get names of previously migrated migrations from db."
   [db]
   (->> {:select [:name]
-        :from [MIGRATIONS-TABLE]}
-    (util-db/query db)
+        :from [db-util/MIGRATIONS-TABLE]}
+    (db-util/query db)
     (map :name)
     (set)))
 
@@ -154,8 +148,8 @@
   "Run migration on a db."
   [{:keys [migrations-dir db-uri]}]
   (let [migration-names (migrations-list migrations-dir)
-        db (db-conn db-uri)
-        _ (create-migrations-table db)
+        db (db-util/db-conn db-uri)
+        _ (db-util/create-migrations-table db)
         migrated (already-migrated db)]
     ; TODO: print if nothing to migrate!
     (doseq [file-name migration-names
@@ -172,17 +166,21 @@
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}]
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :number 0}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    (migrate config)))
+    ;(migrate config)
+    (explain config)))
 
-;(create-migrations-table)
 
-;(already-migrated)))
+; TODO: remove!
+;[honeysql-postgres.format :as phformat]
+;[honeysql-postgres.helpers :as phsql]
+
 
 ;(->> (get-in action [:model :fields])
 ;  (reduce (fn [acc [k v]]

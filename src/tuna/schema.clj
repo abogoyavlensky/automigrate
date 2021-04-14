@@ -1,11 +1,12 @@
 (ns tuna.schema
-  (:require [tuna.util.file :as util-file]
+  "Module for generating db schema from migrations."
+  (:require [tuna.util.file :as file-util]
             [tuna.sql :as sql]))
 
 
 (defn- load-migrations-from-files
   [migrations-files]
-  (map util-file/read-file-obj migrations-files))
+  (map file-util/read-file-obj migrations-files))
 
 
 (defmulti apply-migration-to-schema

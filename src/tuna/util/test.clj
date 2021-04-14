@@ -1,6 +1,7 @@
 (ns tuna.util.test
+  "Utils for simplifying tests."
   (:require [clojure.java.io :as io]
-            [tuna.util.db :as util-db]))
+            [tuna.util.db :as db-util]))
 
 
 (defn- drop-all-tables
@@ -11,11 +12,11 @@
                      :where [:and
                              [:= :table_schema "public"]
                              [:= :table_type "BASE TABLE"]]}
-                 (util-db/query db)
+                 (db-util/query db)
                  (map (comp keyword :table_name)))]
     (when (seq tables)
       (->> {:drop-table tables}
-        (util-db/exec! db)))))
+        (db-util/exec! db)))))
 
 
 (defn with-drop-tables

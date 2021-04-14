@@ -1,4 +1,5 @@
 (ns tuna.models
+  "Module for for transforming models to migrations."
   (:require [clojure.spec.alpha :as s]
             [tuna.sql :as sql]))
 
