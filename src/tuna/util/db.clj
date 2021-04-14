@@ -1,7 +1,6 @@
 (ns tuna.util.db
   "Utils for working with database."
   (:require [clojure.java.jdbc :as jdbc]
-            [honeysql.core :as hsql]
             [honey.sql :as honey]))
 
 
@@ -23,15 +22,7 @@
 
 
 (defn exec!
-  "Write data to db using honeysql."
-  [db q]
-  (->> q
-    (hsql/format)
-    (jdbc/execute! db)))
-
-
-(defn hexec!
-  "Write data to db using honeysql."
+  "Write data to db."
   [db q]
   (->> q
     (honey/format)
@@ -39,15 +30,7 @@
 
 
 (defn query
-  "Read db data using honeysql."
-  [db q]
-  (->> q
-    (hsql/format)
-    (jdbc/query db)))
-
-
-(defn hquery
-  "Read db data using honeysql."
+  "Read data from db."
   [db q]
   (->> q
     (honey/format)
@@ -61,7 +44,7 @@
         :with-columns [[:id :serial [:not nil] [:primary-key]]
                        [:name [:varchar 256] [:not nil] :unique]
                        [:created_at :timestamp [:default [:now]]]]}
-    (hexec! db)))
+    (exec! db)))
 
 
 ; TODO: remove!

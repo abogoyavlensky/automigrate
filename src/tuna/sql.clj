@@ -1,8 +1,7 @@
 (ns tuna.sql
   "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
-            [honeysql.core :as hsql]
-            #_[honey.sql :as honey]))
+            [honey.sql :as honey]))
 
 ; DB actions
 (def CREATE-TABLE-ACTION :create-table)
@@ -11,16 +10,16 @@
 (s/def :option->sql/type
   (s/conformer
     (fn [value]
-      ;(hsql/call value)
-      (hsql/raw (name value)))))
+      ; TODO: add fields type validation and personal conforming by field type
+      value)))
 
 
 (s/def :option->sql/null
   (s/conformer
     (fn [value]
       (if (true? value)
-        (hsql/call nil)
-        (hsql/call :not nil)))))
+        nil
+        [:not nil]))))
 
 
 (s/def ::options->sql
@@ -55,12 +54,12 @@
   (s/conformer
     (fn [value]
       {(:action value) [(:name value)]
-       :with-columns [(fields->columns (-> value :model :fields))]})))
+       :with-columns (fields->columns (-> value :model :fields))})))
 
 
 (s/def ::->sql
   (s/conformer
-    #(hsql/format %)))
+    #(honey/format %)))
 
 
 (s/def ::action->sql
@@ -72,6 +71,7 @@
     ::create-model->sql
     ::->sql))
 
+; TODO: remove or use!
 ;(-> {:create-table [(:name action)]
 ;     :with-columns [[[:id (hsql/raw "serial") (hsql/call :not nil)]]]}
 ;    (hsql/format)))))

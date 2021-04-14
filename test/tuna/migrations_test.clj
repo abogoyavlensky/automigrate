@@ -1,5 +1,5 @@
 (ns tuna.migrations-test
-  (:require [clojure.test :refer [is deftest use-fixtures]]
+  (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [bond.james :as bond]
@@ -32,9 +32,13 @@
 
 
 (deftest test-create-migrations-dir-ok
-  (is (false? (.isDirectory (io/file config/MIGRATIONS-DIR))))
-  (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
-  (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR)))))
+  (testing "test creating dir"
+    (is (false? (.isDirectory (io/file config/MIGRATIONS-DIR))))
+    (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
+    (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR)))))
+  (testing "test when dir already exists"
+    (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
+    (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR))))))
 
 
 (deftest test-make-single-migrations-for-basic-model-ok
@@ -76,8 +80,8 @@
                                                    :action :create-table}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
-    (is (= ["CREATE TABLE feed (id serial NOT NULL)"
-            "CREATE TABLE account (id serial NOT NULL)"]
+    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL)"
+            "CREATE TABLE account (id SERIAL NOT NULL)"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args

@@ -9,11 +9,6 @@
             [clojure.string :as str]
             [clojure.pprint :as pprint]
             [slingshot.slingshot :refer [throw+]]
-            ;[honeysql.core :as hsql]
-            ; TODO: rmeove or uncomment
-            #_:clj-kondo/ignore
-            [honeysql-postgres.format :as phformat]
-            ;[honeysql-postgres.helpers :as phsql]
             [differ.core :as differ]
             [tuna.models :as models]
             [tuna.sql :as sql]
@@ -181,9 +176,11 @@
     ;(migrate config)
     (explain config)))
 
-;(create-migrations-table)
 
-;(already-migrated)))
+; TODO: remove!
+;[honeysql-postgres.format :as phformat]
+;[honeysql-postgres.helpers :as phsql]
+
 
 ;(->> (get-in action [:model :fields])
 ;  (reduce (fn [acc [k v]]
