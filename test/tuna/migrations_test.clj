@@ -1,7 +1,6 @@
 (ns tuna.migrations-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
-            [clojure.edn :as edn]
             [bond.james :as bond]
             [tuna.migrations :as migrations]
             [tuna.core :as core]
@@ -22,13 +21,13 @@
     (is (= {:feed
             {:fields {:id {:type :serial
                            :null false}}}}
-          (#'migrations/models path)))))
+          (file-util/read-edn path)))))
 
 
 (deftest test-reading-models-from-file-err
   (let [path (str config/MODELS-DIR "not_existing.edn")]
     (is (thrown? FileNotFoundException
-          (#'migrations/models path)))))
+          (file-util/read-edn path)))))
 
 
 (deftest test-create-migrations-dir-ok
@@ -48,8 +47,7 @@
             :model {:fields {:id {:type :serial, :null false}}},
             :action :create-table})
         (-> (str config/MIGRATIONS-DIR "0000_create_table_feed.edn")
-          (slurp)
-          (edn/read-string)))))
+          (file-util/read-edn)))))
 
 
 (deftest test-migrate-single-migrations-for-basic-model-ok

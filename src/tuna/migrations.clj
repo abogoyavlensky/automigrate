@@ -4,7 +4,6 @@
   and state of migrations itself."
   (:require [clojure.java.jdbc :as jdbc]
             [clojure.spec.alpha :as s]
-            [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.pprint :as pprint]
@@ -17,18 +16,11 @@
             [tuna.util.db :as db-util]))
 
 
-(defn- models
-  "Return models' definitions."
-  [model-path]
-  (-> (slurp model-path)
-    (edn/read-string)))
-
-
 (defn- read-migration
   "Return models' definitions."
   [file-name migrations-dir]
-  (-> (slurp (str migrations-dir "/" file-name))
-    (edn/read-string)))
+  (-> (str migrations-dir "/" file-name)
+    (file-util/read-edn)))
 
 
 (defn- create-migrations-dir
@@ -69,7 +61,7 @@
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
-        new-schema (models model-file)
+        new-schema (file-util/read-edn model-file)
         [alterations _removals] (differ/diff old-schema new-schema)]
     (for [model alterations
           :let [model-name (key model)]]
@@ -173,7 +165,7 @@
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(migrate config)
+    ;(migrate config)))
     (explain config)))
 
 
