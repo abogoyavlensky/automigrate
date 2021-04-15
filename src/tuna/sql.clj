@@ -1,10 +1,7 @@
 (ns tuna.sql
   "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
-            [honey.sql :as honey]))
-
-; DB actions
-(def CREATE-TABLE-ACTION :create-table)
+            [tuna.models :as models]))
 
 
 (s/def :option->sql/type
@@ -22,13 +19,22 @@
         [:not nil]))))
 
 
+(s/def :option->sql/primary-key
+  (s/and
+    :field/primary-key
+    (s/conformer
+      (fn [_value]
+        [:primary-key]))))
+
+
 (s/def ::options->sql
   (s/keys
     :req-un [:option->sql/type]
-    :opt-un [:option->sql/null]))
+    :opt-un [:option->sql/null
+             :option->sql/primary-key]))
 
 
-(s/def :action/action #{CREATE-TABLE-ACTION})
+(s/def :action/action #{models/CREATE-TABLE-ACTION})
 (s/def :action/name keyword?)
 
 
@@ -57,21 +63,11 @@
        :with-columns (fields->columns (-> value :model :fields))})))
 
 
-(s/def ::->sql
+(s/def ::->edn
   (s/conformer
-    #(honey/format %)))
-
-
-(s/def ::action->sql
-  (s/and
-    (s/keys
-      :req-un [:action/action
-               :action/name
-               :action/model])
-    ::create-model->sql
-    ::->sql))
-
-; TODO: remove or use!
-;(-> {:create-table [(:name action)]
-;     :with-columns [[[:id (hsql/raw "serial") (hsql/call :not nil)]]]}
-;    (hsql/format)))))
+    (s/and
+      (s/keys
+        :req-un [:action/action
+                 :action/name
+                 :action/model])
+      ::create-model->sql)))

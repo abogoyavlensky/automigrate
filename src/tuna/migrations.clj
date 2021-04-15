@@ -7,13 +7,15 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.pprint :as pprint]
-            [slingshot.slingshot :refer [throw+]]
+            #_{:clj-kondo/ignore [:unused-referred-var]}
+            [slingshot.slingshot :refer [throw+ try+]]
             [differ.core :as differ]
             [tuna.models :as models]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
             [tuna.util.file :as file-util]
-            [tuna.util.db :as db-util]))
+            [tuna.util.db :as db-util]
+            [tuna.util.spec :as spec-util]))
 
 
 (defn- read-migration
@@ -121,7 +123,7 @@
     (file-util/safe-println
       [(format "SQL for migration %s:\n" file-name)])
     (->> (read-migration file-name migrations-dir)
-      (mapv #(s/conform ::sql/action->sql %))
+      (mapv  (comp db-util/fmt #(s/conform ::sql/->edn %)))
       (flatten)
       (file-util/safe-println))))
 
@@ -149,8 +151,8 @@
       (when-not (contains? migrated migration-name)
         (jdbc/with-db-transaction [tx db]
           (doseq [action (read-migration file-name migrations-dir)]
-            (->> (s/conform ::sql/action->sql action)
-              (jdbc/execute! tx)))
+            (->> (spec-util/conform ::sql/->edn action)
+              (db-util/exec! tx)))
           (save-migration db migration-name)
           (println "Successfully migrated: " migration-name))))))
 
@@ -165,27 +167,14 @@
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(migrate config)))
-    (explain config)))
+    (migrate config)))
+    ;(explain config)))
 
 
 ; TODO: remove!
 ;[honeysql-postgres.format :as phformat]
 ;[honeysql-postgres.helpers :as phsql]
 
-
-;(->> (get-in action [:model :fields])
-;  (reduce (fn [acc [k v]]
-;            (conj acc (->> (vals v)
-;                        (cons k)
-;                        (vec)))) []))))
-
-
-;(conj acc [k (vals v)])) [])))
-
-;(-> {:create-table [:feed]
-;     :with-columns [[[:id (hsql/call :serial) (hsql/call :not nil)]]]}
-;    (hsql/format))))
 
 ;(-> (phsql/create-table :films)
 ;    (phsql/with-columns [[:code (hsql/call :char 5) (hsql/call :constraint :firstkey) (hsql/call :primary-key)]
@@ -195,3 +184,21 @@
 ;                         [:kind (hsql/call :varchar 10)]])
 ;    hsql/format)))
 ;    (hsql/raw :serial)))
+
+
+; TODO: remove!
+(comment
+  (let [db (db-util/db-conn "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")
+        model [:feed
+               {:fields {:id {;:type :serial
+                              :null false
+                              ;:primary-key true}}}]]
+                              :type :serial}}}]]
+    (try+
+      (->> model
+        (spec-util/conform ::models/->migration)
+        (spec-util/conform ::sql/->edn)
+        (db-util/fmt))
+        ;(db-util/exec! db))
+      (catch [:type ::s/invalid] e
+        (:data e)))))

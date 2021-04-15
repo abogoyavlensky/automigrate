@@ -1,7 +1,9 @@
 (ns tuna.models
   "Module for for transforming models to migrations."
-  (:require [clojure.spec.alpha :as s]
-            [tuna.sql :as sql]))
+  (:require [clojure.spec.alpha :as s]))
+
+; DB actions
+(def CREATE-TABLE-ACTION :create-table)
 
 ; Specs
 
@@ -13,7 +15,7 @@
 
 
 (s/def :field/null boolean?)
-(s/def :field/primary boolean?)
+(s/def :field/primary-key true?)
 (s/def :field/max-length pos-int?)
 
 
@@ -21,7 +23,7 @@
   (s/keys
     :req-un [:field/type]
     :opt-un [:field/null
-             :field/primary
+             :field/primary-key
              :field/max-length]))
 
 
@@ -43,7 +45,7 @@
 (s/def ::model->action
   (s/conformer
     (fn [value]
-      (assoc value :action sql/CREATE-TABLE-ACTION))))
+      (assoc value :action CREATE-TABLE-ACTION))))
 
 
 (s/def ::->action

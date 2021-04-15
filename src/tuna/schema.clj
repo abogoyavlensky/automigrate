@@ -1,7 +1,7 @@
 (ns tuna.schema
   "Module for generating db schema from migrations."
   (:require [tuna.util.file :as file-util]
-            [tuna.sql :as sql]))
+            [tuna.models :as models]))
 
 
 (defn- load-migrations-from-files
@@ -14,7 +14,7 @@
     (:action migration)))
 
 
-(defmethod apply-migration-to-schema sql/CREATE-TABLE-ACTION
+(defmethod apply-migration-to-schema models/CREATE-TABLE-ACTION
   [schema migration]
   (assoc schema (:name migration) (:model migration)))
 

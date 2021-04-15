@@ -8,6 +8,7 @@
                                         tuna.util.db db-util
                                         tuna.util.file file-util
                                         tuna.util.test test-util
+                                        tuna.util.spec spec-util
                                         clojure.java.io io
                                         clojure.edn edn
                                         clojure.string str
