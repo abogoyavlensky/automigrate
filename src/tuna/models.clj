@@ -16,7 +16,7 @@
 
 (s/def :field/null boolean?)
 (s/def :field/primary-key true?)
-(s/def :field/max-length pos-int?)
+(s/def :field/unique true?)
 
 
 (s/def ::field
@@ -24,7 +24,7 @@
     :req-un [:field/type]
     :opt-un [:field/null
              :field/primary-key
-             :field/max-length]))
+             :field/unique]))
 
 
 (s/def :model/fields

@@ -23,15 +23,24 @@
   (s/and
     :field/primary-key
     (s/conformer
-      (fn [_value]
+      (fn [_]
         [:primary-key]))))
+
+
+(s/def :option->sql/unique
+  (s/and
+    :field/unique
+    (s/conformer
+      (fn [_]
+        :unique))))
 
 
 (s/def ::options->sql
   (s/keys
     :req-un [:option->sql/type]
     :opt-un [:option->sql/null
-             :option->sql/primary-key]))
+             :option->sql/primary-key
+             :option->sql/unique]))
 
 
 (s/def :action/action #{models/CREATE-TABLE-ACTION})
