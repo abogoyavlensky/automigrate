@@ -35,12 +35,21 @@
         :unique))))
 
 
+(s/def :option->sql/default
+  (s/and
+    :field/default
+    (s/conformer
+      (fn [value]
+        [:default value]))))
+
+
 (s/def ::options->sql
   (s/keys
     :req-un [:option->sql/type]
     :opt-un [:option->sql/null
              :option->sql/primary-key
-             :option->sql/unique]))
+             :option->sql/unique
+             :option->sql/default]))
 
 
 (s/def :action/action #{models/CREATE-TABLE-ACTION})

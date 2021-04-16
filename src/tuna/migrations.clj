@@ -190,15 +190,16 @@
 (comment
   (let [db (db-util/db-conn "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")
         model [:feed
-               {:fields {:id {:type :serial
+               {:fields {:id {:type :int
                               :null false
                               :primary-key true
+                              :default 1
                               :unique true}}}]]
     (try+
       (->> model
         (spec-util/conform ::models/->migration)
         (spec-util/conform ::sql/->edn)
-        (db-util/fmt))
-        ;(db-util/exec! db))
+        ;(db-util/fmt))
+        (db-util/exec! db))
       (catch [:type ::s/invalid] e
         (:data e)))))

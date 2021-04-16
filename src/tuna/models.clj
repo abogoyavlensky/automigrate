@@ -19,12 +19,20 @@
 (s/def :field/unique true?)
 
 
+(s/def :field/default
+  ; TODO: try to update to s/or
+  #(if (true? ((some-fn nil? string? integer? boolean?) %))
+     %
+     ::s/invalid))
+
+
 (s/def ::field
   (s/keys
     :req-un [:field/type]
     :opt-un [:field/null
              :field/primary-key
-             :field/unique]))
+             :field/unique
+             :field/default]))
 
 
 (s/def :model/fields
