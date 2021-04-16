@@ -197,8 +197,8 @@
     (try+
       (->> model
         (spec-util/conform ::models/->migration)
-        (spec-util/conform ::sql/->edn)
-        (db-util/fmt))
+        (spec-util/conform ::sql/->edn))
+        ;(db-util/fmt))
         ;(db-util/exec! db))
       (catch [:type ::s/invalid] e
         (:data e)))))

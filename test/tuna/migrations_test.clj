@@ -70,15 +70,18 @@
   (bond/with-stub [[migrations/migrations-list (constantly ["0000_create_table_feed"])]
                    [file-util/safe-println (constantly nil)]
                    [migrations/read-migration (constantly
-                                                '({:name :feed,
-                                                   :model {:fields {:id {:type :serial, :null false}}},
+                                                '({:name :feed
+                                                   :model {:fields {:id {:type :serial
+                                                                         :null false
+                                                                         :primary-key true}}}
                                                    :action :create-table}
-                                                  {:name :account,
-                                                   :model {:fields {:id {:type :serial, :null true}}},
+                                                  {:name :account
+                                                   :model {:fields {:id {:null true
+                                                                         :type :serial}}}
                                                    :action :create-table}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
-    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL)"
+    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY)"
             "CREATE TABLE account (id SERIAL NULL)"]
           (-> (bond/calls file-util/safe-println)
             (last)

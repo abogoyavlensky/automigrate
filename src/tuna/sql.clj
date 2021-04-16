@@ -49,11 +49,13 @@
 
 (defn- fields->columns
   [fields]
-  (->> fields
-    (reduce (fn [acc [k v]]
-              (conj acc (->> (vals v)
-                          (cons k)
-                          (vec)))) [])))
+  (reduce
+    (fn [acc [field-name options]]
+      (conj acc (->> (dissoc options :type)
+                  (vals)
+                  (concat [field-name (:type options)]))))
+    []
+    fields))
 
 
 (s/def ::create-model->sql
