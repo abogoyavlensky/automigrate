@@ -21,11 +21,21 @@
      {:connection-uri uri})))
 
 
+(defn fmt
+  "Format data to sql query with configured dialect."
+  ([data]
+   (fmt data nil))
+  ([data dialect]
+   (if (some? dialect)
+     (honey/format data {:dialect dialect})
+     (honey/format data))))
+
+
 (defn exec!
   "Write data to db."
   [db q]
   (->> q
-    (honey/format)
+    (fmt)
     (jdbc/execute! db)))
 
 
@@ -33,7 +43,7 @@
   "Read data from db."
   [db q]
   (->> q
-    (honey/format)
+    (fmt)
     (jdbc/query db)))
 
 
@@ -55,6 +65,4 @@
            :with-columns [[:id :serial [:not nil] [:primary-key]]
                           [:name [:varchar 256] [:not nil] :unique]
                           [:created_at :timestamp [:default [:now]]]]}]
-    (->> q
-      (honey/format)
-      (jdbc/execute! db))))
+    (exec! db q)))

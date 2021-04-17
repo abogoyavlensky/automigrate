@@ -14,11 +14,18 @@
     (filter #(.isFile %))))
 
 
+(defn read-edn
+  "Return edn data from file.
+  f - could be file path or reader."
+  [f]
+  (-> (slurp f)
+    (edn/read-string)))
+
+
 (defn read-file-obj
   [file-obj]
   (with-open [reader (io/reader file-obj)]
-    (-> (slurp reader)
-      (edn/read-string))))
+    (read-edn reader)))
 
 
 (defn zfill

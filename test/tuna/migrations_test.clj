@@ -1,7 +1,6 @@
 (ns tuna.migrations-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
-            [clojure.edn :as edn]
             [bond.james :as bond]
             [tuna.migrations :as migrations]
             [tuna.core :as core]
@@ -22,13 +21,13 @@
     (is (= {:feed
             {:fields {:id {:type :serial
                            :null false}}}}
-          (#'migrations/models path)))))
+          (file-util/read-edn path)))))
 
 
 (deftest test-reading-models-from-file-err
   (let [path (str config/MODELS-DIR "not_existing.edn")]
     (is (thrown? FileNotFoundException
-          (#'migrations/models path)))))
+          (file-util/read-edn path)))))
 
 
 (deftest test-create-migrations-dir-ok
@@ -48,8 +47,7 @@
             :model {:fields {:id {:type :serial, :null false}}},
             :action :create-table})
         (-> (str config/MIGRATIONS-DIR "0000_create_table_feed.edn")
-          (slurp)
-          (edn/read-string)))))
+          (file-util/read-edn)))))
 
 
 (deftest test-migrate-single-migrations-for-basic-model-ok
@@ -72,16 +70,22 @@
   (bond/with-stub [[migrations/migrations-list (constantly ["0000_create_table_feed"])]
                    [file-util/safe-println (constantly nil)]
                    [migrations/read-migration (constantly
-                                                '({:name :feed,
-                                                   :model {:fields {:id {:type :serial, :null false}}},
+                                                '({:name :feed
+                                                   :model {:fields {:id {:type :serial
+                                                                         :null false
+                                                                         :primary-key true}
+                                                                    :number {:type :integer
+                                                                             :default 0}}}
                                                    :action :create-table}
-                                                  {:name :account,
-                                                   :model {:fields {:id {:type :serial, :null false}}},
+                                                  {:name :account
+                                                   :model {:fields {:id {:null true
+                                                                         :unique true
+                                                                         :type :serial}}}
                                                    :action :create-table}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
-    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL)"
-            "CREATE TABLE account (id SERIAL NOT NULL)"]
+    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0)"
+            "CREATE TABLE account (id SERIAL NULL UNIQUE)"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args
