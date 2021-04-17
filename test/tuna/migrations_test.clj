@@ -73,7 +73,9 @@
                                                 '({:name :feed
                                                    :model {:fields {:id {:type :serial
                                                                          :null false
-                                                                         :primary-key true}}}
+                                                                         :primary-key true}
+                                                                    :number {:type :integer
+                                                                             :default 0}}}
                                                    :action :create-table}
                                                   {:name :account
                                                    :model {:fields {:id {:null true
@@ -82,7 +84,7 @@
                                                    :action :create-table}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
-    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY)"
+    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0)"
             "CREATE TABLE account (id SERIAL NULL UNIQUE)"]
           (-> (bond/calls file-util/safe-println)
             (last)

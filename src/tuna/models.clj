@@ -7,7 +7,7 @@
 
 ; Specs
 
-(s/def :field/type #{:int
+(s/def :field/type #{:integer
                      :serial
                      :varchar
                      :text
@@ -20,10 +20,14 @@
 
 
 (s/def :field/default
-  ; TODO: try to update to s/or
-  #(if (true? ((some-fn nil? string? integer? boolean?) %))
-     %
-     ::s/invalid))
+  ; TODO: update with dynamic value related to field's type
+  (s/and
+    (s/or :int integer?
+      :bool boolean?
+      :str string?
+      :nil nil?)
+    (s/conformer
+      #(last %))))
 
 
 (s/def ::field
@@ -48,7 +52,7 @@
   (s/map-of keyword? ::model))
 
 
-; Conformers
+; Action conformers
 
 (s/def ::model->action
   (s/conformer
