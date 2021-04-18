@@ -6,12 +6,32 @@
 (def CREATE-TABLE-ACTION :create-table)
 
 ; Specs
-
-(s/def :field/type #{:integer
-                     :serial
-                     :varchar
-                     :text
-                     :timestamp})
+(s/def :field/type
+  (s/and
+    ; TODO: maybe change :kw and :name spec to `keyword?`
+    (s/or
+      :kw #{:integer
+            :smallint
+            :bigint
+            :float
+            :real
+            :serial
+            :uuid
+            :boolean
+            :text
+            :timestamp
+            :date
+            :time
+            :point
+            :json
+            :jsonb}
+      :fn (s/cat :name #{:char :varchar :float} :val pos-int?))
+    (s/conformer
+      #(let [value-type (first %)
+             value (last %)]
+         (case value-type
+           :fn [(:name value) (:val value)]
+           :kw value)))))
 
 
 (s/def :field/null boolean?)
@@ -22,12 +42,21 @@
 (s/def :field/default
   ; TODO: update with dynamic value related to field's type
   (s/and
-    (s/or :int integer?
+    (s/or
+      :int integer?
       :bool boolean?
       :str string?
-      :nil nil?)
+      :nil nil?
+      :fn (s/cat
+            :name keyword?
+            :val (s/? #((some-fn int? string?) %))))
     (s/conformer
-      #(last %))))
+      #(let [value-type (first %)
+             value (last %)]
+         (case value-type
+           :fn (cond-> [(:name value)]
+                 (some? (:val value)) (conj (:val value)))
+           (last %))))))
 
 
 (s/def ::field

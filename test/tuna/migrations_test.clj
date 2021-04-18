@@ -75,17 +75,28 @@
                                                                          :null false
                                                                          :primary-key true}
                                                                     :number {:type :integer
-                                                                             :default 0}}}
+                                                                             :default 0}
+                                                                    :info {:type :text}}}
                                                    :action :create-table}
                                                   {:name :account
                                                    :model {:fields {:id {:null true
                                                                          :unique true
-                                                                         :type :serial}}}
+                                                                         :type :serial}
+                                                                    :name {:null true
+                                                                           :type [:varchar 100]}
+                                                                    :rate {:type :float}}}
+                                                   :action :create-table}
+                                                  {:name :role
+                                                   :model {:fields {:is-active {:type :boolean}
+                                                                    :created-at {:type :timestamp
+                                                                                 :default [:now]}}}
+
                                                    :action :create-table}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
-    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0)"
-            "CREATE TABLE account (id SERIAL NULL UNIQUE)"]
+    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
+            "CREATE TABLE account (id SERIAL NULL UNIQUE, name VARCHAR(100) NULL, rate FLOAT)"
+            "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args
