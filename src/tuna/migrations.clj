@@ -196,12 +196,14 @@
                               :default 1
                               :unique true}
                          :name {:type [:varchar 100]
-                                :null false}}}]]
-                         ;:number {:type :integer
-                         ;         :default 0}}}]]
+                                :null false}
+                         :created_at {:type :timestamp
+                                      :default [:now]}
+                         :is_active {:type :boolean}
+                         :opts {:type :jsonb}}}]]
     (try+
       (->> model
-        ;(s/valid? ::models/model))
+        ;(s/valid? ::models/model)
         (spec-util/conform ::models/->migration)
         (spec-util/conform ::sql/->edn)
         ;(db-util/fmt))
