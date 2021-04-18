@@ -195,14 +195,16 @@
                               :primary-key true
                               :default 1
                               :unique true}
-                         :number {:type :integer
-                                  :default 0}}}]]
+                         :name {:type [:varchar 100]
+                                :null false}}}]]
+                         ;:number {:type :integer
+                         ;         :default 0}}}]]
     (try+
       (->> model
         ;(s/valid? ::models/model))
         (spec-util/conform ::models/->migration)
         (spec-util/conform ::sql/->edn)
-        (db-util/fmt))
-        ;(db-util/exec! db))
+        ;(db-util/fmt))
+        (db-util/exec! db))
       (catch [:type ::s/invalid] e
         (:data e)))))

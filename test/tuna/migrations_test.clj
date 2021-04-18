@@ -80,12 +80,14 @@
                                                   {:name :account
                                                    :model {:fields {:id {:null true
                                                                          :unique true
-                                                                         :type :serial}}}
+                                                                         :type :serial}
+                                                                    :name {:null true
+                                                                           :type [:varchar 100]}}}
                                                    :action :create-table}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
     (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0)"
-            "CREATE TABLE account (id SERIAL NULL UNIQUE)"]
+            "CREATE TABLE account (id SERIAL NULL UNIQUE, name VARCHAR(100) NULL)"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args

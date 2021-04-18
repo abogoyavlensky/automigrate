@@ -6,12 +6,20 @@
 (def CREATE-TABLE-ACTION :create-table)
 
 ; Specs
-
-(s/def :field/type #{:integer
-                     :serial
-                     :varchar
-                     :text
-                     :timestamp})
+(s/def :field/type
+  (s/and
+    (s/or :kw #{:integer
+                :serial
+                :varchar
+                :text
+                :timestamp}
+      :fn (s/cat :name #{:varchar} :val pos-int?))
+    (s/conformer
+      #(let [value-type (first %)
+             value (last %)]
+         (case value-type
+           :fn [(:name value) (:val value)]
+           :kw value)))))
 
 
 (s/def :field/null boolean?)
@@ -26,8 +34,7 @@
       :bool boolean?
       :str string?
       :nil nil?)
-    (s/conformer
-      #(last %))))
+    (s/conformer #(last %))))
 
 
 (s/def ::field
