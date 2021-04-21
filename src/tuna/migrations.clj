@@ -188,8 +188,8 @@
     ;(explain config)))
     (try+
       (->> (make-migrations* migrations-files model-file)
-           (ffirst))
-           ;(spec-util/conform ::sql/->sql))
+           (ffirst)
+           (spec-util/conform ::sql/->sql))
       (catch [:type ::s/invalid] e
         (:data e)))))
 

@@ -73,6 +73,9 @@
     fields))
 
 
+(defmulti action->sql :action)
+
+
 (s/def ::create-model->sql
   (s/conformer
     (fn [value]
@@ -80,10 +83,14 @@
        :with-columns (fields->columns (-> value :model :fields))})))
 
 
-(s/def ::->sql
+(defmethod action->sql models/CREATE-TABLE-ACTION
+  [_]
   (s/and
     (s/keys
       :req-un [::models/action
                ::models/name
                ::model])
     ::create-model->sql))
+
+
+(s/def ::->sql (s/multi-spec action->sql :action))
