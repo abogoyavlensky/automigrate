@@ -138,7 +138,7 @@
     (file-util/safe-println
       [(format "SQL for migration %s:\n" file-name)])
     (->> (read-migration file-name migrations-dir)
-      (mapv  (comp db-util/fmt #(s/conform ::sql/->edn %)))
+      (mapv  (comp db-util/fmt #(s/conform ::sql/->sql %)))
       (flatten)
       (file-util/safe-println))))
 
@@ -166,7 +166,7 @@
       (when-not (contains? migrated migration-name)
         (jdbc/with-db-transaction [tx db]
           (doseq [action (read-migration file-name migrations-dir)]
-            (->> (spec-util/conform ::sql/->edn action)
+            (->> (spec-util/conform ::sql/->sql action)
               (db-util/exec! tx)))
           (save-migration db migration-name)
           (println "Successfully migrated: " migration-name))))))
@@ -187,7 +187,9 @@
     ;(migrate config)))
     ;(explain config)))
     (try+
-      (make-migrations* migrations-files model-file)
+      (->> (make-migrations* migrations-files model-file)
+           (ffirst)
+           (spec-util/conform ::sql/->sql))
       (catch [:type ::s/invalid] e
         (:data e)))))
 
@@ -226,7 +228,7 @@
       (->> model
         ;(s/valid? ::models/model)
         (spec-util/conform ::models/->migration)
-        (spec-util/conform ::sql/->edn)
+        (spec-util/conform ::sql/->sql)
         ;(db-util/fmt))
         (db-util/exec! db))
       (catch [:type ::s/invalid] e

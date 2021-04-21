@@ -4,6 +4,18 @@
 
 
 ; Specs
+
+(defn- tagged->value
+  "Convert tagged value to vector or identity without a tag."
+  [tagged]
+  (let [value-type (first tagged)
+        value (last tagged)]
+    (case value-type
+      :fn (cond-> [(:name value)]
+            (some? (:val value)) (conj (:val value)))
+      value)))
+
+
 (s/def :field/type
   (s/and
     ; TODO: maybe change :kw and :name spec to `keyword?`
@@ -27,13 +39,7 @@
                          :varchar
                          :float}
             :val pos-int?))
-    (s/conformer
-      ; TODO: move to named fn!
-      #(let [value-type (first %)
-             value (last %)]
-         (case value-type
-           :fn [(:name value) (:val value)]
-           :kw value)))))
+    (s/conformer tagged->value)))
 
 
 (s/def :field/null boolean?)
@@ -53,13 +59,7 @@
             :name keyword?
             :val (s/? #((some-fn int? string?) %))))
     (s/conformer
-      ; TODO: move to named fn!
-      #(let [value-type (first %)
-             value (last %)]
-         (case value-type
-           :fn (cond-> [(:name value)]
-                 (some? (:val value)) (conj (:val value)))
-           (last %))))))
+      tagged->value)))
 
 
 (s/def ::field

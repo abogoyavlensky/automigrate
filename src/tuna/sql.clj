@@ -52,17 +52,13 @@
              :option->sql/default]))
 
 
-(s/def :action/action #{models/CREATE-TABLE-ACTION})
-(s/def :action/name keyword?)
-
-
-(s/def :model->/fields
+(s/def ::fields
   (s/map-of keyword? ::options->sql))
 
 
 (s/def :action/model
   (s/keys
-    :req-un [:model->/fields]))
+    :req-un [::fields]))
 
 
 (defn- fields->columns
@@ -83,11 +79,11 @@
        :with-columns (fields->columns (-> value :model :fields))})))
 
 
-(s/def ::->edn
+(s/def ::->sql
   (s/conformer
     (s/and
       (s/keys
-        :req-un [:action/action
-                 :action/name
+        :req-un [::models/action
+                 ::models/name
                  :action/model])
       ::create-model->sql)))
