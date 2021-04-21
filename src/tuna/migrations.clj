@@ -60,15 +60,30 @@
       (str/replace #"-" "_"))))
 
 
+(defn- parse-field-diff
+  "Return field's migrations for model."
+  [model-diff old-model]
+  (for [field (:fields (val model-diff))
+        :let [field-name (key field)]]
+    (when-not (contains? old-model field-name)
+      [(spec-util/conform ::models/->migration
+         (merge {:action models/CREATE-TABLE-ACTION} field))])))
+
+
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
         new-schema (file-util/read-edn model-file)
         [alterations _removals] (differ/diff old-schema new-schema)]
-    (for [model alterations
-          :let [model-name (key model)]]
-      (when-not (contains? old-schema model-name)
-        [(s/conform ::models/->migration model)]))))
+    (for [model-diff alterations
+          :let [model-name (key model-diff)
+                old-model (get old-schema model-name)]]
+      (if-not (contains? old-schema model-name)
+        [(spec-util/conform ::models/->migration
+           (merge {:action models/CREATE-TABLE-ACTION
+                   :name model-name
+                   :model (val model-diff)}))]
+        (parse-field-diff model-diff old-model)))))
 
 
 (defn make-migrations
@@ -161,14 +176,20 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 0}]
+                :number 0}
+        migrations-files (file-util/list-files (:migrations-dir config))
+        model-file (:model-file config)]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    (migrate config)))
+    ;(migrate config)))
     ;(explain config)))
+    (try+
+      (make-migrations* migrations-files model-file)
+      (catch [:type ::s/invalid] e
+        (:data e)))))
 
 
 ; TODO: remove!

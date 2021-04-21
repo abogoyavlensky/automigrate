@@ -2,8 +2,6 @@
   "Module for for transforming models to migrations."
   (:require [clojure.spec.alpha :as s]))
 
-; DB actions
-(def CREATE-TABLE-ACTION :create-table)
 
 ; Specs
 (s/def :field/type
@@ -27,6 +25,7 @@
             :jsonb}
       :fn (s/cat :name #{:char :varchar :float} :val pos-int?))
     (s/conformer
+      ; TODO: move to named fn!
       #(let [value-type (first %)
              value (last %)]
          (case value-type
@@ -51,6 +50,7 @@
             :name keyword?
             :val (s/? #((some-fn int? string?) %))))
     (s/conformer
+      ; TODO: move to named fn!
       #(let [value-type (first %)
              value (last %)]
          (case value-type
@@ -81,22 +81,22 @@
   (s/map-of keyword? ::model))
 
 
-; Action conformers
+; Actions
+(def CREATE-TABLE-ACTION :create-table)
 
-(s/def ::model->action
-  (s/conformer
-    (fn [value]
-      (assoc value :action CREATE-TABLE-ACTION))))
+(s/def ::action #{CREATE-TABLE-ACTION})
 
+(s/def ::name keyword?)
 
-(s/def ::->action
-  (s/and
-    (s/cat
-      :name keyword?
-      :model ::model)
-    ::model->action))
+(defmulti action :action)
 
 
-(s/def ::->migration
-  (s/and
-    ::->action))
+(defmethod action CREATE-TABLE-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name
+             ::model]))
+
+
+(s/def ::->migration (s/multi-spec action :action))
