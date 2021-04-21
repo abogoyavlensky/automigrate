@@ -5,18 +5,19 @@
 
 
 (s/def :option->sql/type
-  (s/conformer
-    (fn [value]
-      ; TODO: add fields type validation and personal conforming by field type
-      value)))
+  (s/and
+    :field/type
+    (s/conformer identity)))
 
 
 (s/def :option->sql/null
-  (s/conformer
-    (fn [value]
-      (if (true? value)
-        nil
-        [:not nil]))))
+  (s/and
+    :field/null
+    (s/conformer
+      (fn [value]
+        (if (true? value)
+          nil
+          [:not nil])))))
 
 
 (s/def :option->sql/primary-key
@@ -56,7 +57,7 @@
   (s/map-of keyword? ::options->sql))
 
 
-(s/def :action/model
+(s/def ::model
   (s/keys
     :req-un [::fields]))
 
@@ -85,5 +86,5 @@
       (s/keys
         :req-un [::models/action
                  ::models/name
-                 :action/model])
+                 ::model])
       ::create-model->sql)))
