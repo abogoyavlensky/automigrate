@@ -23,7 +23,10 @@
             :point
             :json
             :jsonb}
-      :fn (s/cat :name #{:char :varchar :float} :val pos-int?))
+      :fn (s/cat :name #{:char
+                         :varchar
+                         :float}
+            :val pos-int?))
     (s/conformer
       ; TODO: move to named fn!
       #(let [value-type (first %)
@@ -68,13 +71,13 @@
              :field/default]))
 
 
-(s/def :model/fields
+(s/def ::fields
   (s/map-of keyword? ::field))
 
 
 (s/def ::model
   (s/keys
-    :req-un [:model/fields]))
+    :req-un [::fields]))
 
 
 (s/def ::models
