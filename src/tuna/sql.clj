@@ -81,10 +81,9 @@
 
 
 (s/def ::->sql
-  (s/conformer
-    (s/and
-      (s/keys
-        :req-un [::models/action
-                 ::models/name
-                 ::model])
-      ::create-model->sql)))
+  (s/and
+    (s/keys
+      :req-un [::models/action
+               ::models/name
+               ::model])
+    ::create-model->sql))
