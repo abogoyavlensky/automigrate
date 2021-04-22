@@ -18,7 +18,7 @@
 
 (s/def :field/type
   (s/and
-    ; TODO: maybe change :kw and :name spec to `keyword?`
+    ; TODO: switch available fields according to db dialect!
     (s/or
       :kw #{:integer
             :smallint
@@ -74,16 +74,6 @@
 (s/def ::fields
   (s/map-of keyword? ::field))
 
-
-(s/def ::model
-  (s/keys
-    :req-un [::fields]))
-
-
-(s/def ::models
-  (s/map-of keyword? ::model))
-
-
 ; Actions
 (def CREATE-TABLE-ACTION :create-table)
 
@@ -99,7 +89,7 @@
   (s/keys
     :req-un [::action
              ::name
-             ::model]))
+             ::fields]))
 
 
 (s/def ::->migration (s/multi-spec action :action))

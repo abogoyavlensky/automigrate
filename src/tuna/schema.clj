@@ -16,7 +16,7 @@
 
 (defmethod apply-migration-to-schema models/CREATE-TABLE-ACTION
   [schema migration]
-  (assoc schema (:name migration) (:model migration)))
+  (assoc schema (:name migration) (select-keys migration [:fields])))
 
 
 (defn current-db-schema

@@ -67,6 +67,7 @@
         :let [field-name (key field)]]
     (when-not (contains? old-model field-name)
       [(spec-util/conform ::models/->migration
+         ; TODO: move building map to fn!
          (merge {:action models/CREATE-TABLE-ACTION} field))])))
 
 
@@ -80,9 +81,10 @@
                 old-model (get old-schema model-name)]]
       (if-not (contains? old-schema model-name)
         [(spec-util/conform ::models/->migration
+           ; TODO: move building map to fn!
            (merge {:action models/CREATE-TABLE-ACTION
-                   :name model-name
-                   :model (val model-diff)}))]
+                   :name model-name}
+             (select-keys (val model-diff) [:fields])))]
         (parse-field-diff model-diff old-model)))))
 
 

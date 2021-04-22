@@ -43,8 +43,8 @@
 (deftest test-make-single-migrations-for-basic-model-ok
   (#'migrations/make-migrations {:model-file (str config/MODELS-DIR "feed_basic.edn")
                                  :migrations-dir config/MIGRATIONS-DIR})
-  (is (= '({:name :feed,
-            :model {:fields {:id {:type :serial, :null false}}},
+  (is (= '({:name :feed
+            :fields {:id {:type :serial :null false}}
             :action :create-table})
         (-> (str config/MIGRATIONS-DIR "0000_create_table_feed.edn")
           (file-util/read-edn)))))
@@ -71,26 +71,25 @@
                    [file-util/safe-println (constantly nil)]
                    [migrations/read-migration (constantly
                                                 '({:name :feed
-                                                   :model {:fields {:id {:type :serial
-                                                                         :null false
-                                                                         :primary-key true}
-                                                                    :number {:type :integer
-                                                                             :default 0}
-                                                                    :info {:type :text}}}
+                                                   :fields {:id {:type :serial
+                                                                 :null false
+                                                                 :primary-key true}
+                                                            :number {:type :integer
+                                                                     :default 0}
+                                                            :info {:type :text}}
                                                    :action :create-table}
                                                   {:name :account
-                                                   :model {:fields {:id {:null true
-                                                                         :unique true
-                                                                         :type :serial}
-                                                                    :name {:null true
-                                                                           :type [:varchar 100]}
-                                                                    :rate {:type :float}}}
+                                                   :fields {:id {:null true
+                                                                 :unique true
+                                                                 :type :serial}
+                                                            :name {:null true
+                                                                   :type [:varchar 100]}
+                                                            :rate {:type :float}}
                                                    :action :create-table}
                                                   {:name :role
-                                                   :model {:fields {:is-active {:type :boolean}
-                                                                    :created-at {:type :timestamp
-                                                                                 :default [:now]}}}
-
+                                                   :fields {:is-active {:type :boolean}
+                                                            :created-at {:type :timestamp
+                                                                         :default [:now]}}
                                                    :action :create-table}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})

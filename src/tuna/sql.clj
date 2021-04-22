@@ -57,11 +57,6 @@
   (s/map-of keyword? ::options->sql))
 
 
-(s/def ::model
-  (s/keys
-    :req-un [::fields]))
-
-
 (defn- fields->columns
   [fields]
   (reduce
@@ -80,7 +75,7 @@
   (s/conformer
     (fn [value]
       {(:action value) [(:name value)]
-       :with-columns (fields->columns (-> value :model :fields))})))
+       :with-columns (fields->columns (:fields value))})))
 
 
 (defmethod action->sql models/CREATE-TABLE-ACTION
@@ -89,7 +84,7 @@
     (s/keys
       :req-un [::models/action
                ::models/name
-               ::model])
+               ::fields])
     ::create-model->sql))
 
 
