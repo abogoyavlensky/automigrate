@@ -65,6 +65,35 @@
           (map #(dissoc % :created_at))))))
 
 
+(deftest test-migrate-migrations-with-adding-columns-ok
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_basic.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (is (= '({:action :add-column,
+            :name :name,
+            :options {:type [:varchar 100], :null true}}
+           {:action :add-column,
+            :name :created_at,
+            :options {:type :timestamp, :default [:now]}})
+         (-> (str config/MIGRATIONS-DIR "0001_add_column_name.edn")
+             (file-util/read-edn)))))
+  ; TODO: uncomment!
+  ;(core/run {:action :migrate
+  ;           :migrations-dir config/MIGRATIONS-DIR
+  ;           :db-uri config/DATABASE-URL})
+  ;(is (= '({:id 1
+  ;          :name "0000_create_table_feed"}
+  ;         {:id 2
+  ;          :name "0001_add_column_name"})
+  ;       (->> {:select [:*]
+  ;             :from [db-util/MIGRATIONS-TABLE]}
+  ;         (db-util/query config/DATABASE-CONN)
+  ;         (map #(dissoc % :created_at))))))
+
+
 (deftest test-explain-basic-migration-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[migrations/migrations-list (constantly ["0000_create_table_feed"])]
