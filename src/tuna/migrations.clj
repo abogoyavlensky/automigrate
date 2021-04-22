@@ -60,32 +60,38 @@
       (str/replace #"-" "_"))))
 
 
-(defn- parse-field-diff
+(defn- new-field?
+  [field-name old-model]
+  (not (contains? (:fields old-model) field-name)))
+
+
+(defn- parse-fields-diff
   "Return field's migrations for model."
-  [model-diff old-model]
+  [model-diff _removals old-model]
   (for [field (:fields (val model-diff))
         :let [field-name (key field)]]
-    (when-not (contains? old-model field-name)
-      [(spec-util/conform ::models/->migration
-         ; TODO: move building map to fn!
-         (merge {:action models/CREATE-TABLE-ACTION} field))])))
+    (when (new-field? field-name old-model)
+      (spec-util/conform ::models/->migration
+        {:action models/ADD-COLUMN-ACTION
+         :name field-name
+         :options (val field)}))))
 
 
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
         new-schema (file-util/read-edn model-file)
-        [alterations _removals] (differ/diff old-schema new-schema)]
+        [alterations removals] (differ/diff old-schema new-schema)]
     (for [model-diff alterations
           :let [model-name (key model-diff)
                 old-model (get old-schema model-name)]]
       (if-not (contains? old-schema model-name)
-        [(spec-util/conform ::models/->migration
-           ; TODO: move building map to fn!
-           (merge {:action models/CREATE-TABLE-ACTION
-                   :name model-name}
-             (select-keys (val model-diff) [:fields])))]
-        (parse-field-diff model-diff old-model)))))
+        (spec-util/conform ::models/->migration
+          ; TODO: move building map to fn!
+          (merge {:action models/CREATE-TABLE-ACTION
+                  :name model-name}
+            (select-keys (val model-diff) [:fields])))
+        (parse-fields-diff model-diff (get removals model-name) old-model)))))
 
 
 (defn make-migrations
@@ -189,13 +195,19 @@
     ;(migrate config)))
     ;(explain config)))
     (try+
-      (->> (make-migrations* migrations-files model-file)
-           (ffirst))
+      (->> (make-migrations* migrations-files model-file))
+           ;(ffirst))
            ;(spec-util/conform ::sql/->sql)
            ;(db-util/fmt))
       (catch [:type ::s/invalid] e
         (:data e)))))
 
+
+(comment
+  (spec-util/conform ::models/->migration
+    {:action models/ADD-COLUMN-ACTION
+     :name :name
+     :field {:null true, :type [:varchar 100]}}))
 
 ; TODO: remove!
 ;[honeysql-postgres.format :as phformat]

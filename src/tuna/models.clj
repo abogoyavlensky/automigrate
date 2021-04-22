@@ -74,12 +74,17 @@
 (s/def ::fields
   (s/map-of keyword? ::field))
 
-; Actions
+; DB Actions
 (def CREATE-TABLE-ACTION :create-table)
+(def ADD-COLUMN-ACTION :add-column)
 
-(s/def ::action #{CREATE-TABLE-ACTION})
+
+(s/def ::action #{CREATE-TABLE-ACTION
+                  ADD-COLUMN-ACTION})
+
 
 (s/def ::name keyword?)
+
 
 (defmulti action :action)
 
@@ -90,6 +95,18 @@
     :req-un [::action
              ::name
              ::fields]))
+
+
+(s/def ::options
+  ::field)
+
+
+(defmethod action ADD-COLUMN-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name
+             ::options]))
 
 
 (s/def ::->migration (s/multi-spec action :action))
