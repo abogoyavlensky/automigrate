@@ -8,6 +8,7 @@ INFO := @sh -c '\
 
 
 DIRS?=src test
+GOALS = $(filter-out $@,$(MAKECMDGOALS))
 
 .SILENT:  # Ignore output of make `echo` command
 
@@ -67,6 +68,7 @@ lint-init:
 	@$(INFO) "Linting project's classpath..."
 	@clj-kondo --config .clj-kondo/config-ci.edn --lint $(shell clj -Spath)
 
+
 .PHONY: check  # Check linting and formatting locally
 check:
 	@$(MAKE) lint
@@ -78,12 +80,14 @@ test:
 	@$(INFO) "Running tests..."
 	@clojure -X:dev:test
 
+
 # Docker-compose
 
 .PHONY: up  # Run db
 up:
 	@$(INFO) "Running db..."
 	@docker-compose up -d db adminer
+
 
 .PHONY: up-test  # Run db
 up-test:
@@ -96,6 +100,7 @@ ps:
 	@$(INFO) "List docker containers..."
 	@docker-compose ps
 
+
 .PHONY: stop  # Stop docker containers
 stop:
 	@$(INFO) "Stopping docker containers..."
@@ -105,11 +110,18 @@ stop:
 # Testing commands
 
 .PHONY: make-migrations  # Make testing migrations
-make-migrations:
+migrations:
 	@$(INFO) "Make testing migrations..."
-	@clojure -X:migrations :action :make-migrations
+	@clojure -A:dev -X:migrations :action :make-migrations
+
 
 .PHONY: migrate  # Migrate testing migrations
 migrate:
 	@$(INFO) "Migrate testing migrations..."
-	@clojure -X:migrations :action :migrate
+	@clojure -A:dev -X:migrations :action :migrate
+
+
+.PHONY: explain  # Print SQL for particular migration
+explain:
+	@$(INFO) "Explain testing migration..."
+	@clojure -A:dev -X:migrations :action :explain :number $(GOALS)
