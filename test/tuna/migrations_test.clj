@@ -78,8 +78,8 @@
            {:action :add-column,
             :name :created_at,
             :options {:type :timestamp, :default [:now]}})
-         (-> (str config/MIGRATIONS-DIR "0001_add_column_name.edn")
-             (file-util/read-edn)))))
+        (-> (str config/MIGRATIONS-DIR "0001_add_column_name.edn")
+          (file-util/read-edn)))))
   ; TODO: uncomment!
   ;(core/run {:action :migrate
   ;           :migrations-dir config/MIGRATIONS-DIR
