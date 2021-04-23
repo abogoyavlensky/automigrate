@@ -44,7 +44,8 @@
   "Get migrations' files list."
   [migrations-dir]
   (->> (file-util/list-files migrations-dir)
-    (map #(.getName %))))
+    (map #(.getName %))
+    (sort)))
 
 
 (defn- next-migration-number

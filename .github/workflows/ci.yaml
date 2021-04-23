@@ -32,8 +32,11 @@ jobs:
       - name: ls
         run: ls -alh test/tuna/migrations
 
-      - name: ls0
-        run: ls -alh test/tuna/migrations/0000_create_table_feed.edn
+      - name: cat0
+        run: cat test/tuna/migrations/0000_create_table_feed.edn
 
-      - name: ls1
-        run: ls -alh test/tuna/migrations/0001_add_column_name.edn
+      - name: cat1
+        run: cat test/tuna/migrations/0001_add_column_name.edn
+
+      - name: cat2
+        run: cat test/tuna/migrations/0002_add_column_name.edn
