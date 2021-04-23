@@ -87,15 +87,15 @@
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
-             :db-uri config/DATABASE-URL})
-  (is (= '({:id 1
-            :name "0000_create_table_feed"}
-           {:id 2
-            :name "0001_add_column_name"})
-        (->> {:select [:*]
-              :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
-          (map #(dissoc % :created_at))))))
+             :db-uri config/DATABASE-URL}))
+  ;(is (= '({:id 1
+  ;          :name "0000_create_table_feed"}
+  ;         {:id 2
+  ;          :name "0001_add_column_name"})
+  ;      (->> {:select [:*]
+  ;            :from [db-util/MIGRATIONS-TABLE]}
+  ;        (db-util/query config/DATABASE-CONN)
+  ;        (map #(dissoc % :created_at))))))
 
 
 (deftest test-explain-basic-migration-ok
