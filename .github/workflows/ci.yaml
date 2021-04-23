@@ -30,11 +30,10 @@ jobs:
         run: docker-compose run --rm test bash -c "make deps && make test"
 
       - name: ls
-        run: ls -alh src/tuna/migrations
+        run: ls -alh test/tuna/migrations
 
       - name: ls0
-        run: ls -alh src/tuna/migrations/0000_create_table_feed.edn
+        run: ls -alh test/tuna/migrations/0000_create_table_feed.edn
 
       - name: ls1
-        run: ls -alh src/tuna/migrations/0001_add_column_name.edn
-
+        run: ls -alh test/tuna/migrations/0001_add_column_name.edn
