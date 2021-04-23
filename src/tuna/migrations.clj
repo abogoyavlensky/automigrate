@@ -194,16 +194,16 @@
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)
-    ;(migrate config)))
+    (migrate config)))
     ;(explain config)))
 
-    (try+
-      (->> (make-migrations* migrations-files model-file))
-           ;(ffirst))
-           ;(spec-util/conform ::sql/->sql))
-           ;(db-util/fmt))
-      (catch [:type ::s/invalid] e
-        (:data e)))))
+    ;(try+
+    ;  (->> (make-migrations* migrations-files model-file))
+    ;       ;(ffirst))
+    ;       ;(spec-util/conform ::sql/->sql))
+    ;       ;(db-util/fmt))
+    ;  (catch [:type ::s/invalid] e
+    ;    (:data e)))))
 
 
 (comment
