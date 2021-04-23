@@ -11,7 +11,8 @@
 (defn list-files
   [migrations-dir]
   (->> (file-seq (io/file migrations-dir))
-    (filter #(.isFile %))))
+    (filter #(.isFile %))
+    (sort)))
 
 
 (defn read-edn

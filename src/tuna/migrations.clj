@@ -44,7 +44,8 @@
   "Get migrations' files list."
   [migrations-dir]
   (->> (file-util/list-files migrations-dir)
-    (map #(.getName %))))
+    (map #(.getName %))
+    (sort)))
 
 
 (defn- next-migration-number
@@ -60,15 +61,39 @@
       (str/replace #"-" "_"))))
 
 
+(defn- new-field?
+  [field-name old-model]
+  (not (contains? (:fields old-model) field-name)))
+
+
+(defn- parse-fields-diff
+  "Return field's migrations for model."
+  [model-diff _removals old-model model-name]
+  (for [field (:fields (val model-diff))
+        :let [field-name (key field)]]
+    (when (new-field? field-name old-model)
+      (spec-util/conform ::models/->migration
+        {:action models/ADD-COLUMN-ACTION
+         :name field-name
+         :table-name model-name
+         :options (val field)}))))
+
+
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
         new-schema (file-util/read-edn model-file)
-        [alterations _removals] (differ/diff old-schema new-schema)]
-    (for [model alterations
-          :let [model-name (key model)]]
-      (when-not (contains? old-schema model-name)
-        [(s/conform ::models/->migration model)]))))
+        [alterations removals] (differ/diff old-schema new-schema)]
+    (for [model-diff alterations
+          :let [model-name (key model-diff)
+                old-model (get old-schema model-name)]]
+      (if-not (contains? old-schema model-name)
+        (spec-util/conform ::models/->migration
+          ; TODO: move building map to fn!
+          (merge {:action models/CREATE-TABLE-ACTION
+                  :name model-name}
+            (select-keys (val model-diff) [:fields])))
+        (parse-fields-diff model-diff (get removals model-name) old-model model-name)))))
 
 
 (defn make-migrations
@@ -123,7 +148,7 @@
     (file-util/safe-println
       [(format "SQL for migration %s:\n" file-name)])
     (->> (read-migration file-name migrations-dir)
-      (mapv  (comp db-util/fmt #(s/conform ::sql/->edn %)))
+      (mapv  (comp db-util/fmt #(s/conform ::sql/->sql %)))
       (flatten)
       (file-util/safe-println))))
 
@@ -151,7 +176,7 @@
       (when-not (contains? migrated migration-name)
         (jdbc/with-db-transaction [tx db]
           (doseq [action (read-migration file-name migrations-dir)]
-            (->> (spec-util/conform ::sql/->edn action)
+            (->> (spec-util/conform ::sql/->sql action)
               (db-util/exec! tx)))
           (save-migration db migration-name)
           (println "Successfully migrated: " migration-name))))))
@@ -161,15 +186,31 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 0}]
+                :number 3}
+        migrations-files (file-util/list-files (:migrations-dir config))
+        model-file (:model-file config)]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)))
-    (migrate config)))
+    ;(make-migrations config)
+    ;(migrate config)))
     ;(explain config)))
 
+    (try+
+      (->> (make-migrations* migrations-files model-file))
+           ;(ffirst))
+           ;(spec-util/conform ::sql/->sql))
+           ;(db-util/fmt))
+      (catch [:type ::s/invalid] e
+        (:data e)))))
+
+
+(comment
+  (spec-util/conform ::models/->migration
+    {:action models/ADD-COLUMN-ACTION
+     :name :name
+     :field {:null true, :type [:varchar 100]}}))
 
 ; TODO: remove!
 ;[honeysql-postgres.format :as phformat]
@@ -205,7 +246,7 @@
       (->> model
         ;(s/valid? ::models/model)
         (spec-util/conform ::models/->migration)
-        (spec-util/conform ::sql/->edn)
+        (spec-util/conform ::sql/->sql)
         ;(db-util/fmt))
         (db-util/exec! db))
       (catch [:type ::s/invalid] e

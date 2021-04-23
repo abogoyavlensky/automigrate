@@ -2,13 +2,23 @@
   "Module for for transforming models to migrations."
   (:require [clojure.spec.alpha :as s]))
 
-; DB actions
-(def CREATE-TABLE-ACTION :create-table)
 
 ; Specs
+
+(defn- tagged->value
+  "Convert tagged value to vector or identity without a tag."
+  [tagged]
+  (let [value-type (first tagged)
+        value (last tagged)]
+    (case value-type
+      :fn (cond-> [(:name value)]
+            (some? (:val value)) (conj (:val value)))
+      value)))
+
+
 (s/def :field/type
   (s/and
-    ; TODO: maybe change :kw and :name spec to `keyword?`
+    ; TODO: switch available fields according to db dialect!
     (s/or
       :kw #{:integer
             :smallint
@@ -25,13 +35,11 @@
             :point
             :json
             :jsonb}
-      :fn (s/cat :name #{:char :varchar :float} :val pos-int?))
-    (s/conformer
-      #(let [value-type (first %)
-             value (last %)]
-         (case value-type
-           :fn [(:name value) (:val value)]
-           :kw value)))))
+      :fn (s/cat :name #{:char
+                         :varchar
+                         :float}
+            :val pos-int?))
+    (s/conformer tagged->value)))
 
 
 (s/def :field/null boolean?)
@@ -51,12 +59,7 @@
             :name keyword?
             :val (s/? #((some-fn int? string?) %))))
     (s/conformer
-      #(let [value-type (first %)
-             value (last %)]
-         (case value-type
-           :fn (cond-> [(:name value)]
-                 (some? (:val value)) (conj (:val value)))
-           (last %))))))
+      tagged->value)))
 
 
 (s/def ::field
@@ -68,35 +71,46 @@
              :field/default]))
 
 
-(s/def :model/fields
+(s/def ::fields
   (s/map-of keyword? ::field))
 
+; DB Actions
+(def CREATE-TABLE-ACTION :create-table)
+(def ADD-COLUMN-ACTION :add-column)
 
-(s/def ::model
+
+(s/def ::action #{CREATE-TABLE-ACTION
+                  ADD-COLUMN-ACTION})
+
+
+(s/def ::name keyword?)
+
+
+(defmulti action :action)
+
+
+(defmethod action CREATE-TABLE-ACTION
+  [_]
   (s/keys
-    :req-un [:model/fields]))
+    :req-un [::action
+             ::name
+             ::fields]))
 
 
-(s/def ::models
-  (s/map-of keyword? ::model))
+(s/def ::options
+  ::field)
 
 
-; Action conformers
-
-(s/def ::model->action
-  (s/conformer
-    (fn [value]
-      (assoc value :action CREATE-TABLE-ACTION))))
+(s/def ::table-name keyword?)
 
 
-(s/def ::->action
-  (s/and
-    (s/cat
-      :name keyword?
-      :model ::model)
-    ::model->action))
+(defmethod action ADD-COLUMN-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name
+             ::table-name
+             ::options]))
 
 
-(s/def ::->migration
-  (s/and
-    ::->action))
+(s/def ::->migration (s/multi-spec action :action))

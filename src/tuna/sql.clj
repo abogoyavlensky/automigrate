@@ -5,18 +5,19 @@
 
 
 (s/def :option->sql/type
-  (s/conformer
-    (fn [value]
-      ; TODO: add fields type validation and personal conforming by field type
-      value)))
+  (s/and
+    :field/type
+    (s/conformer identity)))
 
 
 (s/def :option->sql/null
-  (s/conformer
-    (fn [value]
-      (if (true? value)
-        nil
-        [:not nil]))))
+  (s/and
+    :field/null
+    (s/conformer
+      (fn [value]
+        (if (true? value)
+          nil
+          [:not nil])))))
 
 
 (s/def :option->sql/primary-key
@@ -52,17 +53,8 @@
              :option->sql/default]))
 
 
-(s/def :action/action #{models/CREATE-TABLE-ACTION})
-(s/def :action/name keyword?)
-
-
-(s/def :model->/fields
+(s/def ::fields
   (s/map-of keyword? ::options->sql))
-
-
-(s/def :action/model
-  (s/keys
-    :req-un [:model->/fields]))
 
 
 (defn- fields->columns
@@ -76,18 +68,45 @@
     fields))
 
 
-(s/def ::create-model->sql
+(defmulti action->sql :action)
+
+
+(s/def ::create-table->sql
   (s/conformer
     (fn [value]
       {(:action value) [(:name value)]
-       :with-columns (fields->columns (-> value :model :fields))})))
+       :with-columns (fields->columns (:fields value))})))
 
 
-(s/def ::->edn
+(defmethod action->sql models/CREATE-TABLE-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::models/action
+               ::models/name
+               ::fields])
+    ::create-table->sql))
+
+
+(s/def ::options
+  ::options->sql)
+
+
+(s/def ::add-column->sql
   (s/conformer
-    (s/and
-      (s/keys
-        :req-un [:action/action
-                 :action/name
-                 :action/model])
-      ::create-model->sql)))
+    (fn [value]
+      {:alter-table (:table-name value)
+       :add-column (first (fields->columns [[(:name value) (:options value)]]))})))
+
+
+(defmethod action->sql models/ADD-COLUMN-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::models/action
+               ::models/name
+               ::options])
+    ::add-column->sql))
+
+
+(s/def ::->sql (s/multi-spec action->sql :action))
