@@ -72,6 +72,9 @@
   (core/run {:action :make-migrations
              :model-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
             :name :name
             :table-name :feed
@@ -120,12 +123,17 @@
                                                    :fields {:is-active {:type :boolean}
                                                             :created-at {:type :timestamp
                                                                          :default [:now]}}
-                                                   :action :create-table}))]]
+                                                   :action :create-table}
+                                                  {:name :day
+                                                   :table-name :account
+                                                   :options {:type :date}
+                                                   :action :add-column}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
     (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
             "CREATE TABLE account (id SERIAL NULL UNIQUE, name VARCHAR(100) NULL, rate FLOAT)"
-            "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"]
+            "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"
+            "ALTER TABLE account ADD COLUMN day DATE"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args
