@@ -9,29 +9,30 @@
   (map file-util/read-file-obj migrations-files))
 
 
-(defmulti apply-migration-to-schema
-  (fn [_schema migration]
-    (:action migration)))
+(defmulti apply-action-to-schema
+  "Apply migrating action to schema in memory to reproduce current db state."
+  (fn [_schema action]
+    (:action action)))
 
 
-(defmethod apply-migration-to-schema models/CREATE-TABLE-ACTION
-  [schema migration]
-  (assoc schema (:name migration) (select-keys migration [:fields])))
+(defmethod apply-action-to-schema models/CREATE-TABLE-ACTION
+  [schema action]
+  (assoc schema (:name action) (select-keys action [:fields])))
 
 
-(defmethod apply-migration-to-schema models/ADD-COLUMN-ACTION
-  [schema migration]
-  ; TODO: update!
-  (assoc schema (:name migration) (select-keys migration [:fields])))
+(defmethod apply-action-to-schema models/ADD-COLUMN-ACTION
+  [schema action]
+  (assoc-in schema [(:table-name action) :fields (:name action)]
+    (:options action)))
 
 
 (defn current-db-schema
   "Return map of models derived from existing migrations."
   [migrations-files]
   ; TODO: add validation of migrations with spec!
-  (let [migrations (-> (load-migrations-from-files migrations-files)
-                     (flatten))]
-    (reduce apply-migration-to-schema {} migrations)))
+  (let [actions (-> (load-migrations-from-files migrations-files)
+                  (flatten))]
+    (reduce apply-action-to-schema {} actions)))
 
 
 ; TODO: remove!

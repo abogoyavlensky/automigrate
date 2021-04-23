@@ -185,20 +185,20 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 2}
+                :number 3}
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)))
+    (make-migrations config)))
     ;(migrate config)))
-    (explain config)))
+    ;(explain config)))
 
     ;(try+
-    ;  (->> (make-migrations* migrations-files model-file)
-    ;       (ffirst))
+    ;  (->> (make-migrations* migrations-files model-file))
+    ;       ;(ffirst))
     ;       ;(spec-util/conform ::sql/->sql))
     ;       ;(db-util/fmt))
     ;  (catch [:type ::s/invalid] e
