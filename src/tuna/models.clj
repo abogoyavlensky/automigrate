@@ -101,11 +101,15 @@
   ::field)
 
 
+(s/def ::table-name keyword?)
+
+
 (defmethod action ADD-COLUMN-ACTION
   [_]
   (s/keys
     :req-un [::action
              ::name
+             ::table-name
              ::options]))
 
 

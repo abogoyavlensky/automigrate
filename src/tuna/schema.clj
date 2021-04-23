@@ -19,6 +19,12 @@
   (assoc schema (:name migration) (select-keys migration [:fields])))
 
 
+(defmethod apply-migration-to-schema models/ADD-COLUMN-ACTION
+  [schema migration]
+  ; TODO: update!
+  (assoc schema (:name migration) (select-keys migration [:fields])))
+
+
 (defn current-db-schema
   "Return map of models derived from existing migrations."
   [migrations-files]

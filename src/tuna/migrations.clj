@@ -67,13 +67,14 @@
 
 (defn- parse-fields-diff
   "Return field's migrations for model."
-  [model-diff _removals old-model]
+  [model-diff _removals old-model model-name]
   (for [field (:fields (val model-diff))
         :let [field-name (key field)]]
     (when (new-field? field-name old-model)
       (spec-util/conform ::models/->migration
         {:action models/ADD-COLUMN-ACTION
          :name field-name
+         :table-name model-name
          :options (val field)}))))
 
 
@@ -91,7 +92,7 @@
           (merge {:action models/CREATE-TABLE-ACTION
                   :name model-name}
             (select-keys (val model-diff) [:fields])))
-        (parse-fields-diff model-diff (get removals model-name) old-model)))))
+        (parse-fields-diff model-diff (get removals model-name) old-model model-name)))))
 
 
 (defn make-migrations
@@ -184,7 +185,7 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 0}
+                :number 2}
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
     ;(s/explain ::models (models))
@@ -193,14 +194,15 @@
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
     ;(migrate config)))
-    ;(explain config)))
-    (try+
-      (->> (make-migrations* migrations-files model-file))
-           ;(ffirst))
-           ;(spec-util/conform ::sql/->sql)
-           ;(db-util/fmt))
-      (catch [:type ::s/invalid] e
-        (:data e)))))
+    (explain config)))
+
+    ;(try+
+    ;  (->> (make-migrations* migrations-files model-file)
+    ;       (ffirst))
+    ;       ;(spec-util/conform ::sql/->sql))
+    ;       ;(db-util/fmt))
+    ;  (catch [:type ::s/invalid] e
+    ;    (:data e)))))
 
 
 (comment

@@ -71,7 +71,7 @@
 (defmulti action->sql :action)
 
 
-(s/def ::create-model->sql
+(s/def ::create-table->sql
   (s/conformer
     (fn [value]
       {(:action value) [(:name value)]
@@ -85,7 +85,28 @@
       :req-un [::models/action
                ::models/name
                ::fields])
-    ::create-model->sql))
+    ::create-table->sql))
+
+
+(s/def ::options
+  ::options->sql)
+
+
+(s/def ::add-column->sql
+  (s/conformer
+    (fn [value]
+      {:alter-table (:table-name value)
+       :add-column (first (fields->columns [[(:name value) (:options value)]]))})))
+
+
+(defmethod action->sql models/ADD-COLUMN-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::models/action
+               ::models/name
+               ::options])
+    ::add-column->sql))
 
 
 (s/def ::->sql (s/multi-spec action->sql :action))
