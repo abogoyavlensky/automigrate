@@ -26,17 +26,4 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Test
-        continue-on-error: true
         run: docker-compose run --rm test bash -c "make deps && make test"
-
-      - name: ls
-        run: ls -alh test/tuna/migrations
-
-      - name: cat0
-        run: cat test/tuna/migrations/0000_create_table_feed.edn
-
-      - name: cat1
-        run: cat test/tuna/migrations/0001_add_column_name.edn
-
-      - name: cat2
-        run: cat test/tuna/migrations/0002_add_column_name.edn

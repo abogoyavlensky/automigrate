@@ -72,9 +72,6 @@
   (core/run {:action :make-migrations
              :model-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:action :make-migrations
-             :model-file (str config/MODELS-DIR "feed_add_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
             :name :name
             :table-name :feed
