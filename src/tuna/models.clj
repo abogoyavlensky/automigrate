@@ -121,10 +121,11 @@
 
 
 (s/def ::changes
-  (s/merge
-    ::options-common
-    (s/keys
-      :opt-un [:field/type])))
+  (s/nilable
+    (s/merge
+      ::options-common
+      (s/keys
+        :opt-un [:field/type]))))
 
 
 (s/def ::drop

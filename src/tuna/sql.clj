@@ -1,7 +1,12 @@
 (ns tuna.sql
   "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [tuna.models :as models]))
+
+
+(def ^:private UNIQUE-INDEX-POSTFIX "key")
+(def ^:private PRIVATE-KEY-INDEX-POSTFIX "pkey")
 
 
 (s/def :option->sql/type
@@ -104,8 +109,70 @@
     (s/keys
       :req-un [::models/action
                ::models/name
+               ::models/table-name
                ::options])
     ::add-column->sql))
+
+
+(s/def ::changes
+  (s/nilable
+    (s/merge
+      (s/keys
+        :opt-un [:option->sql/type
+                 :option->sql/null
+                 :option->sql/primary-key
+                 :option->sql/unique
+                 :option->sql/default]))))
+
+
+(defn- unique-index-name
+  [table-name field-name]
+  (->> [(name table-name) (name field-name) UNIQUE-INDEX-POSTFIX]
+    (str/join #"-")
+    (keyword)))
+
+
+(defn- private-key-index-name
+  [table-name]
+  (->> [(name table-name) PRIVATE-KEY-INDEX-POSTFIX]
+    (str/join #"-")
+    (keyword)))
+
+
+(s/def ::alter-column->sql
+  (s/conformer
+    (fn [action]
+      (let [changes (for [[option value] (:changes action)
+                          :let [field-name (:name action)]]
+                      (case option
+                        :type {:alter-column [field-name :type value]}
+                        :null (let [operation (if (nil? value) :drop :set)]
+                                {:alter-column [field-name operation [:not nil]]})
+                        :default {:alter-column [field-name :set value]}
+                        :unique {:add-index [:unique nil field-name]}
+                        :primary-key {:add-index [:primary-key field-name]}))
+            dropped (for [option (:drop action)
+                          :let [field-name (:name action)
+                                table-name (:table-name action)]]
+                      (case option
+                        :null {:alter-column [field-name :set [:not nil]]}
+                        :default {:alter-column [field-name :drop :default]}
+                        :unique {:drop-constraint (unique-index-name table-name field-name)}
+                        :primary-key {:drop-constraint (private-key-index-name table-name)}))
+            all-actions (concat changes dropped)]
+        {:alter-table (cons (:table-name action) all-actions)}))))
+
+
+(defmethod action->sql models/ALTER-COLUMN-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::models/action
+               ::models/name
+               ::models/table-name
+               ::changes
+               ::models/drop])
+    ::alter-column->sql))
 
 
 (s/def ::->sql (s/multi-spec action->sql :action))
