@@ -9,7 +9,7 @@
   :migrations)
 
 
-; Additional honeysql clauses
+; Additional sql clauses
 
 (honey/register-clause! :alter-column
   (fn [k spec]
@@ -23,6 +23,8 @@
     (#'honey/format-selector k spec))
   :rename-table)
 
+
+; Public
 
 (defn db-conn
   "Return db connection for performing migration."

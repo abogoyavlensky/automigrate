@@ -6,6 +6,7 @@
             [clojure.spec.alpha :as s]
             [clojure.java.io :as io]
             [clojure.string :as str]
+            [clojure.set :as set]
             [clojure.pprint :as pprint]
             #_{:clj-kondo/ignore [:unused-referred-var]}
             [slingshot.slingshot :refer [throw+ try+]]
@@ -66,17 +67,33 @@
   (not (contains? (:fields old-model) field-name)))
 
 
+(defn- options-dropped
+  [removals]
+  (-> (filter #(= 0 (val %)) removals)
+    (keys)
+    (set)
+    (set/difference #{:type})))
+
+
 (defn- parse-fields-diff
   "Return field's migrations for model."
-  [model-diff _removals old-model model-name]
+  [model-diff removals old-model model-name]
   (for [field (:fields (val model-diff))
-        :let [field-name (key field)]]
-    (when (new-field? field-name old-model)
+        :let [field-name (key field)
+              options (val field)]]
+    (if (new-field? field-name old-model)
       (spec-util/conform ::models/->migration
         {:action models/ADD-COLUMN-ACTION
          :name field-name
          :table-name model-name
-         :options (val field)}))))
+         :options options})
+      (spec-util/conform ::models/->migration
+        {:action models/ALTER-COLUMN-ACTION
+         :name field-name
+         :table-name model-name
+         :changes options
+         :drop (-> (get-in removals [:fields field-name])
+                 (options-dropped))}))))
 
 
 (defn- make-migrations*
@@ -194,16 +211,16 @@
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)
-    (migrate config)))
+    ;(migrate config)))
     ;(explain config)))
 
-    ;(try+
-    ;  (->> (make-migrations* migrations-files model-file))
-    ;       ;(ffirst))
-    ;       ;(spec-util/conform ::sql/->sql))
-    ;       ;(db-util/fmt))
-    ;  (catch [:type ::s/invalid] e
-    ;    (:data e)))))
+    (try+
+      (->> (make-migrations* migrations-files model-file)
+           (ffirst))
+           ;(spec-util/conform ::sql/->sql))
+           ;(db-util/fmt))
+      (catch [:type ::s/invalid] e
+        (:data e)))))
 
 
 (comment

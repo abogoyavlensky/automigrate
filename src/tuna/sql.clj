@@ -88,8 +88,7 @@
     ::create-table->sql))
 
 
-(s/def ::options
-  ::options->sql)
+(derive ::options ::options->sql)
 
 
 (s/def ::add-column->sql
