@@ -1,7 +1,8 @@
 (ns tuna.schema
   "Module for generating db schema from migrations."
   (:require [tuna.util.file :as file-util]
-            [tuna.models :as models]))
+            [tuna.models :as models]
+            [tuna.util.map :as map-util]))
 
 
 (defn- load-migrations-from-files
@@ -24,6 +25,15 @@
   [schema action]
   (assoc-in schema [(:table-name action) :fields (:name action)]
     (:options action)))
+
+
+(defmethod apply-action-to-schema models/ALTER-COLUMN-ACTION
+  [schema action]
+  (let [table-name (:table-name action)
+        field-name (:name action)]
+    (-> schema
+      (update-in [table-name :fields field-name] merge (:changes action))
+      (map-util/dissoc-in [table-name :fields field-name] #p (:drop action)))))
 
 
 (defn current-db-schema
