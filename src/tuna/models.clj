@@ -105,7 +105,8 @@
              ::fields]))
 
 
-(derive ::options ::field)
+(s/def ::options
+  ::field)
 
 
 (s/def ::table-name keyword?)

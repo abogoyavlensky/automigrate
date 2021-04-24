@@ -93,7 +93,8 @@
     ::create-table->sql))
 
 
-(derive ::options ::options->sql)
+(s/def ::options
+  ::options->sql)
 
 
 (s/def ::add-column->sql
@@ -116,13 +117,12 @@
 
 (s/def ::changes
   (s/nilable
-    (s/merge
-      (s/keys
-        :opt-un [:option->sql/type
-                 :option->sql/null
-                 :option->sql/primary-key
-                 :option->sql/unique
-                 :option->sql/default]))))
+    (s/keys
+      :opt-un [:option->sql/type
+               :option->sql/null
+               :option->sql/primary-key
+               :option->sql/unique
+               :option->sql/default])))
 
 
 (defn- unique-index-name
