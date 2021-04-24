@@ -62,13 +62,19 @@
       tagged->value)))
 
 
-(s/def ::field
+(s/def ::options-common
   (s/keys
-    :req-un [:field/type]
     :opt-un [:field/null
              :field/primary-key
              :field/unique
              :field/default]))
+
+
+(s/def ::field
+  (s/merge
+    ::options-common
+    (s/keys
+      :req-un [:field/type])))
 
 
 (s/def ::fields
@@ -77,10 +83,12 @@
 ; DB Actions
 (def CREATE-TABLE-ACTION :create-table)
 (def ADD-COLUMN-ACTION :add-column)
+(def ALTER-COLUMN-ACTION :alter-column)
 
 
 (s/def ::action #{CREATE-TABLE-ACTION
-                  ADD-COLUMN-ACTION})
+                  ADD-COLUMN-ACTION
+                  ALTER-COLUMN-ACTION})
 
 
 (s/def ::name keyword?)
@@ -111,6 +119,30 @@
              ::name
              ::table-name
              ::options]))
+
+
+(s/def ::changes
+  (s/nilable
+    (s/merge
+      ::options-common
+      (s/keys
+        :opt-un [:field/type]))))
+
+
+(s/def ::drop
+  (s/coll-of #{:primary-key :unique :default :null}
+    :kind set?
+    :distinct true))
+
+
+(defmethod action ALTER-COLUMN-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name
+             ::table-name
+             ::changes
+             ::drop]))
 
 
 (s/def ::->migration (s/multi-spec action :action))

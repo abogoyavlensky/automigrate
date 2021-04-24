@@ -9,6 +9,7 @@
                                         tuna.util.file file-util
                                         tuna.util.test test-util
                                         tuna.util.spec spec-util
+                                        tuna.util.map map-util
                                         clojure.java.io io
                                         clojure.edn edn
                                         clojure.string str

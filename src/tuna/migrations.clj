@@ -6,6 +6,7 @@
             [clojure.spec.alpha :as s]
             [clojure.java.io :as io]
             [clojure.string :as str]
+            [clojure.set :as set]
             [clojure.pprint :as pprint]
             #_{:clj-kondo/ignore [:unused-referred-var]}
             [slingshot.slingshot :refer [throw+ try+]]
@@ -62,38 +63,61 @@
 
 
 (defn- new-field?
-  [field-name old-model]
-  (not (contains? (:fields old-model) field-name)))
+  [field-name old-model fields-diff]
+  (and (contains? fields-diff field-name)
+    (not (contains? (:fields old-model) field-name))))
+
+
+(defn- options-dropped
+  [removals]
+  (-> (filter #(= 0 (val %)) removals)
+    (keys)
+    (set)
+    (set/difference #{:type})))
 
 
 (defn- parse-fields-diff
   "Return field's migrations for model."
-  [model-diff _removals old-model model-name]
-  (for [field (:fields (val model-diff))
-        :let [field-name (key field)]]
-    (when (new-field? field-name old-model)
-      (spec-util/conform ::models/->migration
-        {:action models/ADD-COLUMN-ACTION
-         :name field-name
-         :table-name model-name
-         :options (val field)}))))
+  [model-diff removals old-model model-name]
+  (let [fields-diff (:fields model-diff)
+        fields-removals (:fields removals)
+        changed-fields (-> (set (keys fields-diff))
+                         (set/union (set (keys fields-removals))))]
+    (for [field-name changed-fields
+          :let [options-to-add (get fields-diff field-name)
+                options-to-drop (get fields-removals field-name)]]
+      (if (new-field? field-name old-model fields-diff)
+        (spec-util/conform ::models/->migration
+          {:action models/ADD-COLUMN-ACTION
+           :name field-name
+           :table-name model-name
+           :options options-to-add})
+        (spec-util/conform ::models/->migration
+          {:action models/ALTER-COLUMN-ACTION
+           :name field-name
+           :table-name model-name
+           :changes options-to-add
+           :drop (options-dropped options-to-drop)})))))
 
 
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
         new-schema (file-util/read-edn model-file)
-        [alterations removals] (differ/diff old-schema new-schema)]
-    (for [model-diff alterations
-          :let [model-name (key model-diff)
-                old-model (get old-schema model-name)]]
-      (if-not (contains? old-schema model-name)
+        [alterations removals] (differ/diff old-schema new-schema)
+        changed-models (-> (set (keys alterations))
+                         (set/union (set (keys removals))))]
+    (for [model-name changed-models
+          :let [old-model (get old-schema model-name)
+                model-diff (get alterations model-name)
+                model-removals (get removals model-name)]]
+      (if (and (contains? alterations model-name)
+            (not (contains? old-schema model-name)))
         (spec-util/conform ::models/->migration
-          ; TODO: move building map to fn!
           (merge {:action models/CREATE-TABLE-ACTION
-                  :name model-name}
-            (select-keys (val model-diff) [:fields])))
-        (parse-fields-diff model-diff (get removals model-name) old-model model-name)))))
+                  :name model-name
+                  :fields (:fields model-diff)}))
+        (parse-fields-diff model-diff model-removals old-model model-name)))))
 
 
 (defn make-migrations
@@ -186,22 +210,40 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 3}
+                :number 4}
+        db (db-util/db-conn (:db-uri config))
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)
+    ;(make-migrations config)))
     ;(migrate config)))
     ;(explain config)))
 
     (try+
-      (->> (make-migrations* migrations-files model-file))
-           ;(ffirst))
-           ;(spec-util/conform ::sql/->sql))
-           ;(db-util/fmt))
+      (->> #_(make-migrations* migrations-files model-file)
+           ;(flatten)
+           [{:name :number
+             :table-name :account
+             :changes {:type :integer
+                       :unique true
+                       :default 0}
+             :drop #{:primary-key :null}
+             :action :alter-column}]
+           ;[{:action :create-table,
+           ;  :name :feed,
+           ;  :fields
+           ;  {:id {:type :serial, :null false},
+           ;   :name {:type :text, :default "test", :unique true}}}]
+           ; {:action :add-column,
+           ;  :name :created_at,
+           ;  :options {:default [:now], :type :timestamp},
+           ;  :table-name :feed}]
+           (map #(spec-util/conform ::sql/->sql %))
+           (map db-util/fmt))
+           ;(map #(db-util/exec! db %)))
       (catch [:type ::s/invalid] e
         (:data e)))))
 
@@ -242,12 +284,29 @@
                                       :default [:now]}
                          :is_active {:type :boolean}
                          :opts {:type :jsonb}}}]]
-    (try+
-      (->> model
-        ;(s/valid? ::models/model)
-        (spec-util/conform ::models/->migration)
-        (spec-util/conform ::sql/->sql)
-        ;(db-util/fmt))
-        (db-util/exec! db))
-      (catch [:type ::s/invalid] e
-        (:data e)))))
+    ;(try+
+    ;  (->> model
+    ;    ;(s/valid? ::models/model)
+    ;    (spec-util/conform ::models/->migration)
+    ;    (spec-util/conform ::sql/->sql)
+    ;    ;(db-util/fmt))
+    ;    (db-util/exec! db))
+    ;  (catch [:type ::s/invalid] e
+    ;    (:data e)))))
+
+    (->> {:alter-table :feed}
+          ;:alter-column [:name :type [:varchar 10]]}
+
+          ;:alter-column [:name :set [:not nil]]}
+          ;:alter-column [:name :drop [:not nil]]}
+
+          ;:alter-column [:name :set [:default "test"]]}
+          ;:alter-column [:name :drop :default]}
+
+          ;:add-index [:unique nil :name]}
+          ;:drop-constraint (keyword (str/join #"-" [(name :feed) (name :name) "key"]))}
+
+          ;:add-index [:primary-key :name]
+          ;:drop-constraint (keyword (str/join #"-" [(name :feed) "pkey"]))}
+        ;(db-util/fmt))))
+         (db-util/exec! db))))
