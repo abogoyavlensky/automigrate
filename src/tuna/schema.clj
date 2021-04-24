@@ -33,7 +33,7 @@
         field-name (:name action)]
     (-> schema
       (update-in [table-name :fields field-name] merge (:changes action))
-      (map-util/dissoc-in [table-name :fields field-name] #p (:drop action)))))
+      (map-util/dissoc-in [table-name :fields field-name] (:drop action)))))
 
 
 (defn current-db-schema
