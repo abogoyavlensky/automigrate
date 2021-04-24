@@ -9,6 +9,21 @@
   :migrations)
 
 
+; Additional honeysql clauses
+
+(honey/register-clause! :alter-column
+  (fn [k spec]
+    ; TODO: try to check second place of :type, :set, :drop
+    (#'honey/format-add-item k spec))
+  :rename-column)
+
+
+(honey/register-clause! :drop-constraint
+  (fn [k spec]
+    (#'honey/format-selector k spec))
+  :rename-table)
+
+
 (defn db-conn
   "Return db connection for performing migration."
   ([]
@@ -55,14 +70,3 @@
                        [:name [:varchar 256] [:not nil] :unique]
                        [:created_at :timestamp [:default [:now]]]]}
     (exec! db)))
-
-
-; TODO: remove!
-(comment
-  (let [db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-        db (tuna.migrations/db-conn db-uri)
-        q {:create-table [MIGRATIONS-TABLE :if-not-exists]
-           :with-columns [[:id :serial [:not nil] [:primary-key]]
-                          [:name [:varchar 256] [:not nil] :unique]
-                          [:created_at :timestamp [:default [:now]]]]}]
-    (exec! db q)))

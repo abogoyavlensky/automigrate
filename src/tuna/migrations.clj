@@ -242,12 +242,29 @@
                                       :default [:now]}
                          :is_active {:type :boolean}
                          :opts {:type :jsonb}}}]]
-    (try+
-      (->> model
-        ;(s/valid? ::models/model)
-        (spec-util/conform ::models/->migration)
-        (spec-util/conform ::sql/->sql)
-        ;(db-util/fmt))
-        (db-util/exec! db))
-      (catch [:type ::s/invalid] e
-        (:data e)))))
+    ;(try+
+    ;  (->> model
+    ;    ;(s/valid? ::models/model)
+    ;    (spec-util/conform ::models/->migration)
+    ;    (spec-util/conform ::sql/->sql)
+    ;    ;(db-util/fmt))
+    ;    (db-util/exec! db))
+    ;  (catch [:type ::s/invalid] e
+    ;    (:data e)))))
+
+    (->> {:alter-table :feed
+          ;:alter-column [:name :type [:varchar 10]]
+
+          ;:alter-column [:name :set [:not nil]]}
+          ;:alter-column [:name :drop [:not nil]]}
+
+          ;:alter-column [:name :set [:default "test"]]}
+          ;:alter-column [:name :drop :default]}
+
+          ;:add-index [:unique nil :name]}
+          :drop-constraint (keyword (str/join #"-" [(name :feed) (name :name) "key"]))}
+
+          ;:add-index [:primary-key :name]
+          ;:drop-constraint (keyword (str/join #"-" [(name :feed) "pkey"]))}
+        ;(db-util/fmt))))
+         (db-util/exec! db))))
