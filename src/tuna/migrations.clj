@@ -219,26 +219,33 @@
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    (migrate config)))
+    ;(migrate config)))
     ;(explain config)))
 
-    ;(try+
-    ;  (->> (make-migrations* migrations-files model-file)
-    ;       (flatten))
-    ;       ;[{:action :create-table,
-    ;       ;  :name :feed,
-    ;       ;  :fields
-    ;       ;  {:id {:type :serial, :null false},
-    ;       ;   :name {:type :text, :default "test", :unique true}}}
-    ;       ; {:action :add-column,
-    ;       ;  :name :created_at,
-    ;       ;  :options {:default [:now], :type :timestamp},
-    ;       ;  :table-name :feed}]
-    ;       ;(map #(spec-util/conform ::sql/->sql %)))
-    ;       ;(map db-util/fmt))
-    ;       ;(map #(db-util/exec! db %)))
-    ;  (catch [:type ::s/invalid] e
-    ;    (:data e)))))
+    (try+
+      (->> #_(make-migrations* migrations-files model-file)
+           ;(flatten)
+           [{:name :number
+             :table-name :account
+             :changes {:type :integer
+                       :unique true
+                       :default 0}
+             :drop #{:primary-key :null}
+             :action :alter-column}]
+           ;[{:action :create-table,
+           ;  :name :feed,
+           ;  :fields
+           ;  {:id {:type :serial, :null false},
+           ;   :name {:type :text, :default "test", :unique true}}}]
+           ; {:action :add-column,
+           ;  :name :created_at,
+           ;  :options {:default [:now], :type :timestamp},
+           ;  :table-name :feed}]
+           (map #(spec-util/conform ::sql/->sql %))
+           (map db-util/fmt))
+           ;(map #(db-util/exec! db %)))
+      (catch [:type ::s/invalid] e
+        (:data e)))))
 
 
 (comment

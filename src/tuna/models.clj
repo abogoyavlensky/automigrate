@@ -130,7 +130,9 @@
 
 
 (s/def ::drop
-  (s/coll-of #{:primary-key :unique :default :null}))
+  (s/coll-of #{:primary-key :unique :default :null}
+    :kind set?
+    :distinct true))
 
 
 (defmethod action ALTER-COLUMN-ACTION
