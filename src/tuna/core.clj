@@ -7,19 +7,19 @@
 (s/check-asserts true)
 
 
-(s/def :args/model-file string?)
-(s/def :args/migrations-dir string?)
-(s/def :args/db-uri string?)
+(s/def ::model-file string?)
+(s/def ::migrations-dir string?)
+(s/def ::db-uri string?)
 ; TODO: use conform str -> int!
-(s/def :args/number int?)
+(s/def ::number int?)
 
 
 (s/def ::run-args
   (s/keys
-    :req-un [:args/migrations-dir]
-    :opt-un [:args/model-file
-             :args/number
-             :args/db-uri]))
+    :req-un [::migrations-dir]
+    :opt-un [::model-file
+             ::number
+             ::db-uri]))
 
 
 (defn run
