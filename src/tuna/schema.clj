@@ -41,6 +41,11 @@
   (map-util/dissoc-in schema [(:table-name action) :fields] [(:name action)]))
 
 
+(defmethod apply-action-to-schema models/DROP-TABLE-ACTION
+  [schema action]
+  (dissoc schema (:name action)))
+
+
 (defn current-db-schema
   "Return map of models derived from existing migrations."
   [migrations-files]

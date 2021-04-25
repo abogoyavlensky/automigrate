@@ -192,4 +192,19 @@
     ::drop-column->sql))
 
 
+(s/def ::drop-table->sql
+  (s/conformer
+    (fn [value]
+      {:drop-table [:if-exists (:name value)]})))
+
+
+(defmethod action->sql models/DROP-TABLE-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::models/action
+               ::models/name])
+    ::drop-table->sql))
+
+
 (s/def ::->sql (s/multi-spec action->sql :action))

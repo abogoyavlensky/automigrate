@@ -111,24 +111,16 @@
                                        :drop (options-dropped options-to-drop)})]]
       (spec-util/conform ::models/->migration action-params))))
 
-      ;(if (new-field? old-model fields-diff field-name)
-      ;  (spec-util/conform ::models/->migration
-      ;    {:action models/ADD-COLUMN-ACTION
-      ;     :name field-name
-      ;     :table-name model-name
-      ;     :options options-to-add})
-      ;  (spec-util/conform ::models/->migration
-      ;    {:action models/ALTER-COLUMN-ACTION
-      ;     :name field-name
-      ;     :table-name model-name
-      ;     :changes options-to-add
-      ;     :drop (options-dropped options-to-drop)})))))
-
 
 (defn- new-model?
   [alterations old-schema model-name]
   (and (contains? alterations model-name)
     (not (contains? old-schema model-name))))
+
+
+(defn- drop-model?
+  [removals model-name]
+  (= DROPPED-ENTITY-VALUE (get removals model-name)))
 
 
 (defn- make-migrations*
@@ -141,12 +133,18 @@
     (for [model-name changed-models
           :let [old-model (get old-schema model-name)
                 model-diff (get alterations model-name)
-                model-removals (get removals model-name)]]
-      (if (new-model? alterations old-schema model-name)
-        (spec-util/conform ::models/->migration
-          (merge {:action models/CREATE-TABLE-ACTION
-                  :name model-name
-                  :fields (:fields model-diff)}))
+                model-removals (get removals model-name)
+                new-model?* (new-model? alterations old-schema model-name)
+                drop-model?* (drop-model? removals model-name)
+                action-params (cond
+                                new-model?* {:action models/CREATE-TABLE-ACTION
+                                             :name model-name
+                                             :fields (:fields model-diff)}
+                                drop-model?* {:action models/DROP-TABLE-ACTION
+                                              :name model-name}
+                                :else nil)]]
+      (if (some? action-params)
+        (spec-util/conform ::models/->migration action-params)
         (parse-fields-diff model-diff model-removals old-model model-name)))))
 
 

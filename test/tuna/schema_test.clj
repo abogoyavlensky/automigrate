@@ -113,3 +113,25 @@
                                                               :name {:type [:varchar 100]
                                                                      :null true}}}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
+
+
+(deftest test-make-migrations*-drop-table-restore-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly
+                      '(({:action :create-table
+                          :name :feed
+                          :fields {:id {:type :serial
+                                        :null false}}})
+                        ({:action :create-table
+                          :name :account
+                          :fields {:id {:type :serial
+                                        :null false}
+                                   :name {:type [:varchar 256]}}})
+                        ({:action :drop-table
+                          :name :feed})))]
+                   [file-util/read-edn (constantly {:account
+                                                    {:fields {:id {:type :serial
+                                                                   :null false}
+                                                              :name {:type [:varchar 256]}}}})]]
+    (is (not (seq (#'migrations/make-migrations* [] ""))))))
