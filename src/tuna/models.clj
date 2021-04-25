@@ -47,6 +47,10 @@
 (s/def :tuna.models.field/unique true?)
 
 
+(s/def :tuna.models.field/foreign-key
+  (s/coll-of keyword? :count 2))
+
+
 (s/def :tuna.models.field/default
   ; TODO: update with dynamic value related to field's type
   (s/and
@@ -67,7 +71,8 @@
     :opt-un [:tuna.models.field/null
              :tuna.models.field/primary-key
              :tuna.models.field/unique
-             :tuna.models.field/default]))
+             :tuna.models.field/default
+             :tuna.models.field/foreign-key]))
 
 
 (s/def ::field
@@ -134,7 +139,7 @@
 
 
 (s/def ::drop
-  (s/coll-of #{:primary-key :unique :default :null}
+  (s/coll-of #{:primary-key :unique :default :null :foreign-key}
     :kind set?
     :distinct true))
 

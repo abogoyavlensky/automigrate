@@ -251,9 +251,9 @@
     ;(explain config)))
 
     (try+
-      (->> (make-migrations* migrations-files model-file))
-           ;(flatten))
-           ;(map #(spec-util/conform ::sql/->sql %)))
+      (->> (make-migrations* migrations-files model-file)
+           (flatten)
+           (map #(spec-util/conform ::sql/->sql %)))
            ;(map db-util/fmt))
            ;(map #(db-util/exec! db %)))
       (catch [:type ::s/invalid] e

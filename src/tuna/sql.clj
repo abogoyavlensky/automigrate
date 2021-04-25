@@ -49,13 +49,22 @@
         [:default value]))))
 
 
+(s/def :tuna.sql.option->sql/foreign-key
+  (s/and
+    :tuna.models.field/foreign-key
+    (s/conformer
+      (fn [value]
+        (cons :references value)))))
+
+
 (s/def ::options->sql
   (s/keys
     :req-un [:tuna.sql.option->sql/type]
     :opt-un [:tuna.sql.option->sql/null
              :tuna.sql.option->sql/primary-key
              :tuna.sql.option->sql/unique
-             :tuna.sql.option->sql/default]))
+             :tuna.sql.option->sql/default
+             :tuna.sql.option->sql/foreign-key]))
 
 
 (s/def ::fields
@@ -122,7 +131,8 @@
                :tuna.sql.option->sql/null
                :tuna.sql.option->sql/primary-key
                :tuna.sql.option->sql/unique
-               :tuna.sql.option->sql/default])))
+               :tuna.sql.option->sql/default
+               :tuna.sql.option->sql/foreign-key])))
 
 
 (defn- unique-index-name
@@ -150,6 +160,8 @@
                                 {:alter-column [field-name operation [:not nil]]})
                         :default {:alter-column [field-name :set value]}
                         :unique {:add-index [:unique nil field-name]}
+                        ; TODO: add foreign-key
+                        ; Example: ADD CONSTRAINT fk_orders_customers FOREIGN KEY (customer_id) REFERENCES customers (id);
                         :primary-key {:add-index [:primary-key field-name]}))
             dropped (for [option (:drop action)
                           :let [field-name (:name action)
@@ -158,6 +170,7 @@
                         :null {:alter-column [field-name :set [:not nil]]}
                         :default {:alter-column [field-name :drop :default]}
                         :unique {:drop-constraint (unique-index-name table-name field-name)}
+                        ; TODO: add foreign-key - drop-constraint
                         :primary-key {:drop-constraint (private-key-index-name table-name)}))
             all-actions (concat changes dropped)]
         {:alter-table (cons (:table-name action) all-actions)}))))
