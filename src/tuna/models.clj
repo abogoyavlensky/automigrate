@@ -16,7 +16,7 @@
       value)))
 
 
-(s/def :field/type
+(s/def :tuna.models.field/type
   (s/and
     ; TODO: switch available fields according to db dialect!
     (s/or
@@ -42,12 +42,12 @@
     (s/conformer tagged->value)))
 
 
-(s/def :field/null boolean?)
-(s/def :field/primary-key true?)
-(s/def :field/unique true?)
+(s/def :tuna.models.field/null boolean?)
+(s/def :tuna.models.field/primary-key true?)
+(s/def :tuna.models.field/unique true?)
 
 
-(s/def :field/default
+(s/def :tuna.models.field/default
   ; TODO: update with dynamic value related to field's type
   (s/and
     (s/or
@@ -64,17 +64,17 @@
 
 (s/def ::options-common
   (s/keys
-    :opt-un [:field/null
-             :field/primary-key
-             :field/unique
-             :field/default]))
+    :opt-un [:tuna.models.field/null
+             :tuna.models.field/primary-key
+             :tuna.models.field/unique
+             :tuna.models.field/default]))
 
 
 (s/def ::field
   (s/merge
     ::options-common
     (s/keys
-      :req-un [:field/type])))
+      :req-un [:tuna.models.field/type])))
 
 
 (s/def ::fields
@@ -126,7 +126,7 @@
     (s/merge
       ::options-common
       (s/keys
-        :opt-un [:field/type]))))
+        :opt-un [:tuna.models.field/type]))))
 
 
 (s/def ::drop

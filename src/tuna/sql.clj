@@ -9,15 +9,15 @@
 (def ^:private PRIVATE-KEY-INDEX-POSTFIX "pkey")
 
 
-(s/def :option->sql/type
+(s/def :tuna.sql.option->sql/type
   (s/and
-    :field/type
+    :tuna.models.field/type
     (s/conformer identity)))
 
 
-(s/def :option->sql/null
+(s/def :tuna.sql.option->sql/null
   (s/and
-    :field/null
+    :tuna.models.field/null
     (s/conformer
       (fn [value]
         (if (true? value)
@@ -25,25 +25,25 @@
           [:not nil])))))
 
 
-(s/def :option->sql/primary-key
+(s/def :tuna.sql.option->sql/primary-key
   (s/and
-    :field/primary-key
+    :tuna.models.field/primary-key
     (s/conformer
       (fn [_]
         [:primary-key]))))
 
 
-(s/def :option->sql/unique
+(s/def :tuna.sql.option->sql/unique
   (s/and
-    :field/unique
+    :tuna.models.field/unique
     (s/conformer
       (fn [_]
         :unique))))
 
 
-(s/def :option->sql/default
+(s/def :tuna.sql.option->sql/default
   (s/and
-    :field/default
+    :tuna.models.field/default
     (s/conformer
       (fn [value]
         [:default value]))))
@@ -51,11 +51,11 @@
 
 (s/def ::options->sql
   (s/keys
-    :req-un [:option->sql/type]
-    :opt-un [:option->sql/null
-             :option->sql/primary-key
-             :option->sql/unique
-             :option->sql/default]))
+    :req-un [:tuna.sql.option->sql/type]
+    :opt-un [:tuna.sql.option->sql/null
+             :tuna.sql.option->sql/primary-key
+             :tuna.sql.option->sql/unique
+             :tuna.sql.option->sql/default]))
 
 
 (s/def ::fields
@@ -118,11 +118,11 @@
 (s/def ::changes
   (s/nilable
     (s/keys
-      :opt-un [:option->sql/type
-               :option->sql/null
-               :option->sql/primary-key
-               :option->sql/unique
-               :option->sql/default])))
+      :opt-un [:tuna.sql.option->sql/type
+               :tuna.sql.option->sql/null
+               :tuna.sql.option->sql/primary-key
+               :tuna.sql.option->sql/unique
+               :tuna.sql.option->sql/default])))
 
 
 (defn- unique-index-name
