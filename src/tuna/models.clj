@@ -82,13 +82,17 @@
 
 ; DB Actions
 (def CREATE-TABLE-ACTION :create-table)
+(def DROP-TABLE-ACTION :drop-table)
 (def ADD-COLUMN-ACTION :add-column)
 (def ALTER-COLUMN-ACTION :alter-column)
+(def DROP-COLUMN-ACTION :drop-column)
 
 
 (s/def ::action #{CREATE-TABLE-ACTION
+                  DROP-TABLE-ACTION
                   ADD-COLUMN-ACTION
-                  ALTER-COLUMN-ACTION})
+                  ALTER-COLUMN-ACTION
+                  DROP-COLUMN-ACTION})
 
 
 (s/def ::name keyword?)
@@ -143,6 +147,21 @@
              ::table-name
              ::changes
              ::drop]))
+
+
+(defmethod action DROP-COLUMN-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name
+             ::table-name]))
+
+
+(defmethod action DROP-TABLE-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name]))
 
 
 (s/def ::->migration (s/multi-spec action :action))
