@@ -127,6 +127,31 @@
           (map #(dissoc % :created_at))))))
 
 
+(deftest test-migrate-migrations-with-drop-columns-ok
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_drop_column.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (is (= '({:action :drop-column
+            :name :name
+            :table-name :feed})
+        (-> (str config/MIGRATIONS-DIR "0001_drop_column_name.edn")
+          (file-util/read-edn))))
+  (core/run {:action :migrate
+             :migrations-dir config/MIGRATIONS-DIR
+             :db-uri config/DATABASE-URL})
+  (is (= '({:id 1
+            :name "0000_create_table_feed"}
+           {:id 2
+            :name "0001_drop_column_name"})
+        (->> {:select [:*]
+              :from [db-util/MIGRATIONS-TABLE]}
+          (db-util/query config/DATABASE-CONN)
+          (map #(dissoc % :created_at))))))
+
+
 (deftest test-explain-basic-migration-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[migrations/migrations-list (constantly ["0000_create_table_feed"])]
@@ -163,7 +188,10 @@
                                                              :unique true
                                                              :default 0}
                                                    :drop #{:primary-key :null}
-                                                   :action :alter-column}))]]
+                                                   :action :alter-column}
+                                                  {:name :url
+                                                   :table-name :feed
+                                                   :action :drop-column}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
     (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
@@ -172,7 +200,8 @@
             "ALTER TABLE account ADD COLUMN day DATE"
             (str "ALTER TABLE account ALTER COLUMN number TYPE INTEGER, ADD UNIQUE(number), "
               "ALTER COLUMN number SET DEFAULT 0, ALTER COLUMN number SET NOT NULL, "
-              "DROP CONSTRAINT account_pkey")]
+              "DROP CONSTRAINT account_pkey")
+            "ALTER TABLE feed DROP COLUMN url"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args

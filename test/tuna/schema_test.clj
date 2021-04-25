@@ -84,3 +84,32 @@
                                                               :name {:type :text}
                                                               :created_at {:type :date}}}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
+
+
+(deftest test-make-migrations*-drop-column-restore-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly
+                      '(({:action :create-table
+                          :name :feed
+                          :fields {:id {:type :serial
+                                        :null false}}})
+                        ({:action :add-column
+                          :name :name
+                          :table-name :feed
+                          :options {:type [:varchar 100]
+                                    :null true}}
+                         {:action :add-column
+                          :name :created_at
+                          :table-name :feed
+                          :options {:type :timestamp
+                                    :default [:now]}})
+                        ({:action :drop-column
+                          :name :created_at
+                          :table-name :feed})))]
+                   [file-util/read-edn (constantly {:feed
+                                                    {:fields {:id {:type :serial
+                                                                   :null false}
+                                                              :name {:type [:varchar 100]
+                                                                     :null true}}}})]]
+    (is (not (seq (#'migrations/make-migrations* [] ""))))))

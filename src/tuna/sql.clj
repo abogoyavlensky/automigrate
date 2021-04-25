@@ -175,4 +175,21 @@
     ::alter-column->sql))
 
 
+(s/def ::drop-column->sql
+  (s/conformer
+    (fn [value]
+      {:alter-table (:table-name value)
+       :drop-column (:name value)})))
+
+
+(defmethod action->sql models/DROP-COLUMN-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::models/action
+               ::models/name
+               ::models/table-name])
+    ::drop-column->sql))
+
+
 (s/def ::->sql (s/multi-spec action->sql :action))

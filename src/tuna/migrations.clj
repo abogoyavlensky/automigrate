@@ -19,6 +19,9 @@
             [tuna.util.spec :as spec-util]))
 
 
+(def ^:private DROPPED-ENTITY-VALUE 0)
+
+
 (defn- read-migration
   "Return models' definitions."
   [file-name migrations-dir]
@@ -63,14 +66,19 @@
 
 
 (defn- new-field?
-  [field-name old-model fields-diff]
+  [old-model fields-diff field-name]
   (and (contains? fields-diff field-name)
     (not (contains? (:fields old-model) field-name))))
 
 
+(defn- drop-field?
+  [fields-removals field-name]
+  (= DROPPED-ENTITY-VALUE (get fields-removals field-name)))
+
+
 (defn- options-dropped
   [removals]
-  (-> (filter #(= 0 (val %)) removals)
+  (-> (filter #(= DROPPED-ENTITY-VALUE (val %)) removals)
     (keys)
     (set)
     (set/difference #{:type})))
@@ -85,19 +93,42 @@
                          (set/union (set (keys fields-removals))))]
     (for [field-name changed-fields
           :let [options-to-add (get fields-diff field-name)
-                options-to-drop (get fields-removals field-name)]]
-      (if (new-field? field-name old-model fields-diff)
-        (spec-util/conform ::models/->migration
-          {:action models/ADD-COLUMN-ACTION
-           :name field-name
-           :table-name model-name
-           :options options-to-add})
-        (spec-util/conform ::models/->migration
-          {:action models/ALTER-COLUMN-ACTION
-           :name field-name
-           :table-name model-name
-           :changes options-to-add
-           :drop (options-dropped options-to-drop)})))))
+                options-to-drop (get fields-removals field-name)
+                new-field?* (new-field? old-model fields-diff field-name)
+                drop-field?* (drop-field? fields-removals field-name)
+                action-params (cond
+                                new-field?* {:action models/ADD-COLUMN-ACTION
+                                             :name field-name
+                                             :table-name model-name
+                                             :options options-to-add}
+                                drop-field?* {:action models/DROP-COLUMN-ACTION
+                                              :name field-name
+                                              :table-name model-name}
+                                :else {:action models/ALTER-COLUMN-ACTION
+                                       :name field-name
+                                       :table-name model-name
+                                       :changes options-to-add
+                                       :drop (options-dropped options-to-drop)})]]
+      (spec-util/conform ::models/->migration action-params))))
+
+      ;(if (new-field? old-model fields-diff field-name)
+      ;  (spec-util/conform ::models/->migration
+      ;    {:action models/ADD-COLUMN-ACTION
+      ;     :name field-name
+      ;     :table-name model-name
+      ;     :options options-to-add})
+      ;  (spec-util/conform ::models/->migration
+      ;    {:action models/ALTER-COLUMN-ACTION
+      ;     :name field-name
+      ;     :table-name model-name
+      ;     :changes options-to-add
+      ;     :drop (options-dropped options-to-drop)})))))
+
+
+(defn- new-model?
+  [alterations old-schema model-name]
+  (and (contains? alterations model-name)
+    (not (contains? old-schema model-name))))
 
 
 (defn- make-migrations*
@@ -111,8 +142,7 @@
           :let [old-model (get old-schema model-name)
                 model-diff (get alterations model-name)
                 model-removals (get removals model-name)]]
-      (if (and (contains? alterations model-name)
-            (not (contains? old-schema model-name)))
+      (if (new-model? alterations old-schema model-name)
         (spec-util/conform ::models/->migration
           (merge {:action models/CREATE-TABLE-ACTION
                   :name model-name
@@ -223,26 +253,10 @@
     ;(explain config)))
 
     (try+
-      (->> #_(make-migrations* migrations-files model-file)
-           ;(flatten)
-           [{:name :number
-             :table-name :account
-             :changes {:type :integer
-                       :unique true
-                       :default 0}
-             :drop #{:primary-key :null}
-             :action :alter-column}]
-           ;[{:action :create-table,
-           ;  :name :feed,
-           ;  :fields
-           ;  {:id {:type :serial, :null false},
-           ;   :name {:type :text, :default "test", :unique true}}}]
-           ; {:action :add-column,
-           ;  :name :created_at,
-           ;  :options {:default [:now], :type :timestamp},
-           ;  :table-name :feed}]
-           (map #(spec-util/conform ::sql/->sql %))
-           (map db-util/fmt))
+      (->> (make-migrations* migrations-files model-file))
+           ;(flatten))
+           ;(map #(spec-util/conform ::sql/->sql %)))
+           ;(map db-util/fmt))
            ;(map #(db-util/exec! db %)))
       (catch [:type ::s/invalid] e
         (:data e)))))
