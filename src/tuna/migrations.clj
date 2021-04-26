@@ -242,22 +242,29 @@
         db (db-util/db-conn (:db-uri config))
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
+      (try+
+        (->> (make-migrations* migrations-files model-file)
+             (flatten)
+             (map #(spec-util/conform ::sql/->sql %))
+             ;(map db-util/fmt))
+             (map #(db-util/exec! db %)))
+        (catch [:type ::s/invalid] e
+          (:data e)))))
+
+
+(comment
+  (let [config {:model-file "src/tuna/models.edn"
+                :migrations-dir "src/tuna/migrations"
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :number 4}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(migrate config)))
+    (migrate config)))
     ;(explain config)))
 
-    (try+
-      (->> (make-migrations* migrations-files model-file)
-           (flatten)
-           (map #(spec-util/conform ::sql/->sql %)))
-           ;(map db-util/fmt))
-           ;(map #(db-util/exec! db %)))
-      (catch [:type ::s/invalid] e
-        (:data e)))))
 
 
 (comment

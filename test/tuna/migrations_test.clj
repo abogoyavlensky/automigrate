@@ -217,7 +217,16 @@
                                                    :table-name :feed
                                                    :action :drop-column}
                                                   {:name :feed
-                                                   :action :drop-table}))]]
+                                                   :action :drop-table}
+                                                  {:name :feed
+                                                   :fields {:account {:type :serial
+                                                                      :foreign-key [:account :id]}}
+                                                   :action :create-table}
+                                                  {:name :account
+                                                   :table-name :feed
+                                                   :changes nil
+                                                   :drop #{:foreign-key}
+                                                   :action :alter-column}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
     (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
@@ -228,7 +237,9 @@
               "ALTER COLUMN number SET DEFAULT 0, ALTER COLUMN number SET NOT NULL, "
               "DROP CONSTRAINT account_pkey")
             "ALTER TABLE feed DROP COLUMN url"
-            "DROP TABLE IF EXISTS feed"]
+            "DROP TABLE IF EXISTS feed"
+            "CREATE TABLE feed (account SERIAL REFERENCES ACCOUNT(ID))"
+            "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args

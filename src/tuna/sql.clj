@@ -7,6 +7,7 @@
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
 (def ^:private PRIVATE-KEY-INDEX-POSTFIX "pkey")
+(def ^:private FOREIGN-KEY-INDEX-POSTFIX "fkey")
 
 
 (s/def :tuna.sql.option->sql/type
@@ -149,6 +150,13 @@
     (keyword)))
 
 
+(defn- foreign-key-index-name
+  [table-name field-name]
+  (->> [(name table-name) (name field-name) FOREIGN-KEY-INDEX-POSTFIX]
+    (str/join #"-")
+    (keyword)))
+
+
 (s/def ::alter-column->sql
   (s/conformer
     (fn [action]
@@ -170,8 +178,8 @@
                         :null {:alter-column [field-name :set [:not nil]]}
                         :default {:alter-column [field-name :drop :default]}
                         :unique {:drop-constraint (unique-index-name table-name field-name)}
-                        ; TODO: add foreign-key - drop-constraint
-                        :primary-key {:drop-constraint (private-key-index-name table-name)}))
+                        :primary-key {:drop-constraint (private-key-index-name table-name)}
+                        :foreign-key {:drop-constraint (foreign-key-index-name table-name field-name)}))
             all-actions (concat changes dropped)]
         {:alter-table (cons (:table-name action) all-actions)}))))
 
