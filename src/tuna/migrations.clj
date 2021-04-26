@@ -256,7 +256,7 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 4}]
+                :number 3}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
@@ -313,7 +313,7 @@
     ;  (catch [:type ::s/invalid] e
     ;    (:data e)))))
 
-    (->> {:alter-table :feed}
+    (->> {:alter-table :feed
           ;:alter-column [:name :type [:varchar 10]]}
 
           ;:alter-column [:name :set [:not nil]]}
@@ -327,5 +327,10 @@
 
           ;:add-index [:primary-key :name]
           ;:drop-constraint (keyword (str/join #"-" [(name :feed) "pkey"]))}
+
+           ;:add-index [:constraint :feed-account-fkey [:foreign-key :id] [:references :account :id]]
+           ;:add-index [[:constraint :feed-account-fkey] [:foreign-key :id] [:references :account :id]]
+           :add-constraint [:feed-account-fkey [:foreign-key :id] [:references :account :id]]}
+         ;ADD CONSTRAINT fk_orders_customers FOREIGN KEY (customer_id) REFERENCES customers (id);
         ;(db-util/fmt))))
          (db-util/exec! db))))

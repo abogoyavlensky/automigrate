@@ -161,16 +161,18 @@
   (s/conformer
     (fn [action]
       (let [changes (for [[option value] (:changes action)
-                          :let [field-name (:name action)]]
+                          :let [field-name (:name action)
+                                table-name (:table-name action)]]
                       (case option
                         :type {:alter-column [field-name :type value]}
                         :null (let [operation (if (nil? value) :drop :set)]
                                 {:alter-column [field-name operation [:not nil]]})
                         :default {:alter-column [field-name :set value]}
                         :unique {:add-index [:unique nil field-name]}
-                        ; TODO: add foreign-key
-                        ; Example: ADD CONSTRAINT fk_orders_customers FOREIGN KEY (customer_id) REFERENCES customers (id);
-                        :primary-key {:add-index [:primary-key field-name]}))
+                        :primary-key {:add-index [:primary-key field-name]}
+                        :foreign-key {:add-constraint [(foreign-key-index-name table-name field-name)
+                                                       [:foreign-key field-name]
+                                                       value]}))
             dropped (for [option (:drop action)
                           :let [field-name (:name action)
                                 table-name (:table-name action)]]
