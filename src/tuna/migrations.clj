@@ -11,7 +11,7 @@
             #_{:clj-kondo/ignore [:unused-referred-var]}
             [slingshot.slingshot :refer [throw+ try+]]
             [differ.core :as differ]
-            [tuna.models :as models]
+            [tuna.actions :as actions]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
             [tuna.util.file :as file-util]
@@ -97,19 +97,19 @@
                 new-field?* (new-field? old-model fields-diff field-name)
                 drop-field?* (drop-field? fields-removals field-name)
                 action-params (cond
-                                new-field?* {:action models/ADD-COLUMN-ACTION
+                                new-field?* {:action actions/ADD-COLUMN-ACTION
                                              :name field-name
                                              :table-name model-name
                                              :options options-to-add}
-                                drop-field?* {:action models/DROP-COLUMN-ACTION
+                                drop-field?* {:action actions/DROP-COLUMN-ACTION
                                               :name field-name
                                               :table-name model-name}
-                                :else {:action models/ALTER-COLUMN-ACTION
+                                :else {:action actions/ALTER-COLUMN-ACTION
                                        :name field-name
                                        :table-name model-name
                                        :changes options-to-add
                                        :drop (options-dropped options-to-drop)})]]
-      (spec-util/conform ::models/->migration action-params))))
+      (spec-util/conform ::actions/->migration action-params))))
 
 
 (defn- new-model?
@@ -137,14 +137,14 @@
                 new-model?* (new-model? alterations old-schema model-name)
                 drop-model?* (drop-model? removals model-name)
                 action-params (cond
-                                new-model?* {:action models/CREATE-TABLE-ACTION
+                                new-model?* {:action actions/CREATE-TABLE-ACTION
                                              :name model-name
                                              :fields (:fields model-diff)}
-                                drop-model?* {:action models/DROP-TABLE-ACTION
+                                drop-model?* {:action actions/DROP-TABLE-ACTION
                                               :name model-name}
                                 :else nil)]]
       (if (some? action-params)
-        (spec-util/conform ::models/->migration action-params)
+        (spec-util/conform ::actions/->migration action-params)
         (parse-fields-diff model-diff model-removals old-model model-name)))))
 
 
@@ -244,10 +244,10 @@
         model-file (:model-file config)]
       (try+
         (->> (make-migrations* migrations-files model-file)
-             (flatten)
-             (map #(spec-util/conform ::sql/->sql %))
+             (flatten))
+             ;(map #(spec-util/conform ::sql/->sql %)))
              ;(map db-util/fmt))
-             (map #(db-util/exec! db %)))
+             ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (:data e)))))
 
@@ -261,31 +261,10 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)))
-    (migrate config)))
+    (make-migrations config)))
+    ;(migrate config)))
     ;(explain config)))
 
-
-
-(comment
-  (spec-util/conform ::models/->migration
-    {:action models/ADD-COLUMN-ACTION
-     :name :name
-     :field {:null true, :type [:varchar 100]}}))
-
-; TODO: remove!
-;[honeysql-postgres.format :as phformat]
-;[honeysql-postgres.helpers :as phsql]
-
-
-;(-> (phsql/create-table :films)
-;    (phsql/with-columns [[:code (hsql/call :char 5) (hsql/call :constraint :firstkey) (hsql/call :primary-key)]
-;                         [:title (hsql/call :varchar 40) (hsql/call :not nil)]
-;                         [:did :integer (hsql/call :not nil)]
-;                         [:date_prod :date]
-;                         [:kind (hsql/call :varchar 10)]])
-;    hsql/format)))
-;    (hsql/raw :serial)))
 
 
 ; TODO: remove!
@@ -305,8 +284,7 @@
                          :opts {:type :jsonb}}}]]
     ;(try+
     ;  (->> model
-    ;    ;(s/valid? ::models/model)
-    ;    (spec-util/conform ::models/->migration)
+    ;    (spec-util/conform ::action/->migration)
     ;    (spec-util/conform ::sql/->sql)
     ;    ;(db-util/fmt))
     ;    (db-util/exec! db))

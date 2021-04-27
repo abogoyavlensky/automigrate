@@ -2,7 +2,7 @@
   "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
-            [tuna.models :as models]))
+            [tuna.actions :as actions]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
@@ -93,12 +93,12 @@
        :with-columns (fields->columns (:fields value))})))
 
 
-(defmethod action->sql models/CREATE-TABLE-ACTION
+(defmethod action->sql actions/CREATE-TABLE-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name
+      :req-un [::actions/action
+               ::actions/name
                ::fields])
     ::create-table->sql))
 
@@ -114,13 +114,13 @@
        :add-column (first (fields->columns [[(:name value) (:options value)]]))})))
 
 
-(defmethod action->sql models/ADD-COLUMN-ACTION
+(defmethod action->sql actions/ADD-COLUMN-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name
-               ::models/table-name
+      :req-un [::actions/action
+               ::actions/name
+               ::actions/table-name
                ::options])
     ::add-column->sql))
 
@@ -186,15 +186,15 @@
         {:alter-table (cons (:table-name action) all-actions)}))))
 
 
-(defmethod action->sql models/ALTER-COLUMN-ACTION
+(defmethod action->sql actions/ALTER-COLUMN-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name
-               ::models/table-name
+      :req-un [::actions/action
+               ::actions/name
+               ::actions/table-name
                ::changes
-               ::models/drop])
+               ::actions/drop])
     ::alter-column->sql))
 
 
@@ -205,13 +205,13 @@
        :drop-column (:name value)})))
 
 
-(defmethod action->sql models/DROP-COLUMN-ACTION
+(defmethod action->sql actions/DROP-COLUMN-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name
-               ::models/table-name])
+      :req-un [::actions/action
+               ::actions/name
+               ::actions/table-name])
     ::drop-column->sql))
 
 
@@ -221,12 +221,12 @@
       {:drop-table [:if-exists (:name value)]})))
 
 
-(defmethod action->sql models/DROP-TABLE-ACTION
+(defmethod action->sql actions/DROP-TABLE-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name])
+      :req-un [::actions/action
+               ::actions/name])
     ::drop-table->sql))
 
 
