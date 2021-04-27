@@ -71,8 +71,8 @@ lint-init:
 
 .PHONY: check  # Check linting and apply formatting locally
 check:
-	@$(MAKE) lint
 	@$(MAKE) fmt
+	@$(MAKE) lint
 
 
 .PHONY: test  # Run tests with coverage

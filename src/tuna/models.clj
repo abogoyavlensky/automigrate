@@ -1,6 +1,7 @@
 (ns tuna.models
   "Module for for transforming models to migrations."
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [slingshot.slingshot :refer [throw+]]))
 
 
 ; Specs
@@ -91,6 +92,25 @@
     :req-un {:fields ::fields}))
 
 
-(s/def ::models
-  (s/map-of keyword? ::model))
+(defn- check-fk-model-exists?
+  [models fk-model-name]
+  (when-not (contains? models fk-model-name)
+    (throw+ {:type ::missing-referenced-model
+             :data {:referenced-model fk-model-name}
+             :message (format "Referenced model %s doesn't exist" fk-model-name)})))
 
+
+(defn- validate-foreign-key
+  [models]
+  (doseq [[_model-name model-value] models]
+    (doseq [[_field-name field-value] (:fields model-value)
+            :let [[fk-model-name fk-field-name] (:foreign-key field-value)]]
+      (when (and (some? fk-model-name) (some? fk-field-name))
+        (check-fk-model-exists? models fk-model-name))))
+  models)
+
+
+(s/def ::models
+  (s/and
+    (s/map-of keyword? ::model)
+    validate-foreign-key))
