@@ -12,6 +12,7 @@
             [slingshot.slingshot :refer [throw+ try+]]
             [differ.core :as differ]
             [tuna.actions :as actions]
+            [tuna.models :as models]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
             [tuna.util.file :as file-util]
@@ -123,10 +124,18 @@
   (= DROPPED-ENTITY-VALUE (get removals model-name)))
 
 
+(defn- read-models
+  "Read and validate models from file."
+  [model-file]
+  (->> model-file
+    (file-util/read-edn)
+    (spec-util/conform ::models/models)))
+
+
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
-        new-schema (file-util/read-edn model-file)
+        new-schema (read-models model-file)
         [alterations removals] (differ/diff old-schema new-schema)
         changed-models (-> (set (keys alterations))
                          (set/union (set (keys removals))))]
@@ -243,8 +252,9 @@
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
       (try+
-        (->> (make-migrations* migrations-files model-file)
-             (flatten))
+        (read-models model-file)
+        ;(->> (make-migrations* migrations-files model-file)
+        ;     (flatten))
              ;(map #(spec-util/conform ::sql/->sql %)))
              ;(map db-util/fmt))
              ;(map #(db-util/exec! db %)))

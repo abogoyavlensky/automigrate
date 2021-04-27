@@ -2,7 +2,9 @@
   "Module for generating db schema from migrations."
   (:require [tuna.util.file :as file-util]
             [tuna.actions :as actions]
-            [tuna.util.map :as map-util]))
+            [tuna.models :as models]
+            [tuna.util.map :as map-util]
+            [tuna.util.spec :as spec-util]))
 
 
 (defn- load-migrations-from-files
@@ -52,7 +54,9 @@
   ; TODO: add validation of migrations with spec!
   (let [actions (-> (load-migrations-from-files migrations-files)
                   (flatten))]
-    (reduce apply-action-to-schema {} actions)))
+    (->> actions
+      (reduce apply-action-to-schema {})
+      (spec-util/conform ::models/models))))
 
 
 ; TODO: remove!

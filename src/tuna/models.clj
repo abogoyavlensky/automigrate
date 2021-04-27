@@ -84,3 +84,13 @@
 
 (s/def ::fields
   (s/map-of keyword? ::field))
+
+
+(s/def ::model
+  (s/keys
+    :req-un {:fields ::fields}))
+
+
+(s/def ::models
+  (s/map-of keyword? ::model))
+
