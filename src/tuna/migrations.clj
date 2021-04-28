@@ -11,6 +11,7 @@
             #_{:clj-kondo/ignore [:unused-referred-var]}
             [slingshot.slingshot :refer [throw+ try+]]
             [differ.core :as differ]
+            [tuna.actions :as actions]
             [tuna.models :as models]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
@@ -97,19 +98,19 @@
                 new-field?* (new-field? old-model fields-diff field-name)
                 drop-field?* (drop-field? fields-removals field-name)
                 action-params (cond
-                                new-field?* {:action models/ADD-COLUMN-ACTION
+                                new-field?* {:action actions/ADD-COLUMN-ACTION
                                              :name field-name
                                              :table-name model-name
                                              :options options-to-add}
-                                drop-field?* {:action models/DROP-COLUMN-ACTION
+                                drop-field?* {:action actions/DROP-COLUMN-ACTION
                                               :name field-name
                                               :table-name model-name}
-                                :else {:action models/ALTER-COLUMN-ACTION
+                                :else {:action actions/ALTER-COLUMN-ACTION
                                        :name field-name
                                        :table-name model-name
                                        :changes options-to-add
                                        :drop (options-dropped options-to-drop)})]]
-      (spec-util/conform ::models/->migration action-params))))
+      (spec-util/conform ::actions/->migration action-params))))
 
 
 (defn- new-model?
@@ -123,10 +124,18 @@
   (= DROPPED-ENTITY-VALUE (get removals model-name)))
 
 
+(defn- read-models
+  "Read and validate models from file."
+  [model-file]
+  (->> model-file
+    (file-util/read-edn)
+    (spec-util/conform ::models/models)))
+
+
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
-        new-schema (file-util/read-edn model-file)
+        new-schema (read-models model-file)
         [alterations removals] (differ/diff old-schema new-schema)
         changed-models (-> (set (keys alterations))
                          (set/union (set (keys removals))))]
@@ -137,14 +146,14 @@
                 new-model?* (new-model? alterations old-schema model-name)
                 drop-model?* (drop-model? removals model-name)
                 action-params (cond
-                                new-model?* {:action models/CREATE-TABLE-ACTION
+                                new-model?* {:action actions/CREATE-TABLE-ACTION
                                              :name model-name
                                              :fields (:fields model-diff)}
-                                drop-model?* {:action models/DROP-TABLE-ACTION
+                                drop-model?* {:action actions/DROP-TABLE-ACTION
                                               :name model-name}
                                 :else nil)]]
       (if (some? action-params)
-        (spec-util/conform ::models/->migration action-params)
+        (spec-util/conform ::actions/->migration action-params)
         (parse-fields-diff model-diff model-removals old-model model-name)))))
 
 
@@ -242,43 +251,30 @@
         db (db-util/db-conn (:db-uri config))
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
+      (try+
+        (->> (read-models model-file))
+        ;(->> (make-migrations* migrations-files model-file)
+        ;     (flatten))
+             ;(map #(spec-util/conform ::sql/->sql %)))
+             ;(map db-util/fmt))
+             ;(map #(db-util/exec! db %)))
+        (catch [:type ::s/invalid] e
+          (:data e)))))
+
+
+(comment
+  (let [config {:model-file "src/tuna/models.edn"
+                :migrations-dir "src/tuna/migrations"
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :number 3}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)))
+    (make-migrations config)))
     ;(migrate config)))
     ;(explain config)))
 
-    (try+
-      (->> (make-migrations* migrations-files model-file))
-           ;(flatten))
-           ;(map #(spec-util/conform ::sql/->sql %)))
-           ;(map db-util/fmt))
-           ;(map #(db-util/exec! db %)))
-      (catch [:type ::s/invalid] e
-        (:data e)))))
-
-
-(comment
-  (spec-util/conform ::models/->migration
-    {:action models/ADD-COLUMN-ACTION
-     :name :name
-     :field {:null true, :type [:varchar 100]}}))
-
-; TODO: remove!
-;[honeysql-postgres.format :as phformat]
-;[honeysql-postgres.helpers :as phsql]
-
-
-;(-> (phsql/create-table :films)
-;    (phsql/with-columns [[:code (hsql/call :char 5) (hsql/call :constraint :firstkey) (hsql/call :primary-key)]
-;                         [:title (hsql/call :varchar 40) (hsql/call :not nil)]
-;                         [:did :integer (hsql/call :not nil)]
-;                         [:date_prod :date]
-;                         [:kind (hsql/call :varchar 10)]])
-;    hsql/format)))
-;    (hsql/raw :serial)))
 
 
 ; TODO: remove!
@@ -298,15 +294,14 @@
                          :opts {:type :jsonb}}}]]
     ;(try+
     ;  (->> model
-    ;    ;(s/valid? ::models/model)
-    ;    (spec-util/conform ::models/->migration)
+    ;    (spec-util/conform ::action/->migration)
     ;    (spec-util/conform ::sql/->sql)
     ;    ;(db-util/fmt))
     ;    (db-util/exec! db))
     ;  (catch [:type ::s/invalid] e
     ;    (:data e)))))
 
-    (->> {:alter-table :feed}
+    (->> {:alter-table :feed
           ;:alter-column [:name :type [:varchar 10]]}
 
           ;:alter-column [:name :set [:not nil]]}
@@ -320,5 +315,10 @@
 
           ;:add-index [:primary-key :name]
           ;:drop-constraint (keyword (str/join #"-" [(name :feed) "pkey"]))}
+
+           ;:add-index [:constraint :feed-account-fkey [:foreign-key :id] [:references :account :id]]
+           ;:add-index [[:constraint :feed-account-fkey] [:foreign-key :id] [:references :account :id]]
+           :add-constraint [:feed-account-fkey [:foreign-key :id] [:references :account :id]]}
+         ;ADD CONSTRAINT fk_orders_customers FOREIGN KEY (customer_id) REFERENCES customers (id);
         ;(db-util/fmt))))
          (db-util/exec! db))))

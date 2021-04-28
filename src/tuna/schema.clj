@@ -1,8 +1,10 @@
 (ns tuna.schema
   "Module for generating db schema from migrations."
   (:require [tuna.util.file :as file-util]
+            [tuna.actions :as actions]
             [tuna.models :as models]
-            [tuna.util.map :as map-util]))
+            [tuna.util.map :as map-util]
+            [tuna.util.spec :as spec-util]))
 
 
 (defn- load-migrations-from-files
@@ -16,18 +18,18 @@
     (:action action)))
 
 
-(defmethod apply-action-to-schema models/CREATE-TABLE-ACTION
+(defmethod apply-action-to-schema actions/CREATE-TABLE-ACTION
   [schema action]
   (assoc schema (:name action) (select-keys action [:fields])))
 
 
-(defmethod apply-action-to-schema models/ADD-COLUMN-ACTION
+(defmethod apply-action-to-schema actions/ADD-COLUMN-ACTION
   [schema action]
   (assoc-in schema [(:table-name action) :fields (:name action)]
     (:options action)))
 
 
-(defmethod apply-action-to-schema models/ALTER-COLUMN-ACTION
+(defmethod apply-action-to-schema actions/ALTER-COLUMN-ACTION
   [schema action]
   (let [table-name (:table-name action)
         field-name (:name action)]
@@ -36,12 +38,12 @@
       (map-util/dissoc-in [table-name :fields field-name] (:drop action)))))
 
 
-(defmethod apply-action-to-schema models/DROP-COLUMN-ACTION
+(defmethod apply-action-to-schema actions/DROP-COLUMN-ACTION
   [schema action]
   (map-util/dissoc-in schema [(:table-name action) :fields] [(:name action)]))
 
 
-(defmethod apply-action-to-schema models/DROP-TABLE-ACTION
+(defmethod apply-action-to-schema actions/DROP-TABLE-ACTION
   [schema action]
   (dissoc schema (:name action)))
 
@@ -52,7 +54,9 @@
   ; TODO: add validation of migrations with spec!
   (let [actions (-> (load-migrations-from-files migrations-files)
                   (flatten))]
-    (reduce apply-action-to-schema {} actions)))
+    (->> actions
+      (reduce apply-action-to-schema {})
+      (spec-util/conform ::models/models))))
 
 
 ; TODO: remove!
@@ -69,4 +73,4 @@
 ;    (for [model alterations
 ;          :let [model-name (key model)]]
 ;     (when-not (contains? old model-name)
-;      [(s/conform ::models/->migration model)]))))
+;      [(s/conform ::actions/->migration model)]))))

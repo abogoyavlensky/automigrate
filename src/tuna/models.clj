@@ -1,6 +1,7 @@
 (ns tuna.models
   "Module for for transforming models to migrations."
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [slingshot.slingshot :refer [throw+]]))
 
 
 ; Specs
@@ -42,9 +43,29 @@
     (s/conformer tagged->value)))
 
 
+(def type-groups
+  "Type groups for definition of type's relations.
+
+  Used for foreign-key field type validation."
+  {:int #{:integer :serial :bigint :smallint}
+   :char #{:varchar :text :uuid}})
+
+
+(defn check-type-group
+  [t]
+  (some->> type-groups
+    (filter #(contains? (val %) t))
+    (first)
+    (key)))
+
+
 (s/def :tuna.models.field/null boolean?)
 (s/def :tuna.models.field/primary-key true?)
 (s/def :tuna.models.field/unique true?)
+
+
+(s/def :tuna.models.field/foreign-key
+  (s/coll-of keyword? :count 2))
 
 
 (s/def :tuna.models.field/default
@@ -67,7 +88,8 @@
     :opt-un [:tuna.models.field/null
              :tuna.models.field/primary-key
              :tuna.models.field/unique
-             :tuna.models.field/default]))
+             :tuna.models.field/default
+             :tuna.models.field/foreign-key]))
 
 
 (s/def ::field
@@ -80,88 +102,71 @@
 (s/def ::fields
   (s/map-of keyword? ::field))
 
-; DB Actions
-(def CREATE-TABLE-ACTION :create-table)
-(def DROP-TABLE-ACTION :drop-table)
-(def ADD-COLUMN-ACTION :add-column)
-(def ALTER-COLUMN-ACTION :alter-column)
-(def DROP-COLUMN-ACTION :drop-column)
 
-
-(s/def ::action #{CREATE-TABLE-ACTION
-                  DROP-TABLE-ACTION
-                  ADD-COLUMN-ACTION
-                  ALTER-COLUMN-ACTION
-                  DROP-COLUMN-ACTION})
-
-
-(s/def ::name keyword?)
-
-
-(defmulti action :action)
-
-
-(defmethod action CREATE-TABLE-ACTION
-  [_]
+(s/def ::model
   (s/keys
-    :req-un [::action
-             ::name
-             ::fields]))
+    :req-un [::fields]))
 
 
-(s/def ::options
-  ::field)
+(defn- check-referenced-model-exists?
+  "Check that referenced model exists."
+  [models fk-model-name]
+  (when-not (contains? models fk-model-name)
+    (throw+ {:type ::missing-referenced-model
+             :data {:referenced-model fk-model-name}
+             :message (format "Referenced model %s is missing" fk-model-name)})))
 
 
-(s/def ::table-name keyword?)
+(defn- check-referenced-field-exists?
+  "Check that referenced field exists in referenced model."
+  [fk-field-options fk-model-name fk-field-name]
+  (when-not (some? fk-field-options)
+    (throw+ {:type ::missing-referenced-field
+             :data {:referenced-model fk-model-name
+                    :referenced-field fk-field-name}
+             :message (format "Referenced field %s of model %s is missing"
+                        fk-field-name fk-model-name)})))
 
 
-(defmethod action ADD-COLUMN-ACTION
-  [_]
-  (s/keys
-    :req-un [::action
-             ::name
-             ::table-name
-             ::options]))
+(defn- check-fields-type-valid?
+  "Check that referenced and origin fields has same types.
+
+  Also check that field should has `:unique` option enabled and
+  it has the same type as origin field."
+  [field-name field-options fk-field-options fk-model-name fk-field-name]
+  (when-not (true? (:unique fk-field-options))
+    (throw+ {:type ::referenced-field-is-not-unique
+             :data {:referenced-model fk-model-name
+                    :referenced-field fk-field-name}
+             :message (format "Referenced field %s of model %s is not unique"
+                        fk-field-name fk-model-name)}))
+  (let [field-type-group (check-type-group (:type field-options))
+        fk-field-type-group (check-type-group (:type fk-field-options))]
+    (when-not (and (some? field-type-group)
+                (some? fk-field-type-group)
+                (= field-type-group fk-field-type-group))
+      (throw+ {:type ::origin-and-referenced-fields-have-different-types
+               :data {:origin-field field-name
+                      :referenced-field fk-field-name}
+               :message (format "Referenced field %s and origin field %s have different types"
+                          fk-field-name
+                          field-name)}))))
 
 
-(s/def ::changes
-  (s/nilable
-    (s/merge
-      ::options-common
-      (s/keys
-        :opt-un [:tuna.models.field/type]))))
+(defn- validate-foreign-key
+  [models]
+  (doseq [[_model-name model-value] models]
+    (doseq [[field-name field-options] (:fields model-value)
+            :let [[fk-model-name fk-field-name] (:foreign-key field-options)
+                  fk-field-options (get-in models [fk-model-name :fields fk-field-name])]]
+      (when (and (some? fk-model-name) (some? fk-field-name))
+        (check-referenced-model-exists? models fk-model-name)
+        (check-referenced-field-exists? fk-field-options fk-model-name fk-field-name)
+        (check-fields-type-valid? field-name field-options fk-field-options fk-model-name fk-field-name))))
+  models)
 
 
-(s/def ::drop
-  (s/coll-of #{:primary-key :unique :default :null}
-    :kind set?
-    :distinct true))
-
-
-(defmethod action ALTER-COLUMN-ACTION
-  [_]
-  (s/keys
-    :req-un [::action
-             ::name
-             ::table-name
-             ::changes
-             ::drop]))
-
-
-(defmethod action DROP-COLUMN-ACTION
-  [_]
-  (s/keys
-    :req-un [::action
-             ::name
-             ::table-name]))
-
-
-(defmethod action DROP-TABLE-ACTION
-  [_]
-  (s/keys
-    :req-un [::action
-             ::name]))
-
-
-(s/def ::->migration (s/multi-spec action :action))
+(s/def ::models
+  (s/and
+    (s/map-of keyword? ::model)
+    validate-foreign-key))

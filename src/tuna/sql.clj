@@ -2,11 +2,12 @@
   "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
-            [tuna.models :as models]))
+            [tuna.actions :as actions]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
 (def ^:private PRIVATE-KEY-INDEX-POSTFIX "pkey")
+(def ^:private FOREIGN-KEY-INDEX-POSTFIX "fkey")
 
 
 (s/def :tuna.sql.option->sql/type
@@ -49,13 +50,22 @@
         [:default value]))))
 
 
+(s/def :tuna.sql.option->sql/foreign-key
+  (s/and
+    :tuna.models.field/foreign-key
+    (s/conformer
+      (fn [value]
+        (cons :references value)))))
+
+
 (s/def ::options->sql
   (s/keys
     :req-un [:tuna.sql.option->sql/type]
     :opt-un [:tuna.sql.option->sql/null
              :tuna.sql.option->sql/primary-key
              :tuna.sql.option->sql/unique
-             :tuna.sql.option->sql/default]))
+             :tuna.sql.option->sql/default
+             :tuna.sql.option->sql/foreign-key]))
 
 
 (s/def ::fields
@@ -83,12 +93,12 @@
        :with-columns (fields->columns (:fields value))})))
 
 
-(defmethod action->sql models/CREATE-TABLE-ACTION
+(defmethod action->sql actions/CREATE-TABLE-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name
+      :req-un [::actions/action
+               ::actions/name
                ::fields])
     ::create-table->sql))
 
@@ -104,13 +114,13 @@
        :add-column (first (fields->columns [[(:name value) (:options value)]]))})))
 
 
-(defmethod action->sql models/ADD-COLUMN-ACTION
+(defmethod action->sql actions/ADD-COLUMN-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name
-               ::models/table-name
+      :req-un [::actions/action
+               ::actions/name
+               ::actions/table-name
                ::options])
     ::add-column->sql))
 
@@ -122,7 +132,8 @@
                :tuna.sql.option->sql/null
                :tuna.sql.option->sql/primary-key
                :tuna.sql.option->sql/unique
-               :tuna.sql.option->sql/default])))
+               :tuna.sql.option->sql/default
+               :tuna.sql.option->sql/foreign-key])))
 
 
 (defn- unique-index-name
@@ -139,18 +150,29 @@
     (keyword)))
 
 
+(defn- foreign-key-index-name
+  [table-name field-name]
+  (->> [(name table-name) (name field-name) FOREIGN-KEY-INDEX-POSTFIX]
+    (str/join #"-")
+    (keyword)))
+
+
 (s/def ::alter-column->sql
   (s/conformer
     (fn [action]
       (let [changes (for [[option value] (:changes action)
-                          :let [field-name (:name action)]]
+                          :let [field-name (:name action)
+                                table-name (:table-name action)]]
                       (case option
                         :type {:alter-column [field-name :type value]}
                         :null (let [operation (if (nil? value) :drop :set)]
                                 {:alter-column [field-name operation [:not nil]]})
                         :default {:alter-column [field-name :set value]}
                         :unique {:add-index [:unique nil field-name]}
-                        :primary-key {:add-index [:primary-key field-name]}))
+                        :primary-key {:add-index [:primary-key field-name]}
+                        :foreign-key {:add-constraint [(foreign-key-index-name table-name field-name)
+                                                       [:foreign-key field-name]
+                                                       value]}))
             dropped (for [option (:drop action)
                           :let [field-name (:name action)
                                 table-name (:table-name action)]]
@@ -158,20 +180,21 @@
                         :null {:alter-column [field-name :set [:not nil]]}
                         :default {:alter-column [field-name :drop :default]}
                         :unique {:drop-constraint (unique-index-name table-name field-name)}
-                        :primary-key {:drop-constraint (private-key-index-name table-name)}))
+                        :primary-key {:drop-constraint (private-key-index-name table-name)}
+                        :foreign-key {:drop-constraint (foreign-key-index-name table-name field-name)}))
             all-actions (concat changes dropped)]
         {:alter-table (cons (:table-name action) all-actions)}))))
 
 
-(defmethod action->sql models/ALTER-COLUMN-ACTION
+(defmethod action->sql actions/ALTER-COLUMN-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name
-               ::models/table-name
+      :req-un [::actions/action
+               ::actions/name
+               ::actions/table-name
                ::changes
-               ::models/drop])
+               ::actions/drop])
     ::alter-column->sql))
 
 
@@ -182,13 +205,13 @@
        :drop-column (:name value)})))
 
 
-(defmethod action->sql models/DROP-COLUMN-ACTION
+(defmethod action->sql actions/DROP-COLUMN-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name
-               ::models/table-name])
+      :req-un [::actions/action
+               ::actions/name
+               ::actions/table-name])
     ::drop-column->sql))
 
 
@@ -198,12 +221,12 @@
       {:drop-table [:if-exists (:name value)]})))
 
 
-(defmethod action->sql models/DROP-TABLE-ACTION
+(defmethod action->sql actions/DROP-TABLE-ACTION
   [_]
   (s/and
     (s/keys
-      :req-un [::models/action
-               ::models/name])
+      :req-un [::actions/action
+               ::actions/name])
     ::drop-table->sql))
 
 

@@ -69,10 +69,10 @@ lint-init:
 	@clj-kondo --config .clj-kondo/config-ci.edn --lint $(shell clj -Spath)
 
 
-.PHONY: check  # Check linting and formatting locally
+.PHONY: check  # Check linting and apply formatting locally
 check:
+	@$(MAKE) fmt
 	@$(MAKE) lint
-	@$(MAKE) fmt-check
 
 
 .PHONY: test  # Run tests with coverage

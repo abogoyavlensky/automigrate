@@ -135,3 +135,30 @@
                                                                    :null false}
                                                               :name {:type [:varchar 256]}}}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
+
+
+(deftest test-make-migrations*-foreign-key-restore-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly
+                      '(({:action :create-table
+                          :name :feed
+                          :fields {:id {:type :serial
+                                        :null false}
+                                   :account {:type :integer
+                                             :foreign-key [:account :id]}}})
+                        ({:action :create-table
+                          :name :account
+                          :fields {:id {:type :serial
+                                        :unique true}
+                                   :name {:type [:varchar 256]}}})))]
+                   [file-util/read-edn (constantly {:feed
+                                                    {:fields {:id {:type :serial
+                                                                   :null false}
+                                                              :account {:type :integer
+                                                                        :foreign-key [:account :id]}}}
+                                                    :account
+                                                    {:fields {:id {:type :serial
+                                                                   :unique true}
+                                                              :name {:type [:varchar 256]}}}})]]
+    (is (not (seq (#'migrations/make-migrations* [] ""))))))
