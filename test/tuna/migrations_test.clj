@@ -226,6 +226,11 @@
                                                    :table-name :feed
                                                    :changes nil
                                                    :drop #{:foreign-key}
+                                                   :action :alter-column}
+                                                  {:name :account
+                                                   :table-name :feed
+                                                   :changes {:foreign-key [:account :id]}
+                                                   :drop #{}
                                                    :action :alter-column}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 0})
@@ -239,7 +244,8 @@
             "ALTER TABLE feed DROP COLUMN url"
             "DROP TABLE IF EXISTS feed"
             "CREATE TABLE feed (account SERIAL REFERENCES ACCOUNT(ID))"
-            "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"]
+            "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
+            "ALTER TABLE feed ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) REFERENCES ACCOUNT(ID)"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args
