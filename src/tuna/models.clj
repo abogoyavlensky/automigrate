@@ -89,7 +89,7 @@
 
 (s/def ::model
   (s/keys
-    :req-un {:fields ::fields}))
+    :req-un [::fields]))
 
 
 (defn- check-referenced-model-exists?
