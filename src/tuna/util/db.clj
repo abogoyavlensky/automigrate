@@ -25,7 +25,7 @@
 
 
 (honey/register-clause! :add-constraint
-                        ; TODO: update with more precise formatter
+  ; TODO: update with more precise formatter
   (fn [k spec]
     (#'honey/format-add-item k spec))
   :drop-constraint)
