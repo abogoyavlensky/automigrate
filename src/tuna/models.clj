@@ -43,6 +43,22 @@
     (s/conformer tagged->value)))
 
 
+(def type-groups
+  "Type groups for definition of type's relations.
+
+  Used for foreign-key field type validation."
+  {:int #{:integer :serial :bigint :smallint}
+   :char #{:varchar :text :uuid}})
+
+
+(defn check-type-group
+  [t]
+  (some->> type-groups
+    (filter #(contains? (val %) t))
+    (first)
+    (key)))
+
+
 (s/def :tuna.models.field/null boolean?)
 (s/def :tuna.models.field/primary-key true?)
 (s/def :tuna.models.field/unique true?)
@@ -98,38 +114,55 @@
   (when-not (contains? models fk-model-name)
     (throw+ {:type ::missing-referenced-model
              :data {:referenced-model fk-model-name}
-             :message (format "Referenced model %s doesn't exist" fk-model-name)})))
+             :message (format "Referenced model %s is missing" fk-model-name)})))
 
 
 (defn- check-referenced-field-exists?
-  "Check that referenced field exists in referenced model.
+  "Check that referenced field exists in referenced model."
+  [fk-field-options fk-model-name fk-field-name]
+  (when-not (some? fk-field-options)
+    (throw+ {:type ::missing-referenced-field
+             :data {:referenced-model fk-model-name
+                    :referenced-field fk-field-name}
+             :message (format "Referenced field %s of model %s is missing"
+                        fk-field-name fk-model-name)})))
+
+
+(defn- check-fields-type-valid?
+  "Check that referenced and origin fields has same types.
 
   Also check that field should has `:unique` option enabled and
   it has the same type as origin field."
-  [models fk-model-name fk-field-name]
-  (let [fk-field-options (get-in models [fk-model-name :fields fk-field-name])]
-    (when-not (some? fk-field-options)
-      (throw+ {:type ::missing-referenced-field
-               :data {:referenced-model fk-model-name
+  [field-name field-options fk-field-options fk-model-name fk-field-name]
+  (when-not (true? (:unique fk-field-options))
+    (throw+ {:type ::referenced-field-is-not-unique
+             :data {:referenced-model fk-model-name
+                    :referenced-field fk-field-name}
+             :message (format "Referenced field %s of model %s is not unique"
+                        fk-field-name fk-model-name)}))
+  (let [field-type-group (check-type-group (:type field-options))
+        fk-field-type-group (check-type-group (:type fk-field-options))]
+    (when-not (and (some? field-type-group)
+                (some? fk-field-type-group)
+                (= field-type-group fk-field-type-group))
+      (throw+ {:type ::origin-and-referenced-fields-have-different-types
+               :data {:origin-field field-name
                       :referenced-field fk-field-name}
-               :message (format "Referenced field %s of model %s does not exists"
-                          fk-field-name fk-model-name)}))
-    (when-not (true? (:unique fk-field-options))
-      (throw+ {:type ::referenced-field-is-not-unique
-               :data {:referenced-model fk-model-name
-                      :referenced-field fk-field-name}
-               :message (format "Referenced field %s of model %s is not unique"
-                          fk-field-name fk-model-name)}))))
+               :message (format "Referenced field %s and origin field %s have different types"
+                          fk-field-name
+                          field-name)}))))
 
 
 (defn- validate-foreign-key
   [models]
   (doseq [[_model-name model-value] models]
-    (doseq [[_field-name field-value] (:fields model-value)
-            :let [[fk-model-name fk-field-name] (:foreign-key field-value)]]
+    (doseq [[field-name field-options] (:fields model-value)
+            :let [[fk-model-name fk-field-name] (:foreign-key field-options)
+                  fk-field-options (get-in models [fk-model-name :fields fk-field-name])]]
       (when (and (some? fk-model-name) (some? fk-field-name))
         (check-referenced-model-exists? models fk-model-name)
-        (check-referenced-field-exists? models fk-model-name fk-field-name))))
+        (check-referenced-field-exists? fk-field-options fk-model-name fk-field-name)
+        (check-fields-type-valid? field-name field-options fk-field-options fk-model-name fk-field-name))))
   models)
 
 
