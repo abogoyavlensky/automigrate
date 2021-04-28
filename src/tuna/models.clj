@@ -92,12 +92,34 @@
     :req-un {:fields ::fields}))
 
 
-(defn- check-fk-model-exists?
+(defn- check-referenced-model-exists?
+  "Check that referenced model exists."
   [models fk-model-name]
   (when-not (contains? models fk-model-name)
     (throw+ {:type ::missing-referenced-model
              :data {:referenced-model fk-model-name}
              :message (format "Referenced model %s doesn't exist" fk-model-name)})))
+
+
+(defn- check-referenced-field-exists?
+  "Check that referenced field exists in referenced model.
+
+  Also check that field should has `:unique` option enabled and
+  it has the same type as origin field."
+  [models fk-model-name fk-field-name]
+  (let [fk-field-options (get-in models [fk-model-name :fields fk-field-name])]
+    (when-not (some? fk-field-options)
+      (throw+ {:type ::missing-referenced-field
+               :data {:referenced-model fk-model-name
+                      :referenced-field fk-field-name}
+               :message (format "Referenced field %s of model %s does not exists"
+                          fk-field-name fk-model-name)}))
+    (when-not (true? (:unique fk-field-options))
+      (throw+ {:type ::referenced-field-is-not-unique
+               :data {:referenced-model fk-model-name
+                      :referenced-field fk-field-name}
+               :message (format "Referenced field %s of model %s is not unique"
+                          fk-field-name fk-model-name)}))))
 
 
 (defn- validate-foreign-key
@@ -106,7 +128,8 @@
     (doseq [[_field-name field-value] (:fields model-value)
             :let [[fk-model-name fk-field-name] (:foreign-key field-value)]]
       (when (and (some? fk-model-name) (some? fk-field-name))
-        (check-fk-model-exists? models fk-model-name))))
+        (check-referenced-model-exists? models fk-model-name)
+        (check-referenced-field-exists? models fk-model-name fk-field-name))))
   models)
 
 
