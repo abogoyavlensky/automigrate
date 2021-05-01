@@ -224,6 +224,12 @@
     (set)))
 
 
+(defn- get-migration-name
+  "Return migration name without file format."
+  [file-name]
+  (first (str/split file-name #"\.")))
+
+
 (defn migrate
   "Run migration on a db."
   [{:keys [migrations-dir db-uri]}]
@@ -233,7 +239,7 @@
         migrated (already-migrated db)]
     ; TODO: print if nothing to migrate!
     (doseq [file-name migration-names
-            :let [migration-name (first (str/split file-name #"\."))]]
+            :let [migration-name (get-migration-name file-name)]]
       (when-not (contains? migrated migration-name)
         (jdbc/with-db-transaction [tx db]
           (doseq [action (read-migration file-name migrations-dir)]
@@ -241,6 +247,21 @@
               (db-util/exec! tx)))
           (save-migration db migration-name)
           (println "Successfully migrated: " migration-name))))))
+
+
+(defn migration-list
+  "Print migration list with status."
+  [{:keys [migrations-dir db-uri]}]
+  ; TODO: reduce duplication with `migrate` fn!
+  (let [migration-names (migrations-list migrations-dir)
+        db (db-util/db-conn db-uri)
+        _ (db-util/create-migrations-table db)
+        migrated (already-migrated db)]
+    (doseq [file-name migration-names
+            :let [migration-name (get-migration-name file-name)]]
+      (if (contains? migrated migration-name)
+        (file-util/safe-println [(str "[✓] " file-name)])
+        (file-util/safe-println [(str "[ ] " file-name)])))))
 
 
 (comment
@@ -252,12 +273,12 @@
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
       (try+
-        (->> (read-models model-file))
-        ;(->> (make-migrations* migrations-files model-file)
+        ;(->> (read-models model-file))
+        (->> (make-migrations* migrations-files model-file))
         ;     (flatten))
-             ;(map #(spec-util/conform ::sql/->sql %)))
-             ;(map db-util/fmt))
-             ;(map #(db-util/exec! db %)))
+            ;(map #(spec-util/conform ::sql/->sql %)))
+            ;(map db-util/fmt))
+            ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (:data e)))))
 
@@ -271,10 +292,10 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    (make-migrations config)))
+    ;(make-migrations config)))
     ;(migrate config)))
     ;(explain config)))
-
+    (migration-list config)))
 
 
 ; TODO: remove!

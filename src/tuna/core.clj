@@ -30,5 +30,6 @@
   (let [action-fn (case action
                     :make-migrations migrations/make-migrations
                     :migrate migrations/migrate
-                    :explain migrations/explain)]
+                    :explain migrations/explain
+                    :migration-list migrations/migration-list)]
     (action-fn (dissoc args :action))))
