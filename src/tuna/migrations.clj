@@ -96,21 +96,20 @@
           :let [options-to-add (get fields-diff field-name)
                 options-to-drop (get fields-removals field-name)
                 new-field?* (new-field? old-model fields-diff field-name)
-                drop-field?* (drop-field? fields-removals field-name)
-                action-params (cond
-                                new-field?* {:action actions/ADD-COLUMN-ACTION
-                                             :name field-name
-                                             :table-name model-name
-                                             :options options-to-add}
-                                drop-field?* {:action actions/DROP-COLUMN-ACTION
-                                              :name field-name
-                                              :table-name model-name}
-                                :else {:action actions/ALTER-COLUMN-ACTION
-                                       :name field-name
-                                       :table-name model-name
-                                       :changes options-to-add
-                                       :drop (options-dropped options-to-drop)})]]
-      (spec-util/conform ::actions/->migration action-params))))
+                drop-field?* (drop-field? fields-removals field-name)]]
+      (cond
+        new-field?* {:action actions/ADD-COLUMN-ACTION
+                     :name field-name
+                     :table-name model-name
+                     :options options-to-add}
+        drop-field?* {:action actions/DROP-COLUMN-ACTION
+                      :name field-name
+                      :table-name model-name}
+        :else {:action actions/ALTER-COLUMN-ACTION
+               :name field-name
+               :table-name model-name
+               :changes options-to-add
+               :drop (options-dropped options-to-drop)}))))
 
 
 (defn- new-model?
@@ -138,23 +137,23 @@
         new-schema (read-models model-file)
         [alterations removals] (differ/diff old-schema new-schema)
         changed-models (-> (set (keys alterations))
-                         (set/union (set (keys removals))))]
-    (for [model-name changed-models
-          :let [old-model (get old-schema model-name)
-                model-diff (get alterations model-name)
-                model-removals (get removals model-name)
-                new-model?* (new-model? alterations old-schema model-name)
-                drop-model?* (drop-model? removals model-name)
-                action-params (cond
-                                new-model?* {:action actions/CREATE-TABLE-ACTION
-                                             :name model-name
-                                             :fields (:fields model-diff)}
-                                drop-model?* {:action actions/DROP-TABLE-ACTION
-                                              :name model-name}
-                                :else nil)]]
-      (if (some? action-params)
-        (spec-util/conform ::actions/->migration action-params)
-        (parse-fields-diff model-diff model-removals old-model model-name)))))
+                         (set/union (set (keys removals))))
+        actions (for [model-name changed-models
+                      :let [old-model (get old-schema model-name)
+                            model-diff (get alterations model-name)
+                            model-removals (get removals model-name)
+                            new-model?* (new-model? alterations old-schema model-name)
+                            drop-model?* (drop-model? removals model-name)]]
+                  (cond
+                    new-model?* {:action actions/CREATE-TABLE-ACTION
+                                 :name model-name
+                                 :fields (:fields model-diff)}
+                    drop-model?* {:action actions/DROP-TABLE-ACTION
+                                  :name model-name}
+                    :else (parse-fields-diff model-diff model-removals old-model model-name)))]
+    (->> actions
+      (flatten)
+      (map #(spec-util/conform ::actions/->migration %)))))
 
 
 (defn make-migrations
@@ -293,9 +292,9 @@
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(migrate config)))
+    (migrate config)))
     ;(explain config)))
-    (migration-list config)))
+    ;(migration-list config)))
 
 
 ; TODO: remove!
