@@ -11,6 +11,7 @@
             #_{:clj-kondo/ignore [:unused-referred-var]}
             [slingshot.slingshot :refer [throw+ try+]]
             [differ.core :as differ]
+            [weavejester.dependency :as dep]
             [tuna.actions :as actions]
             [tuna.models :as models]
             [tuna.sql :as sql]
@@ -21,6 +22,7 @@
 
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
+(def ^:private DEFAULT-ROOT-NODE :root)
 
 
 (defn- read-migration
@@ -131,6 +133,52 @@
     (spec-util/conform ::models/models)))
 
 
+(defn- action-dependencies
+  "Return dependencies as vector of vectors for an action or nil.
+
+  return: [[:model-name :field-name] ...]"
+  [action]
+  (->> (condp contains? (:action action)
+         #{actions/ADD-COLUMN-ACTION} [(get-in action [:options :foreign-key])]
+         #{actions/ALTER-COLUMN-ACTION} [(get-in action [:changes :foreign-key])]
+         #{actions/CREATE-TABLE-ACTION} (mapv :foreign-key (vals (:fields action)))
+         [])
+    (remove nil?)))
+
+
+(defn- action-depends?
+  [deps action]
+  (let [model-names (set (map first deps))]
+    (condp contains? (:action action)
+      #{actions/CREATE-TABLE-ACTION} (contains? model-names (:name action))
+      #{actions/ADD-COLUMN-ACTION
+        actions/ALTER-COLUMN-ACTION} (some
+                                       #(and (= (:table-name action) (first %))
+                                          (= (:name action) (last %)))
+                                       deps)
+      false)))
+
+
+(defn- assoc-action-deps
+  "Assoc dependencies to graph by actions."
+  [actions graph next-action]
+  (let [deps (action-dependencies next-action)
+        parent-actions (filter (partial action-depends? deps) actions)]
+    (as-> graph g
+          (dep/depend g next-action DEFAULT-ROOT-NODE)
+          (reduce #(dep/depend %1 next-action %2) g parent-actions))))
+
+
+(defn- sort-actions
+  "Apply order for migration's actions by foreign key between models."
+  [actions]
+  (->> actions
+    (reduce (partial assoc-action-deps actions) (dep/graph))
+    (dep/topo-sort)
+    ; drop first default root node `:root`
+    (drop 1)))
+
+
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
@@ -153,6 +201,7 @@
                     :else (parse-fields-diff model-diff model-removals old-model model-name)))]
     (->> actions
       (flatten)
+      (sort-actions)
       (map #(spec-util/conform ::actions/->migration %)))))
 
 
@@ -292,9 +341,9 @@
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    (migrate config)))
+    ;(migrate config)))
     ;(explain config)))
-    ;(migration-list config)))
+    (migration-list config)))
 
 
 ; TODO: remove!

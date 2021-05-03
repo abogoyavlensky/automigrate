@@ -73,14 +73,14 @@
              :model-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
-            :name :name
-            :table-name :feed
-            :options {:type [:varchar 100] :null true}}
-           {:action :add-column
             :name :created_at
             :table-name :feed
-            :options {:type :timestamp, :default [:now]}})
-        (-> (str config/MIGRATIONS-DIR "0001_add_column_name.edn")
+            :options {:type :timestamp, :default [:now]}}
+           {:action :add-column
+            :name :name
+            :table-name :feed
+            :options {:type [:varchar 100] :null true}})
+        (-> (str config/MIGRATIONS-DIR "0001_add_column_created_at.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -88,7 +88,7 @@
   (is (= '({:id 1
             :name "0000_create_table_feed"}
            {:id 2
-            :name "0001_add_column_name"})
+            :name "0001_add_column_created_at"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/query config/DATABASE-CONN)
@@ -103,16 +103,16 @@
              :model-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :alter-column
-            :changes {:type :text}
-            :drop #{:null}
-            :name :name
-            :table-name :feed}
-           {:action :alter-column
             :changes {:primary-key true}
             :drop #{}
             :name :id
+            :table-name :feed}
+           {:action :alter-column
+            :changes {:type :text}
+            :drop #{:null}
+            :name :name
             :table-name :feed})
-        (-> (str config/MIGRATIONS-DIR "0001_alter_column_name.edn")
+        (-> (str config/MIGRATIONS-DIR "0001_alter_column_id.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -120,7 +120,7 @@
   (is (= '({:id 1
             :name "0000_create_table_feed"}
            {:id 2
-            :name "0001_alter_column_name"})
+            :name "0001_alter_column_id"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/query config/DATABASE-CONN)
@@ -250,3 +250,37 @@
             (last)
             :args
             (first))))))
+
+
+(deftest test-sort-actions-ok
+  (let [actions '({:action :create-table,
+                   :name :foo1,
+                   :fields {:id {:type :serial, :unique true}, :account {:type :integer, :foreign-key [:account :id]}}}
+                  {:action :create-table,
+                   :name :bar1,
+                   :fields {:id {:type :serial, :unique true},
+                            :foo1 {:type :integer, :foreign-key [:foo1 :id]},
+                            :account {:type :integer, :foreign-key [:account :id]}}}
+                  {:action :drop-column, :name :created_at, :table-name :feed}
+                  {:action :add-column, :name :foo1, :table-name :account, :options {:type :integer, :foreign-key [:foo1 :id]}}
+                  {:action :add-column, :name :slug, :table-name :account, :options {:type :text, :null false, :unique true}}
+                  {:action :add-column, :name :bar1, :table-name :feed, :options {:type :integer, :foreign-key [:account :id]}}
+                  {:action :create-table,
+                   :name :articles,
+                   :fields {:id {:type :serial, :unique true}, :bar1 {:type :integer, :foreign-key [:bar1 :id]}}})]
+    (is (= '({:action :create-table,
+              :name :foo1,
+              :fields {:id {:type :serial, :unique true}, :account {:type :integer, :foreign-key [:account :id]}}}
+             {:action :create-table,
+              :name :bar1,
+              :fields {:id {:type :serial, :unique true},
+                       :foo1 {:type :integer, :foreign-key [:foo1 :id]},
+                       :account {:type :integer, :foreign-key [:account :id]}}}
+             {:action :drop-column, :name :created_at, :table-name :feed}
+             {:action :add-column, :name :foo1, :table-name :account, :options {:type :integer, :foreign-key [:foo1 :id]}}
+             {:action :add-column, :name :slug, :table-name :account, :options {:type :text, :null false, :unique true}}
+             {:action :add-column, :name :bar1, :table-name :feed, :options {:type :integer, :foreign-key [:account :id]}}
+             {:action :create-table,
+              :name :articles,
+              :fields {:id {:type :serial, :unique true}, :bar1 {:type :integer, :foreign-key [:bar1 :id]}}})
+          (#'migrations/sort-actions actions)))))
