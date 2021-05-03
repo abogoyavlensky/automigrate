@@ -7,7 +7,8 @@
         org.clojure/java.jdbc {:mvn/version "0.7.11"}
 
         slingshot/slingshot {:mvn/version "0.12.2"}
-        differ/differ {:mvn/version "0.3.3"}}
+        differ/differ {:mvn/version "0.3.3"}
+        weavejester/dependency {:mvn/version "0.2.1"}}
 
  :aliases
  {:dev {:extra-paths ["dev"]

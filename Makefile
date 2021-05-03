@@ -111,17 +111,23 @@ stop:
 
 .PHONY: make-migrations  # Make testing migrations
 migrations:
-	@$(INFO) "Make testing migrations..."
+	@$(INFO) "Make migrations..."
 	@clojure -A:dev -X:migrations :action :make-migrations
 
 
 .PHONY: migrate  # Migrate testing migrations
 migrate:
-	@$(INFO) "Migrate testing migrations..."
+	@$(INFO) "Migrate migrations..."
 	@clojure -A:dev -X:migrations :action :migrate
 
 
 .PHONY: explain  # Print SQL for particular migration
 explain:
-	@$(INFO) "Explain testing migration..."
+	@$(INFO) "Explain migration..."
 	@clojure -A:dev -X:migrations :action :explain :number $(GOALS)
+
+
+.PHONY: list  # Print migration's list
+list:
+	@$(INFO) "Migrations found..."
+	@clojure -A:dev -X:migrations :action :migration-list

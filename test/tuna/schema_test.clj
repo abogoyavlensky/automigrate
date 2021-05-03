@@ -19,14 +19,14 @@
                                                                      :null true}
                                                               :created_at {:type :timestamp
                                                                            :default [:now]}}}})]]
-    (is (= '(({:action :add-column,
-               :name :name,
-               :table-name :feed,
-               :options {:type [:varchar 100], :null true}}
-              {:action :add-column,
-               :name :created_at,
-               :table-name :feed,
-               :options {:type :timestamp, :default [:now]}}))
+    (is (= '({:action :add-column,
+              :name :created_at,
+              :table-name :feed,
+              :options {:type :timestamp, :default [:now]}}
+             {:action :add-column,
+              :name :name,
+              :table-name :feed,
+              :options {:type [:varchar 100], :null true}})
           (#'migrations/make-migrations* [] "")))))
 
 

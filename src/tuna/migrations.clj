@@ -11,6 +11,7 @@
             #_{:clj-kondo/ignore [:unused-referred-var]}
             [slingshot.slingshot :refer [throw+ try+]]
             [differ.core :as differ]
+            [weavejester.dependency :as dep]
             [tuna.actions :as actions]
             [tuna.models :as models]
             [tuna.sql :as sql]
@@ -21,6 +22,7 @@
 
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
+(def ^:private DEFAULT-ROOT-NODE :root)
 
 
 (defn- read-migration
@@ -96,21 +98,20 @@
           :let [options-to-add (get fields-diff field-name)
                 options-to-drop (get fields-removals field-name)
                 new-field?* (new-field? old-model fields-diff field-name)
-                drop-field?* (drop-field? fields-removals field-name)
-                action-params (cond
-                                new-field?* {:action actions/ADD-COLUMN-ACTION
-                                             :name field-name
-                                             :table-name model-name
-                                             :options options-to-add}
-                                drop-field?* {:action actions/DROP-COLUMN-ACTION
-                                              :name field-name
-                                              :table-name model-name}
-                                :else {:action actions/ALTER-COLUMN-ACTION
-                                       :name field-name
-                                       :table-name model-name
-                                       :changes options-to-add
-                                       :drop (options-dropped options-to-drop)})]]
-      (spec-util/conform ::actions/->migration action-params))))
+                drop-field?* (drop-field? fields-removals field-name)]]
+      (cond
+        new-field?* {:action actions/ADD-COLUMN-ACTION
+                     :name field-name
+                     :table-name model-name
+                     :options options-to-add}
+        drop-field?* {:action actions/DROP-COLUMN-ACTION
+                      :name field-name
+                      :table-name model-name}
+        :else {:action actions/ALTER-COLUMN-ACTION
+               :name field-name
+               :table-name model-name
+               :changes options-to-add
+               :drop (options-dropped options-to-drop)}))))
 
 
 (defn- new-model?
@@ -132,29 +133,76 @@
     (spec-util/conform ::models/models)))
 
 
+(defn- action-dependencies
+  "Return dependencies as vector of vectors for an action or nil.
+
+  return: [[:model-name :field-name] ...]"
+  [action]
+  (->> (condp contains? (:action action)
+         #{actions/ADD-COLUMN-ACTION} [(get-in action [:options :foreign-key])]
+         #{actions/ALTER-COLUMN-ACTION} [(get-in action [:changes :foreign-key])]
+         #{actions/CREATE-TABLE-ACTION} (mapv :foreign-key (vals (:fields action)))
+         [])
+    (remove nil?)))
+
+
+(defn- action-depends?
+  [deps action]
+  (let [model-names (set (map first deps))]
+    (condp contains? (:action action)
+      #{actions/CREATE-TABLE-ACTION} (contains? model-names (:name action))
+      #{actions/ADD-COLUMN-ACTION
+        actions/ALTER-COLUMN-ACTION} (some
+                                       #(and (= (:table-name action) (first %))
+                                          (= (:name action) (last %)))
+                                       deps)
+      false)))
+
+
+(defn- assoc-action-deps
+  "Assoc dependencies to graph by actions."
+  [actions graph next-action]
+  (let [deps (action-dependencies next-action)
+        parent-actions (filter (partial action-depends? deps) actions)]
+    (as-> graph g
+          (dep/depend g next-action DEFAULT-ROOT-NODE)
+          (reduce #(dep/depend %1 next-action %2) g parent-actions))))
+
+
+(defn- sort-actions
+  "Apply order for migration's actions by foreign key between models."
+  [actions]
+  (->> actions
+    (reduce (partial assoc-action-deps actions) (dep/graph))
+    (dep/topo-sort)
+    ; drop first default root node `:root`
+    (drop 1)))
+
+
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
         new-schema (read-models model-file)
         [alterations removals] (differ/diff old-schema new-schema)
         changed-models (-> (set (keys alterations))
-                         (set/union (set (keys removals))))]
-    (for [model-name changed-models
-          :let [old-model (get old-schema model-name)
-                model-diff (get alterations model-name)
-                model-removals (get removals model-name)
-                new-model?* (new-model? alterations old-schema model-name)
-                drop-model?* (drop-model? removals model-name)
-                action-params (cond
-                                new-model?* {:action actions/CREATE-TABLE-ACTION
-                                             :name model-name
-                                             :fields (:fields model-diff)}
-                                drop-model?* {:action actions/DROP-TABLE-ACTION
-                                              :name model-name}
-                                :else nil)]]
-      (if (some? action-params)
-        (spec-util/conform ::actions/->migration action-params)
-        (parse-fields-diff model-diff model-removals old-model model-name)))))
+                         (set/union (set (keys removals))))
+        actions (for [model-name changed-models
+                      :let [old-model (get old-schema model-name)
+                            model-diff (get alterations model-name)
+                            model-removals (get removals model-name)
+                            new-model?* (new-model? alterations old-schema model-name)
+                            drop-model?* (drop-model? removals model-name)]]
+                  (cond
+                    new-model?* {:action actions/CREATE-TABLE-ACTION
+                                 :name model-name
+                                 :fields (:fields model-diff)}
+                    drop-model?* {:action actions/DROP-TABLE-ACTION
+                                  :name model-name}
+                    :else (parse-fields-diff model-diff model-removals old-model model-name)))]
+    (->> actions
+      (flatten)
+      (sort-actions)
+      (map #(spec-util/conform ::actions/->migration %)))))
 
 
 (defn make-migrations
@@ -224,6 +272,12 @@
     (set)))
 
 
+(defn- get-migration-name
+  "Return migration name without file format."
+  [file-name]
+  (first (str/split file-name #"\.")))
+
+
 (defn migrate
   "Run migration on a db."
   [{:keys [migrations-dir db-uri]}]
@@ -233,7 +287,7 @@
         migrated (already-migrated db)]
     ; TODO: print if nothing to migrate!
     (doseq [file-name migration-names
-            :let [migration-name (first (str/split file-name #"\."))]]
+            :let [migration-name (get-migration-name file-name)]]
       (when-not (contains? migrated migration-name)
         (jdbc/with-db-transaction [tx db]
           (doseq [action (read-migration file-name migrations-dir)]
@@ -241,6 +295,21 @@
               (db-util/exec! tx)))
           (save-migration db migration-name)
           (println "Successfully migrated: " migration-name))))))
+
+
+(defn migration-list
+  "Print migration list with status."
+  [{:keys [migrations-dir db-uri]}]
+  ; TODO: reduce duplication with `migrate` fn!
+  (let [migration-names (migrations-list migrations-dir)
+        db (db-util/db-conn db-uri)
+        _ (db-util/create-migrations-table db)
+        migrated (already-migrated db)]
+    (doseq [file-name migration-names
+            :let [migration-name (get-migration-name file-name)]]
+      (if (contains? migrated migration-name)
+        (file-util/safe-println [(str "[✓] " file-name)])
+        (file-util/safe-println [(str "[ ] " file-name)])))))
 
 
 (comment
@@ -252,12 +321,12 @@
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
       (try+
-        (->> (read-models model-file))
-        ;(->> (make-migrations* migrations-files model-file)
+        ;(->> (read-models model-file))
+        (->> (make-migrations* migrations-files model-file))
         ;     (flatten))
-             ;(map #(spec-util/conform ::sql/->sql %)))
-             ;(map db-util/fmt))
-             ;(map #(db-util/exec! db %)))
+            ;(map #(spec-util/conform ::sql/->sql %)))
+            ;(map db-util/fmt))
+            ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (:data e)))))
 
@@ -271,10 +340,10 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    (make-migrations config)))
+    ;(make-migrations config)))
     ;(migrate config)))
     ;(explain config)))
-
+    (migration-list config)))
 
 
 ; TODO: remove!
