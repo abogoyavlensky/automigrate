@@ -2,7 +2,7 @@
   "Module for applying changes to migrations and db.
   Also contains tools for inspection of db state by migrations
   and state of migrations itself."
-  (:require [clojure.java.jdbc :as jdbc]
+  (:require [next.jdbc :as jdbc]
             [clojure.spec.alpha :as s]
             [clojure.java.io :as io]
             [clojure.string :as str]
@@ -23,6 +23,7 @@
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
 (def ^:private DEFAULT-ROOT-NODE :root)
+(def ^:private AUTO-MIGRATION-PREFIX "auto")
 
 
 (defn- read-migration
@@ -57,14 +58,15 @@
 
 (defn- next-migration-number
   [file-names]
-  (file-util/zfill (count file-names)))
+  ; migrations' numbers starting from 1
+  (file-util/zfill (inc (count file-names))))
 
 
 (defn- next-migration-name
   [actions]
   (let [action-name (-> actions first :action name)
         model-name (-> actions first :name name)]
-    (-> (str action-name "_" model-name)
+    (-> (str/join #"_" [AUTO-MIGRATION-PREFIX action-name model-name])
       (str/replace #"-" "_"))))
 
 
@@ -267,7 +269,7 @@
   [db]
   (->> {:select [:name]
         :from [db-util/MIGRATIONS-TABLE]}
-    (db-util/query db)
+    (db-util/exec! db)
     (map :name)
     (set)))
 
@@ -289,7 +291,7 @@
     (doseq [file-name migration-names
             :let [migration-name (get-migration-name file-name)]]
       (when-not (contains? migrated migration-name)
-        (jdbc/with-db-transaction [tx db]
+        (jdbc/with-transaction [tx db]
           (doseq [action (read-migration file-name migrations-dir)]
             (->> (spec-util/conform ::sql/->sql action)
               (db-util/exec! tx)))

@@ -46,7 +46,7 @@
   (is (= '({:name :feed
             :fields {:id {:type :serial :null false}}
             :action :create-table})
-        (-> (str config/MIGRATIONS-DIR "0000_create_table_feed.edn")
+        (-> (str config/MIGRATIONS-DIR "0001_auto_create_table_feed.edn")
           (file-util/read-edn)))))
 
 
@@ -58,10 +58,10 @@
              :migrations-dir config/MIGRATIONS-DIR
              :db-uri config/DATABASE-URL})
   (is (= '({:id 1
-            :name "0000_create_table_feed"})
+            :name "0001_auto_create_table_feed"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 
@@ -80,18 +80,18 @@
             :name :name
             :table-name :feed
             :options {:type [:varchar 100] :null true}})
-        (-> (str config/MIGRATIONS-DIR "0001_add_column_created_at.edn")
+        (-> (str config/MIGRATIONS-DIR "0002_auto_add_column_created_at.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
              :db-uri config/DATABASE-URL})
   (is (= '({:id 1
-            :name "0000_create_table_feed"}
+            :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0001_add_column_created_at"})
+            :name "0002_auto_add_column_created_at"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 
@@ -112,18 +112,18 @@
             :drop #{:null}
             :name :name
             :table-name :feed})
-        (-> (str config/MIGRATIONS-DIR "0001_alter_column_id.edn")
+        (-> (str config/MIGRATIONS-DIR "0002_auto_alter_column_id.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
              :db-uri config/DATABASE-URL})
   (is (= '({:id 1
-            :name "0000_create_table_feed"}
+            :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0001_alter_column_id"})
+            :name "0002_auto_alter_column_id"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 
@@ -137,18 +137,18 @@
   (is (= '({:action :drop-column
             :name :name
             :table-name :feed})
-        (-> (str config/MIGRATIONS-DIR "0001_drop_column_name.edn")
+        (-> (str config/MIGRATIONS-DIR "0002_auto_drop_column_name.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
              :db-uri config/DATABASE-URL})
   (is (= '({:id 1
-            :name "0000_create_table_feed"}
+            :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0001_drop_column_name"})
+            :name "0002_auto_drop_column_name"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 
@@ -161,24 +161,24 @@
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-table
             :name :feed})
-        (-> (str config/MIGRATIONS-DIR "0001_drop_table_feed.edn")
+        (-> (str config/MIGRATIONS-DIR "0002_auto_drop_table_feed.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
              :db-uri config/DATABASE-URL})
   (is (= '({:id 1
-            :name "0000_create_table_feed"}
+            :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0001_drop_table_feed"})
+            :name "0002_auto_drop_table_feed"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 
 (deftest test-explain-basic-migration-ok
   #_{:clj-kondo/ignore [:private-call]}
-  (bond/with-stub [[migrations/migrations-list (constantly ["0000_create_table_feed"])]
+  (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed"])]
                    [file-util/safe-println (constantly nil)]
                    [migrations/read-migration (constantly
                                                 '({:name :feed
@@ -233,7 +233,7 @@
                                                    :drop #{}
                                                    :action :alter-column}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
-                         :number 0})
+                         :number 1})
     (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
             "CREATE TABLE account (id SERIAL NULL UNIQUE, name VARCHAR(100) NULL, rate FLOAT)"
             "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"
