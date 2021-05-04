@@ -57,7 +57,8 @@
 
 (defn- next-migration-number
   [file-names]
-  (file-util/zfill (count file-names)))
+  ; migrations' numbers starting from 1
+  (file-util/zfill (inc (count file-names))))
 
 
 (defn- next-migration-name
