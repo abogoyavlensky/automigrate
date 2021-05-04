@@ -6,7 +6,7 @@
 
 (def MIGRATIONS-TABLE
   "Default migrations table name."
-  :migrations)
+  :tuna-migrations)
 
 
 ; Additional sql clauses
