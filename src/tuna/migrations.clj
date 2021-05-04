@@ -23,6 +23,7 @@
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
 (def ^:private DEFAULT-ROOT-NODE :root)
+(def ^:private AUTO-MIGRATION-PREFIX "auto")
 
 
 (defn- read-migration
@@ -65,7 +66,7 @@
   [actions]
   (let [action-name (-> actions first :action name)
         model-name (-> actions first :name name)]
-    (-> (str action-name "_" model-name)
+    (-> (str/join #"_" [AUTO-MIGRATION-PREFIX action-name model-name])
       (str/replace #"-" "_"))))
 
 
