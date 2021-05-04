@@ -32,15 +32,21 @@
 (defmethod apply-action-to-schema actions/ALTER-COLUMN-ACTION
   [schema action]
   (let [table-name (:table-name action)
-        field-name (:name action)]
+        field-name (:name action)
+        dissoc-actions-fn (fn [schema]
+                            (apply map-util/dissoc-in
+                              schema
+                              [table-name :fields field-name]
+                              (:drop action)))]
+
     (-> schema
       (update-in [table-name :fields field-name] merge (:changes action))
-      (map-util/dissoc-in [table-name :fields field-name] (:drop action)))))
+      (dissoc-actions-fn))))
 
 
 (defmethod apply-action-to-schema actions/DROP-COLUMN-ACTION
   [schema action]
-  (map-util/dissoc-in schema [(:table-name action) :fields] [(:name action)]))
+  (map-util/dissoc-in schema [(:table-name action) :fields] (:name action)))
 
 
 (defmethod apply-action-to-schema actions/DROP-TABLE-ACTION
