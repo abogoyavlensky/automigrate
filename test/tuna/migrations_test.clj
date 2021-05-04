@@ -61,7 +61,7 @@
             :name "0001_auto_create_table_feed"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 
@@ -91,7 +91,7 @@
             :name "0002_auto_add_column_created_at"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 
@@ -123,7 +123,7 @@
             :name "0002_auto_alter_column_id"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 
@@ -148,7 +148,7 @@
             :name "0002_auto_drop_column_name"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 
@@ -172,7 +172,7 @@
             :name "0002_auto_drop_table_feed"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/query config/DATABASE-CONN)
+          (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
 

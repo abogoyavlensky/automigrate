@@ -12,7 +12,7 @@
                      :where [:and
                              [:= :table_schema "public"]
                              [:= :table_type "BASE TABLE"]]}
-                 (db-util/query db)
+                 (db-util/exec! db)
                  (map (comp keyword :table_name)))]
     (when (seq tables)
       (->> {:drop-table tables}

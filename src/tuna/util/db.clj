@@ -1,6 +1,7 @@
 (ns tuna.util.db
   "Utils for working with database."
-  (:require [clojure.java.jdbc :as jdbc]
+  (:require [next.jdbc :as jdbc]
+            [next.jdbc.result-set :as jdbc-rs]
             [honey.sql :as honey]))
 
 
@@ -42,7 +43,7 @@
                  ; TODO: add ability to read .end file
                  ; TODO: add ability to change env var name
                (System/getenv "DATABASE_URL"))]
-     {:connection-uri uri})))
+     (jdbc/get-datasource {:jdbcUrl uri}))))
 
 
 (defn fmt
@@ -56,19 +57,11 @@
 
 
 (defn exec!
-  "Write data to db."
-  [db q]
-  (->> q
-    (fmt)
-    (jdbc/execute! db)))
-
-
-(defn query
-  "Read data from db."
-  [db q]
-  (->> q
-    (fmt)
-    (jdbc/query db)))
+  "Send query to db."
+  [db query]
+  (as-> query q
+        (fmt q)
+        (jdbc/execute! db q {:builder-fn jdbc-rs/as-unqualified-lower-maps})))
 
 
 (defn create-migrations-table

@@ -1,4 +1,5 @@
-(ns tuna.testing-config)
+(ns tuna.testing-config
+  (:require [tuna.util.db :as db-util]))
 
 
 (def MIGRATIONS-DIR "test/tuna/migrations/")
@@ -13,4 +14,5 @@
       "127.0.0.1:5555")))
 
 
-(def DATABASE-CONN {:connection-uri DATABASE-URL})
+(def DATABASE-CONN
+  (db-util/db-conn DATABASE-URL))
