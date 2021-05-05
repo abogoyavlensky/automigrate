@@ -359,11 +359,11 @@
         model-file (:model-file config)]
       (try+
         ;(->> (read-models model-file))
-        (->> (make-migrations* migrations-files model-file)
+        (->> (make-migrations* migrations-files model-file))
         ;     (flatten))
-            (map #(spec-util/conform ::sql/->sql %))
+        ;    (map #(spec-util/conform ::sql/->sql %)))
             ;(map db-util/fmt)
-            (map #(db-util/exec! db %)))
+            ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (:data e)))))
 
@@ -377,7 +377,7 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)
+    ;(make-migrations config)))
     ;(migrate config)))
     ;(explain config)))
     (migration-list config)))
