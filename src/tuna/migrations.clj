@@ -181,6 +181,39 @@
     (drop 1)))
 
 
+(defn- new-index?
+  [old-model indexes-diff index-name]
+  (and (contains? indexes-diff index-name)
+    (not (contains? (:indexes old-model) index-name))))
+
+
+(defn- parse-indexes-diff
+  "Return index's migrations for model."
+  [model-diff removals old-model model-name]
+  (let [indexes-diff (:indexes model-diff)
+        indexes-removals (:indexes removals)
+        changed-indexes (-> (set (keys indexes-diff))
+                          (set/union (set (keys indexes-removals))))]
+    (for [index-name changed-indexes
+          :let [options-to-add (get indexes-diff index-name)
+                options-to-drop (get indexes-removals index-name)
+                new-index?* (new-index? old-model indexes-diff index-name)]]
+                ;drop-index?* (drop-index? indexes-removals index-name)]]
+      (cond
+        new-index?* {:action actions/CREATE-INDEX-ACTION
+                     :name index-name
+                     :table-name model-name
+                     :options options-to-add}))))
+        ;drop-index?* {:action actions/DROP-COLUMN-ACTION
+        ;              :name index-name
+        ;              :table-name model-name}
+        ;:else {:action actions/ALTER-COLUMN-ACTION
+        ;       :name index-name
+        ;       :table-name model-name
+        ;       :changes options-to-add
+        ;       :drop (options-dropped options-to-drop)}))))
+
+
 (defn- make-migrations*
   [migrations-files model-file]
   (let [old-schema (schema/current-db-schema migrations-files)
@@ -194,13 +227,15 @@
                             model-removals (get removals model-name)
                             new-model?* (new-model? alterations old-schema model-name)
                             drop-model?* (drop-model? removals model-name)]]
-                  (cond
-                    new-model?* {:action actions/CREATE-TABLE-ACTION
-                                 :name model-name
-                                 :fields (:fields model-diff)}
-                    drop-model?* {:action actions/DROP-TABLE-ACTION
-                                  :name model-name}
-                    :else (parse-fields-diff model-diff model-removals old-model model-name)))]
+                  (concat
+                    (cond
+                      new-model?* {:action actions/CREATE-TABLE-ACTION
+                                   :name model-name
+                                   :fields (:fields model-diff)}
+                      drop-model?* {:action actions/DROP-TABLE-ACTION
+                                    :name model-name}
+                      :else (parse-fields-diff model-diff model-removals old-model model-name))
+                    (parse-indexes-diff model-diff model-removals old-model model-name)))]
     (->> actions
       (flatten)
       (sort-actions)
@@ -324,11 +359,11 @@
         model-file (:model-file config)]
       (try+
         ;(->> (read-models model-file))
-        (->> (make-migrations* migrations-files model-file))
+        (->> (make-migrations* migrations-files model-file)
         ;     (flatten))
-            ;(map #(spec-util/conform ::sql/->sql %)))
-            ;(map db-util/fmt))
-            ;(map #(db-util/exec! db %)))
+            (map #(spec-util/conform ::sql/->sql %))
+            ;(map db-util/fmt)
+            (map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (:data e)))))
 
@@ -342,7 +377,7 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)))
+    ;(make-migrations config)
     ;(migrate config)))
     ;(explain config)))
     (migration-list config)))
@@ -372,24 +407,28 @@
     ;  (catch [:type ::s/invalid] e
     ;    (:data e)))))
 
-    (->> {:alter-table :feed
-          ;:alter-column [:name :type [:varchar 10]]}
+    (->> #_{:alter-table :feed}
+            ;:alter-column [:name :type [:varchar 10]]}
 
-          ;:alter-column [:name :set [:not nil]]}
-          ;:alter-column [:name :drop [:not nil]]}
+            ;:alter-column [:name :set [:not nil]]}
+            ;:alter-column [:name :drop [:not nil]]}
 
-          ;:alter-column [:name :set [:default "test"]]}
-          ;:alter-column [:name :drop :default]}
+            ;:alter-column [:name :set [:default "test"]]}
+            ;:alter-column [:name :drop :default]}
 
-          ;:add-index [:unique nil :name]}
-          ;:drop-constraint (keyword (str/join #"-" [(name :feed) (name :name) "key"]))}
+            ;:add-index [:unique nil :name]}
+            ;:drop-constraint (keyword (str/join #"-" [(name :feed) (name :name) "key"]))}
 
-          ;:add-index [:primary-key :name]
-          ;:drop-constraint (keyword (str/join #"-" [(name :feed) "pkey"]))}
+            ;:add-index [:primary-key :name]
+            ;:drop-constraint (keyword (str/join #"-" [(name :feed) "pkey"]))}
 
-           ;:add-index [:constraint :feed-account-fkey [:foreign-key :id] [:references :account :id]]
-           ;:add-index [[:constraint :feed-account-fkey] [:foreign-key :id] [:references :account :id]]
-           :add-constraint [:feed-account-fkey [:foreign-key :id] [:references :account :id]]}
-         ;ADD CONSTRAINT fk_orders_customers FOREIGN KEY (customer_id) REFERENCES customers (id);
-        ;(db-util/fmt))))
-         (db-util/exec! db))))
+             ;:add-index [:constraint :feed-account-fkey [:foreign-key :id] [:references :account :id]]}
+             ;:add-index [[:constraint :feed-account-fkey] [:foreign-key :id] [:references :account :id]]}
+             ;:add-constraint [:feed-account-fkey [:foreign-key :id] [:references :account :id]]}
+
+
+        {:create-index [:some-index-idx :on :feed :using [:btree :name :id]]}
+        ;{:create-unique-index [:some-index-idx :on :feed :using [:btree :name :id]]}
+        ;{:drop-index :some-index-idx}
+        (db-util/fmt))))
+;(db-util/exec! db)))))

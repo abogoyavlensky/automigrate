@@ -103,9 +103,32 @@
   (s/map-of keyword? ::field))
 
 
+(s/def :tuna.models.index/type
+  #{:btree :gin :gist :spgist :brin :hash})
+
+
+(s/def :tuna.models.index/fields
+  (s/coll-of keyword? :min-count 1 :kind vector? :distinct true))
+
+
+(s/def :tuna.models.index/unique true?)
+
+
+(s/def ::index
+  (s/keys
+    :req-un [:tuna.models.index/type
+             :tuna.models.index/fields]
+    :opt-un [:tuna.models.index/unique]))
+
+
+(s/def ::indexes
+  (s/map-of keyword? ::index))
+
+
 (s/def ::model
   (s/keys
-    :req-un [::fields]))
+    :req-un [::fields]
+    :opt-un [::indexes]))
 
 
 (defn- check-referenced-model-exists?

@@ -32,6 +32,19 @@
   :drop-constraint)
 
 
+(honey/register-clause! :create-index
+  ; TODO: update with more precise formatter
+  (fn [k spec]
+    (#'honey/format-add-item k spec))
+  :add-index)
+
+
+(honey/register-clause! :create-unique-index
+  ; TODO: update with more precise formatter
+  (fn [k spec]
+    (#'honey/format-add-item k spec))
+  :add-index)
+
 ; Public
 
 (defn db-conn
