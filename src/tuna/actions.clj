@@ -9,6 +9,7 @@
 (def ALTER-COLUMN-ACTION :alter-column)
 (def DROP-COLUMN-ACTION :drop-column)
 (def CREATE-INDEX-ACTION :create-index)
+(def DROP-INDEX-ACTION :drop-index)
 
 
 (s/def ::action #{CREATE-TABLE-ACTION
@@ -16,7 +17,8 @@
                   ADD-COLUMN-ACTION
                   ALTER-COLUMN-ACTION
                   DROP-COLUMN-ACTION
-                  CREATE-INDEX-ACTION})
+                  CREATE-INDEX-ACTION
+                  DROP-INDEX-ACTION})
 
 
 (s/def ::name keyword?)
@@ -99,6 +101,14 @@
              ::name
              ::table-name
              :tuna.actions.indexes/options]))
+
+
+(defmethod action DROP-INDEX-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name
+             ::table-name]))
 
 
 (s/def ::->migration (s/multi-spec action :action))

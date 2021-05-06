@@ -187,26 +187,33 @@
     (not (contains? (:indexes old-model) index-name))))
 
 
+(defn- drop-index?
+  [indexes-removals index-name]
+  (= DROPPED-ENTITY-VALUE (get indexes-removals index-name)))
+
+
 (defn- parse-indexes-diff
   "Return index's migrations for model."
   [model-diff removals old-model model-name]
   (let [indexes-diff (:indexes model-diff)
-        indexes-removals (:indexes removals)
+        indexes-removals (if (= DROPPED-ENTITY-VALUE (:indexes removals))
+                           (->> (:indexes old-model)
+                             (reduce-kv (fn [m k _v] (assoc m k DROPPED-ENTITY-VALUE)) {}))
+                           (:indexes removals))
         changed-indexes (-> (set (keys indexes-diff))
                           (set/union (set (keys indexes-removals))))]
     (for [index-name changed-indexes
           :let [options-to-add (get indexes-diff index-name)
-                options-to-drop (get indexes-removals index-name)
-                new-index?* (new-index? old-model indexes-diff index-name)]]
-                ;drop-index?* (drop-index? indexes-removals index-name)]]
+                new-index?* (new-index? old-model indexes-diff index-name)
+                drop-index?* (drop-index? indexes-removals index-name)]]
       (cond
         new-index?* {:action actions/CREATE-INDEX-ACTION
                      :name index-name
                      :table-name model-name
-                     :options options-to-add}))))
-        ;drop-index?* {:action actions/DROP-COLUMN-ACTION
-        ;              :name index-name
-        ;              :table-name model-name}
+                     :options options-to-add}
+        drop-index?* {:action actions/DROP-INDEX-ACTION
+                      :name index-name
+                      :table-name model-name}))))
         ;:else {:action actions/ALTER-COLUMN-ACTION
         ;       :name index-name
         ;       :table-name model-name
@@ -362,7 +369,7 @@
         (->> (make-migrations* migrations-files model-file))
         ;     (flatten))
         ;    (map #(spec-util/conform ::sql/->sql %)))
-            ;(map db-util/fmt)
+            ;(map db-util/fmt))
             ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (:data e)))))
@@ -372,7 +379,7 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 3}]
+                :number 7}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))

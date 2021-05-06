@@ -254,4 +254,20 @@
     ::create-index->sql))
 
 
+(s/def ::drop-index->sql
+  (s/conformer
+    (fn [value]
+      {:drop-index (:name value)})))
+
+
+(defmethod action->sql actions/DROP-INDEX-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::actions/action
+               ::actions/name
+               ::actions/table-name])
+    ::drop-index->sql))
+
+
 (s/def ::->sql (s/multi-spec action->sql :action))
