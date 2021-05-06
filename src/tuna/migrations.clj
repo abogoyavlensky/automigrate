@@ -3,6 +3,7 @@
   Also contains tools for inspection of db state by migrations
   and state of migrations itself."
   (:require [next.jdbc :as jdbc]
+            #_{:clj-kondo/ignore [:unused-namespace]}
             [clojure.spec.alpha :as s]
             [clojure.java.io :as io]
             [clojure.string :as str]
@@ -194,7 +195,7 @@
 
 (defn- parse-indexes-diff
   "Return index's migrations for model."
-  [model-diff removals old-model model-name]
+  [model-diff removals old-model new-model model-name]
   (let [indexes-diff (:indexes model-diff)
         indexes-removals (if (= DROPPED-ENTITY-VALUE (:indexes removals))
                            (->> (:indexes old-model)
@@ -204,6 +205,7 @@
                           (set/union (set (keys indexes-removals))))]
     (for [index-name changed-indexes
           :let [options-to-add (get indexes-diff index-name)
+                options-to-alter (get-in new-model [:indexes index-name])
                 new-index?* (new-index? old-model indexes-diff index-name)
                 drop-index?* (drop-index? indexes-removals index-name)]]
       (cond
@@ -213,12 +215,11 @@
                      :options options-to-add}
         drop-index?* {:action actions/DROP-INDEX-ACTION
                       :name index-name
-                      :table-name model-name}))))
-        ;:else {:action actions/ALTER-COLUMN-ACTION
-        ;       :name index-name
-        ;       :table-name model-name
-        ;       :changes options-to-add
-        ;       :drop (options-dropped options-to-drop)}))))
+                      :table-name model-name}
+        :else {:action actions/ALTER-INDEX-ACTION
+               :name index-name
+               :table-name model-name
+               :options options-to-alter}))))
 
 
 (defn- make-migrations*
@@ -230,6 +231,7 @@
                          (set/union (set (keys removals))))
         actions (for [model-name changed-models
                       :let [old-model (get old-schema model-name)
+                            new-model (get new-schema model-name)
                             model-diff (get alterations model-name)
                             model-removals (get removals model-name)
                             new-model?* (new-model? alterations old-schema model-name)
@@ -242,7 +244,7 @@
                       drop-model?* {:action actions/DROP-TABLE-ACTION
                                     :name model-name}
                       :else (parse-fields-diff model-diff model-removals old-model model-name))
-                    (parse-indexes-diff model-diff model-removals old-model model-name)))]
+                    (parse-indexes-diff model-diff model-removals old-model new-model model-name)))]
     (->> actions
       (flatten)
       (sort-actions)
@@ -301,7 +303,8 @@
     (file-util/safe-println
       [(format "SQL for migration %s:\n" file-name)])
     (->> (read-migration file-name migrations-dir)
-      (mapv  (comp db-util/fmt #(s/conform ::sql/->sql %)))
+      (mapv sql/->sql)
+      ; TODO: maybe remove!?
       (flatten)
       (file-util/safe-println))))
 
@@ -334,9 +337,12 @@
             :let [migration-name (get-migration-name file-name)]]
       (when-not (contains? migrated migration-name)
         (jdbc/with-transaction [tx db]
-          (doseq [action (read-migration file-name migrations-dir)]
-            (->> (spec-util/conform ::sql/->sql action)
-              (db-util/exec! tx)))
+          (doseq [action (read-migration file-name migrations-dir)
+                  :let [formatted-action (spec-util/conform ::sql/->sql action)]]
+            (if (seq formatted-action)
+              (doseq [sub-action formatted-action]
+                (db-util/exec! tx sub-action))
+              (db-util/exec! tx formatted-action)))
           (save-migration db migration-name)
           (println "Successfully migrated: " migration-name))))))
 
@@ -369,6 +375,7 @@
         (->> (make-migrations* migrations-files model-file))
         ;     (flatten))
         ;    (map #(spec-util/conform ::sql/->sql %)))
+            ;(flatten)
             ;(map db-util/fmt))
             ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
@@ -379,15 +386,15 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 7}]
+                :number 11}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(migrate config)))
+    (migrate config)))
     ;(explain config)))
-    (migration-list config)))
+    ;(migration-list config)))
 
 
 ; TODO: remove!

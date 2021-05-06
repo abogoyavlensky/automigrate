@@ -2,7 +2,8 @@
   "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
-            [tuna.actions :as actions]))
+            [tuna.actions :as actions]
+            [tuna.util.db :as db-util]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
@@ -270,4 +271,31 @@
     ::drop-index->sql))
 
 
+(s/def ::alter-index->sql
+  (s/conformer
+    (fn [value]
+      [(s/conform ::drop-index->sql (assoc value :action actions/DROP-INDEX-ACTION))
+       (s/conform ::create-index->sql (assoc value :action actions/CREATE-INDEX-ACTION))])))
+
+
+(defmethod action->sql actions/ALTER-INDEX-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::actions/action
+               ::actions/name
+               ::actions/table-name
+               :tuna.actions.indexes/options])
+    ::alter-index->sql))
+
+
 (s/def ::->sql (s/multi-spec action->sql :action))
+
+
+(defn ->sql
+  "Convert migration action to sql."
+  [action]
+  (let [formatted-action (s/conform ::->sql action)]
+    (if (seq formatted-action)
+      (map #(db-util/fmt %) formatted-action)
+      (db-util/fmt formatted-action))))
