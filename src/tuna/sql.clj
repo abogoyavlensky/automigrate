@@ -296,6 +296,6 @@
   "Convert migration action to sql."
   [action]
   (let [formatted-action (s/conform ::->sql action)]
-    (if (seq formatted-action)
+    (if (sequential? formatted-action)
       (map #(db-util/fmt %) formatted-action)
       (db-util/fmt formatted-action))))

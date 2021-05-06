@@ -238,11 +238,11 @@
                             drop-model?* (drop-model? removals model-name)]]
                   (concat
                     (cond
-                      new-model?* {:action actions/CREATE-TABLE-ACTION
-                                   :name model-name
-                                   :fields (:fields model-diff)}
-                      drop-model?* {:action actions/DROP-TABLE-ACTION
-                                    :name model-name}
+                      new-model?* [{:action actions/CREATE-TABLE-ACTION
+                                    :name model-name
+                                    :fields (:fields model-diff)}]
+                      drop-model?* [{:action actions/DROP-TABLE-ACTION
+                                     :name model-name}]
                       :else (parse-fields-diff model-diff model-removals old-model model-name))
                     (parse-indexes-diff model-diff model-removals old-model new-model model-name)))]
     (->> actions
@@ -339,7 +339,7 @@
         (jdbc/with-transaction [tx db]
           (doseq [action (read-migration file-name migrations-dir)
                   :let [formatted-action (spec-util/conform ::sql/->sql action)]]
-            (if (seq formatted-action)
+            (if (sequential? formatted-action)
               (doseq [sub-action formatted-action]
                 (db-util/exec! tx sub-action))
               (db-util/exec! tx formatted-action)))
