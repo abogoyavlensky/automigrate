@@ -374,10 +374,11 @@
         ;(->> (read-models model-file))
         (->> (make-migrations* migrations-files model-file))
         ;     (flatten))
-        ;    (map #(spec-util/conform ::sql/->sql %)))
-            ;(flatten)
-            ;(map db-util/fmt))
-            ;(map #(db-util/exec! db %)))
+
+           ;(map #(spec-util/conform ::sql/->sql %)))
+           ;(flatten)
+           ;(map db-util/fmt))
+           ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (:data e)))))
 
@@ -386,14 +387,14 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 11}]
+                :number 9}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    (migrate config)))
-    ;(explain config)))
+    ;(migrate config)))
+    (explain config)))
     ;(migration-list config)))
 
 

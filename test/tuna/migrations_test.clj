@@ -4,8 +4,11 @@
             [bond.james :as bond]
             [tuna.migrations :as migrations]
             [tuna.core :as core]
+            [tuna.schema :as schema]
+            [tuna.sql :as sql]
             [tuna.util.db :as db-util]
             [tuna.util.file :as file-util]
+            [tuna.util.spec :as spec-util]
             [tuna.util.test :as test-util]
             [tuna.testing-config :as config])
   (:import [java.io FileNotFoundException]))
@@ -231,7 +234,20 @@
                                                    :table-name :feed
                                                    :changes {:foreign-key [:account :id]}
                                                    :drop #{}
-                                                   :action :alter-column}))]]
+                                                   :action :alter-column}
+                                                  {:name :feed_name_idx
+                                                   :table-name :feed
+                                                   :options {:type :btree
+                                                             :fields [:name]}
+                                                   :action :create-index}
+                                                  {:name :feed_name_idx
+                                                   :table-name :feed
+                                                   :action :drop-index}
+                                                  {:name :feed_name_idx
+                                                   :table-name :feed
+                                                   :options {:type :btree
+                                                             :fields [:name]}
+                                                   :action :alter-index}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 1})
     (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
@@ -245,7 +261,11 @@
             "DROP TABLE IF EXISTS feed"
             "CREATE TABLE feed (account SERIAL REFERENCES ACCOUNT(ID))"
             "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
-            "ALTER TABLE feed ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) REFERENCES ACCOUNT(ID)"]
+            "ALTER TABLE feed ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) REFERENCES ACCOUNT(ID)"
+            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"
+            "DROP INDEX feed_name_idx"
+            "DROP INDEX feed_name_idx"
+            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args
@@ -284,3 +304,32 @@
               :name :articles,
               :fields {:id {:type :serial, :unique true}, :bar1 {:type :integer, :foreign-key [:bar1 :id]}}})
           (#'migrations/sort-actions actions)))))
+
+
+(deftest test-make-and-migrate-create-index-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly '({:action :create-table
+                                   :name :feed
+                                   :fields {:id {:type :serial
+                                                 :null false}
+                                            :name {:type :text}}}))]
+                   [file-util/read-edn (constantly {:feed
+                                                    {:fields {:id {:type :serial
+                                                                   :null false}
+                                                              :name {:type :text}}
+                                                     :indexes {:feed_name_id_unique_idx {:type :brin
+                                                                                         :fields [:name]
+                                                                                         :unique true}}}})]]
+    (let [actions (#'migrations/make-migrations* [] "")
+          queries (map #(spec-util/conform ::sql/->sql %) actions)]
+      (is (= '({:action :create-index
+                :name :feed_name_id_unique_idx
+                :table-name :feed
+                :options {:type :brin
+                          :fields [:name]
+                          :unique true}})
+            actions))
+      (is (= '({:create-unique-index
+                [:feed_name_id_unique_idx :on :feed :using (:brin :name)]})
+            queries)))))
