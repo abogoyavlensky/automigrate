@@ -326,19 +326,25 @@
       (let [db config/DATABASE-CONN
             actions (#'migrations/make-migrations* [] "")
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
-        (is (= '({:action :create-index
-                  :name :feed_name_id_unique_idx
-                  :table-name :feed
-                  :options {:type :btree
-                            :fields [:name]
-                            :unique true}})
-              actions))
-        (is (= '({:create-unique-index
-                  [:feed_name_id_unique_idx :on :feed :using (:btree :name)]})
-              queries))
-        (is (every?
-              #(= [#:next.jdbc{:update-count 0}] %)
-              (map #(db-util/exec! db %) (concat default-queries queries))))))))
+        (testing "test make-migrations for model changes"
+          (is (= '({:action :create-index
+                    :name :feed_name_id_unique_idx
+                    :table-name :feed
+                    :options {:type :btree
+                              :fields [:name]
+                              :unique true}})
+                actions)))
+        (testing "test converting migration actions to sql queries formatted as edn"
+          (is (= '({:create-unique-index
+                    [:feed_name_id_unique_idx :on :feed :using (:btree :name)]})
+                queries)))
+        (testing "test converting actions to sql"
+          (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(NAME)"])
+                (map #(sql/->sql %) actions))))
+        (testing "test running migrations on db"
+          (is (every?
+                #(= [#:next.jdbc{:update-count 0}] %)
+                (map #(db-util/exec! db %) (concat default-queries queries)))))))))
 
 
 (deftest test-make-and-migrate-drop-index-ok
@@ -372,7 +378,57 @@
         (testing "test converting migration actions to sql queries formatted as edn"
           (is (= '({:drop-index :feed_name_id_idx})
                 queries)))
+        (testing "test converting actions to sql"
+          (is (= '(["DROP INDEX feed_name_id_idx"])
+                (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
                 (map #(db-util/exec! db %) (concat default-queries queries)))))))))
+
+
+(deftest test-make-and-migrate-alter-index-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (let [default-actions '({:action :create-table
+                           :name :feed
+                           :fields {:id {:type :serial
+                                         :null false}
+                                    :name {:type :text}}}
+                          {:action :create-index
+                           :name :feed_name_id_idx
+                           :table-name :feed
+                           :options {:type :btree
+                                     :fields [:name :id]
+                                     :unique true}})
+        default-queries (map #(spec-util/conform ::sql/->sql %) default-actions)]
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly default-actions)]
+                     [file-util/read-edn (constantly {:feed
+                                                      {:fields {:id {:type :serial
+                                                                     :null false}
+                                                                :name {:type :text}}
+                                                       :indexes {:feed_name_id_idx {:type :btree
+                                                                                    :fields [:name]}}}})]]
+      (let [db config/DATABASE-CONN
+            actions (#'migrations/make-migrations* [] "")
+            queries (map #(spec-util/conform ::sql/->sql %) actions)]
+        (testing "test make-migrations for model changes"
+          (is (= '({:action :alter-index
+                    :name :feed_name_id_idx
+                    :options {:fields [:name]
+                              :type :btree}
+                    :table-name :feed})
+                actions)))
+        (testing "test converting migration actions to sql queries formatted as edn"
+          (is (= '([{:drop-index :feed_name_id_idx}
+                    {:create-index
+                     [:feed_name_id_idx :on :feed :using (:btree :name)]}])
+                queries)))
+        (testing "test converting actions to sql"
+          (is (= '((["DROP INDEX feed_name_id_idx"]
+                    ["CREATE INDEX feed_name_id_idx ON FEED USING BTREE(NAME)"]))
+                (map #(sql/->sql %) actions))))
+        (testing "test running migrations on db"
+          (is (every?
+                #(= [#:next.jdbc{:update-count 0}] %)
+                (map #(db-util/exec! db %) (concat default-queries (flatten queries))))))))))
