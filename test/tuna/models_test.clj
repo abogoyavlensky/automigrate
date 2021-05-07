@@ -84,3 +84,15 @@
                                :unique true}}}}]
     (is (thrown-with-msg? ExceptionInfo #"Referenced field :id and origin field :account have different types"
           (#'models/validate-foreign-key models)))))
+
+
+(deftest test-validate-indexes-missing-indexed-fields-err
+  (let [models {:feed
+                {:fields {:id {:type :serial
+                               :null false
+                               :unique true}}
+                 :indexes {:feed_name_id_ids {:type :btree
+                                              :fields [:id :name]}}}}]
+
+    (is (thrown-with-msg? ExceptionInfo #"Missing indexed fields: :name"
+          (#'models/validate-indexes models)))))

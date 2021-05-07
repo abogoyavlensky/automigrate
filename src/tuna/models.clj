@@ -1,7 +1,9 @@
 (ns tuna.models
   "Module for for transforming models to migrations."
   (:require [clojure.spec.alpha :as s]
-            [slingshot.slingshot :refer [throw+]]))
+            [clojure.string :as str]
+            [slingshot.slingshot :refer [throw+]]
+            [clojure.set :as set]))
 
 
 ; Specs
@@ -189,7 +191,24 @@
   models)
 
 
+(defn- validate-indexes
+  [models]
+  (doseq [[model-name model-value] models]
+    (doseq [[_index-name index-options] (:indexes model-value)
+            :let [index-fields (set (:fields index-options))
+                  model-fields (set (keys (:fields model-value)))
+                  missing-fields (set/difference index-fields model-fields)]]
+      (when (seq missing-fields)
+        (throw+ {:type ::missing-indexed-fields
+                 :data {:model-name model-name
+                        :missing-fields missing-fields
+                        :message (format "Missing indexed fields: %s"
+                                   (str/join ", " missing-fields))}}))))
+  models)
+
+
 (s/def ::models
   (s/and
     (s/map-of keyword? ::model)
-    validate-foreign-key))
+    validate-foreign-key
+    validate-indexes))
