@@ -307,29 +307,72 @@
 
 
 (deftest test-make-and-migrate-create-index-ok
+  (let [default-actions '({:action :create-table
+                           :name :feed
+                           :fields {:id {:type :serial
+                                         :null false}
+                                    :name {:type :text}}})
+        default-queries (map #(spec-util/conform ::sql/->sql %) default-actions)]
+    #_{:clj-kondo/ignore [:private-call]}
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly default-actions)]
+                     [file-util/read-edn (constantly {:feed
+                                                      {:fields {:id {:type :serial
+                                                                     :null false}
+                                                                :name {:type :text}}
+                                                       :indexes {:feed_name_id_unique_idx {:type :btree
+                                                                                           :fields [:name]
+                                                                                           :unique true}}}})]]
+      (let [db config/DATABASE-CONN
+            actions (#'migrations/make-migrations* [] "")
+            queries (map #(spec-util/conform ::sql/->sql %) actions)]
+        (is (= '({:action :create-index
+                  :name :feed_name_id_unique_idx
+                  :table-name :feed
+                  :options {:type :btree
+                            :fields [:name]
+                            :unique true}})
+              actions))
+        (is (= '({:create-unique-index
+                  [:feed_name_id_unique_idx :on :feed :using (:btree :name)]})
+              queries))
+        (is (every?
+              #(= [#:next.jdbc{:update-count 0}] %)
+              (map #(db-util/exec! db %) (concat default-queries queries))))))))
+
+
+(deftest test-make-and-migrate-drop-index-ok
   #_{:clj-kondo/ignore [:private-call]}
-  (bond/with-stub [[schema/load-migrations-from-files
-                    (constantly '({:action :create-table
-                                   :name :feed
-                                   :fields {:id {:type :serial
-                                                 :null false}
-                                            :name {:type :text}}}))]
-                   [file-util/read-edn (constantly {:feed
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :name {:type :text}}
-                                                     :indexes {:feed_name_id_unique_idx {:type :brin
-                                                                                         :fields [:name]
-                                                                                         :unique true}}}})]]
-    (let [actions (#'migrations/make-migrations* [] "")
-          queries (map #(spec-util/conform ::sql/->sql %) actions)]
-      (is (= '({:action :create-index
-                :name :feed_name_id_unique_idx
-                :table-name :feed
-                :options {:type :brin
-                          :fields [:name]
-                          :unique true}})
-            actions))
-      (is (= '({:create-unique-index
-                [:feed_name_id_unique_idx :on :feed :using (:brin :name)]})
-            queries)))))
+  (let [default-actions '({:action :create-table
+                           :name :feed
+                           :fields {:id {:type :serial
+                                         :null false}
+                                    :name {:type :text}}}
+                          {:action :create-index
+                           :name :feed_name_id_idx
+                           :table-name :feed
+                           :options {:type :btree
+                                     :fields [:name :id]
+                                     :unique true}})
+        default-queries (map #(spec-util/conform ::sql/->sql %) default-actions)]
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly default-actions)]
+                     [file-util/read-edn (constantly {:feed
+                                                      {:fields {:id {:type :serial
+                                                                     :null false}
+                                                                :name {:type :text}}}})]]
+      (let [db config/DATABASE-CONN
+            actions (#'migrations/make-migrations* [] "")
+            queries (map #(spec-util/conform ::sql/->sql %) actions)]
+        (testing "test make-migrations for model changes"
+          (is (= '({:action :drop-index
+                    :name :feed_name_id_idx
+                    :table-name :feed})
+                actions)))
+        (testing "test converting migration actions to sql queries formatted as edn"
+          (is (= '({:drop-index :feed_name_id_idx})
+                queries)))
+        (testing "test running migrations on db"
+          (is (every?
+                #(= [#:next.jdbc{:update-count 0}] %)
+                (map #(db-util/exec! db %) (concat default-queries queries)))))))))
