@@ -311,8 +311,7 @@
                            :name :feed
                            :fields {:id {:type :serial
                                          :null false}
-                                    :name {:type :text}}})
-        default-queries (map #(spec-util/conform ::sql/->sql %) default-actions)]
+                                    :name {:type :text}}})]
     #_{:clj-kondo/ignore [:private-call]}
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly default-actions)]
@@ -344,7 +343,7 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (map #(db-util/exec! db %) (concat default-queries queries)))))))))
+                (#'migrations/exec-actions! db (concat default-actions actions)))))))))
 
 
 (deftest test-make-and-migrate-drop-index-ok
@@ -359,8 +358,7 @@
                            :table-name :feed
                            :options {:type :btree
                                      :fields [:name :id]
-                                     :unique true}})
-        default-queries (map #(spec-util/conform ::sql/->sql %) default-actions)]
+                                     :unique true}})]
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly default-actions)]
                      [file-util/read-edn (constantly {:feed
@@ -384,7 +382,7 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (map #(db-util/exec! db %) (concat default-queries queries)))))))))
+                (#'migrations/exec-actions! db (concat default-actions actions)))))))))
 
 
 (deftest test-make-and-migrate-alter-index-ok
@@ -399,8 +397,7 @@
                            :table-name :feed
                            :options {:type :btree
                                      :fields [:name :id]
-                                     :unique true}})
-        default-queries (map #(spec-util/conform ::sql/->sql %) default-actions)]
+                                     :unique true}})]
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly default-actions)]
                      [file-util/read-edn (constantly {:feed
@@ -431,4 +428,4 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (map #(db-util/exec! db %) (concat default-queries (flatten queries))))))))))
+                (#'migrations/exec-actions! db (concat default-actions actions)))))))))

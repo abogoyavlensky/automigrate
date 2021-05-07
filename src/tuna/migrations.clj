@@ -325,6 +325,23 @@
   (first (str/split file-name #"\.")))
 
 
+(defn- exec-action!
+  "Perform action on a database."
+  [db action]
+  (let [formatted-action (spec-util/conform ::sql/->sql action)]
+    (if (sequential? formatted-action)
+      (doseq [sub-action formatted-action]
+        (db-util/exec! db sub-action))
+      (db-util/exec! db formatted-action))))
+
+
+(defn- exec-actions!
+  "Perform list of actions on a database."
+  [db actions]
+  (doseq [action actions]
+    (exec-action! db action)))
+
+
 (defn migrate
   "Run migration on a db."
   [{:keys [migrations-dir db-uri]}]
@@ -337,12 +354,8 @@
             :let [migration-name (get-migration-name file-name)]]
       (when-not (contains? migrated migration-name)
         (jdbc/with-transaction [tx db]
-          (doseq [action (read-migration file-name migrations-dir)
-                  :let [formatted-action (spec-util/conform ::sql/->sql action)]]
-            (if (sequential? formatted-action)
-              (doseq [sub-action formatted-action]
-                (db-util/exec! tx sub-action))
-              (db-util/exec! tx formatted-action)))
+          (let [actions (read-migration file-name migrations-dir)]
+            (exec-actions! tx actions))
           (save-migration db migration-name)
           (println "Successfully migrated: " migration-name))))))
 
