@@ -145,11 +145,15 @@
          #{actions/ADD-COLUMN-ACTION} [(get-in action [:options :foreign-key])]
          #{actions/ALTER-COLUMN-ACTION} [(get-in action [:changes :foreign-key])]
          #{actions/CREATE-TABLE-ACTION} (mapv :foreign-key (vals (:fields action)))
+         #{actions/CREATE-INDEX-ACTION
+           actions/ALTER-INDEX-ACTION} (mapv (fn [field] [(:table-name action) field])
+                                         (get-in action [:options :fields]))
          [])
     (remove nil?)))
 
 
-(defn- action-depends?
+(defn- parent-action?
+  "Check if action is parent to one with presented dependencies."
   [deps action]
   (let [model-names (set (map first deps))]
     (condp contains? (:action action)
@@ -166,7 +170,7 @@
   "Assoc dependencies to graph by actions."
   [actions graph next-action]
   (let [deps (action-dependencies next-action)
-        parent-actions (filter (partial action-depends? deps) actions)]
+        parent-actions (filter (partial parent-action? deps) actions)]
     (as-> graph g
           (dep/depend g next-action DEFAULT-ROOT-NODE)
           (reduce #(dep/depend %1 next-action %2) g parent-actions))))
