@@ -349,14 +349,15 @@
 (defn migrate
   "Run migration on a db."
   [{:keys [migrations-dir db-uri]}]
-  (let [migration-names (migrations-list migrations-dir)
+  (let [migration-names (->> (migrations-list migrations-dir)
+                          (mapv (juxt get-migration-name identity)))
         db (db-util/db-conn db-uri)
         _ (db-util/create-migrations-table db)
         migrated (already-migrated db)]
-    ; TODO: print if nothing to migrate!
-    (doseq [file-name migration-names
-            :let [migration-name (get-migration-name file-name)]]
-      (when-not (contains? migrated migration-name)
+    (if (= migrated (set (map first migration-names)))
+      (println "Noting to migrate.")
+      (doseq [[migration-name file-name] migration-names
+              :when (not (contains? migrated migration-name))]
         (jdbc/with-transaction [tx db]
           (let [actions (read-migration file-name migrations-dir)]
             (exec-actions! tx actions))
@@ -373,10 +374,9 @@
         _ (db-util/create-migrations-table db)
         migrated (already-migrated db)]
     (doseq [file-name migration-names
-            :let [migration-name (get-migration-name file-name)]]
-      (if (contains? migrated migration-name)
-        (file-util/safe-println [(str "[✓] " file-name)])
-        (file-util/safe-println [(str "[ ] " file-name)])))))
+            :let [migration-name (get-migration-name file-name)
+                  sign (if (contains? migrated migration-name) "✓" " ")]]
+      (file-util/safe-println [(format "[%s] %s" sign file-name)]))))
 
 
 (comment
@@ -411,8 +411,8 @@
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
     ;(migrate config)))
-    (explain config)))
-    ;(migration-list config)))
+    ;(explain config)))
+    (migration-list config)))
 
 
 ; TODO: remove!
