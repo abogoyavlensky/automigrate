@@ -96,3 +96,17 @@
 
     (is (thrown-with-msg? ExceptionInfo #"Missing indexed fields: :name"
           (#'models/validate-indexes models)))))
+
+
+(deftest test-validate-indexes-empty-models-ok
+  (let [models {:feed
+                {:indexes {:feed_name_id_ids {:type :btree
+                                              :fields [:id :name]}}}}]
+    (is (thrown-with-msg? ExceptionInfo #"Missing indexed fields: :name, :id"
+          (#'models/validate-indexes models)))))
+
+
+(deftest test-validate-models-missing-fields-err
+  (let [models {:feed {:fields {}}}]
+    (is (thrown-with-msg? ExceptionInfo #"Missing fields in model: :feed"
+          (#'models/validate-models models)))))
