@@ -162,3 +162,82 @@
                                                                    :unique true}
                                                               :name {:type [:varchar 256]}}}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
+
+
+(deftest test-make-migrations*-create-index-restore-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly
+                      '(({:action :create-table
+                          :name :feed
+                          :fields {:id {:type :serial
+                                        :null false}
+                                   :name {:type :text}}}
+                         {:action :create-index
+                          :name :feed_name_id_unique_idx
+                          :table-name :feed
+                          :options {:type :btree
+                                    :fields [:name :id]
+                                    :unique true}})))]
+                   [file-util/read-edn (constantly {:feed
+                                                    {:fields {:id {:type :serial
+                                                                   :null false}
+                                                              :name {:type :text}}
+                                                     :indexes {:feed_name_id_unique_idx {:type :btree
+                                                                                         :fields [:name :id]
+                                                                                         :unique true}}}})]]
+    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+
+
+(deftest test-make-migrations*-drop-index-restore-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly
+                      '(({:action :create-table
+                          :name :feed
+                          :fields {:id {:type :serial
+                                        :null false}
+                                   :name {:type :text}}}
+                         {:action :create-index
+                          :name :feed_name_id_unique_idx
+                          :table-name :feed
+                          :options {:type :btree
+                                    :fields [:name :id]
+                                    :unique true}}
+                         {:action :drop-index
+                          :name :feed_name_id_unique_idx
+                          :table-name :feed})))]
+                   [file-util/read-edn (constantly {:feed
+                                                    {:fields {:id {:type :serial
+                                                                   :null false}
+                                                              :name {:type :text}}}})]]
+    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+
+
+(deftest test-make-migrations*-alter-index-restore-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly
+                      '(({:action :create-table
+                          :name :feed
+                          :fields {:id {:type :serial
+                                        :null false}
+                                   :name {:type :text}}}
+                         {:action :create-index
+                          :name :feed_name_id_idx
+                          :table-name :feed
+                          :options {:type :btree
+                                    :fields [:name :id]
+                                    :unique true}}
+                         {:action :alter-index
+                          :name :feed_name_id_idx
+                          :table-name :feed
+                          :options {:type :btree
+                                    :fields [:name :id]}})))]
+                   [file-util/read-edn (constantly {:feed
+                                                    {:fields {:id {:type :serial
+                                                                   :null false}
+                                                              :name {:type :text}}
+                                                     :indexes {:feed_name_id_idx {:type :btree
+                                                                                  :fields [:name :id]}}}})]]
+    (is (not (seq (#'migrations/make-migrations* [] ""))))))

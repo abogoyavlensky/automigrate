@@ -4,8 +4,11 @@
             [bond.james :as bond]
             [tuna.migrations :as migrations]
             [tuna.core :as core]
+            [tuna.schema :as schema]
+            [tuna.sql :as sql]
             [tuna.util.db :as db-util]
             [tuna.util.file :as file-util]
+            [tuna.util.spec :as spec-util]
             [tuna.util.test :as test-util]
             [tuna.testing-config :as config])
   (:import [java.io FileNotFoundException]))
@@ -231,7 +234,20 @@
                                                    :table-name :feed
                                                    :changes {:foreign-key [:account :id]}
                                                    :drop #{}
-                                                   :action :alter-column}))]]
+                                                   :action :alter-column}
+                                                  {:name :feed_name_idx
+                                                   :table-name :feed
+                                                   :options {:type :btree
+                                                             :fields [:name]}
+                                                   :action :create-index}
+                                                  {:name :feed_name_idx
+                                                   :table-name :feed
+                                                   :action :drop-index}
+                                                  {:name :feed_name_idx
+                                                   :table-name :feed
+                                                   :options {:type :btree
+                                                             :fields [:name]}
+                                                   :action :alter-index}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 1})
     (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
@@ -245,7 +261,11 @@
             "DROP TABLE IF EXISTS feed"
             "CREATE TABLE feed (account SERIAL REFERENCES ACCOUNT(ID))"
             "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
-            "ALTER TABLE feed ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) REFERENCES ACCOUNT(ID)"]
+            "ALTER TABLE feed ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) REFERENCES ACCOUNT(ID)"
+            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"
+            "DROP INDEX feed_name_idx"
+            "DROP INDEX feed_name_idx"
+            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args
@@ -284,3 +304,226 @@
               :name :articles,
               :fields {:id {:type :serial, :unique true}, :bar1 {:type :integer, :foreign-key [:bar1 :id]}}})
           (#'migrations/sort-actions actions)))))
+
+
+(deftest test-sort-actions-with-create-index-ok
+  (let [actions '({:action :create-index
+                   :name :feed-name-id-idx
+                   :table-name :feed
+                   :options {:type :btree
+                             :fields [:name :id]}}
+                  {:action :create-table
+                   :name :feed
+                   :fields {:id {:type :serial
+                                 :unique true}}}
+                  {:action :add-column
+                   :name :name
+                   :table-name :feed
+                   :options {:type :text}})]
+
+    (is (= '({:action :create-table
+              :name :feed
+              :fields {:id {:type :serial
+                            :unique true}}}
+             {:action :add-column
+              :name :name
+              :table-name :feed
+              :options {:type :text}}
+             {:action :create-index
+              :name :feed-name-id-idx
+              :table-name :feed
+              :options {:type :btree
+                        :fields [:name :id]}})
+          (#'migrations/sort-actions actions)))))
+
+
+(deftest test-sort-actions-with-alter-index-ok
+  (let [actions '({:action :alter-index
+                   :name :feed-name-id-idx
+                   :table-name :feed
+                   :options {:type :btree
+                             :fields [:name :id]}}
+                  {:action :add-column
+                   :name :name
+                   :table-name :feed
+                   :options {:type :text}})]
+
+    (is (= '({:action :add-column
+              :name :name
+              :table-name :feed
+              :options {:type :text}}
+             {:action :alter-index
+              :name :feed-name-id-idx
+              :table-name :feed
+              :options {:type :btree
+                        :fields [:name :id]}})
+          (#'migrations/sort-actions actions)))))
+
+
+(deftest test-make-and-migrate-create-index-on-new-model-ok
+  (let [existing-actions '()]
+    #_{:clj-kondo/ignore [:private-call]}
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly existing-actions)]
+                     [file-util/read-edn (constantly {:feed
+                                                      {:fields {:id {:type :serial
+                                                                     :null false}
+                                                                :name {:type :text}}
+                                                       :indexes {:feed-name-id-unique-idx {:type :btree
+                                                                                           :fields [:name]
+                                                                                           :unique true}}}})]]
+      (let [db config/DATABASE-CONN
+            actions (#'migrations/make-migrations* [] "")
+            queries (map #(spec-util/conform ::sql/->sql %) actions)]
+        (testing "test make-migrations for model changes"
+          (is (= '({:action :create-table
+                    :name :feed
+                    :fields {:id {:type :serial
+                                  :null false}
+                             :name {:type :text}}}
+                   {:action :create-index
+                    :name :feed-name-id-unique-idx
+                    :table-name :feed
+                    :options {:type :btree
+                              :fields [:name]
+                              :unique true}})
+                actions)))
+        (testing "test converting migration actions to sql queries formatted as edn"
+          (is (= '({:create-table [:feed]
+                    :with-columns [(:id :serial [:not nil])
+                                   (:name :text)]}
+                   {:create-unique-index [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
+                queries)))
+        (testing "test converting actions to sql"
+          (is (= '(["CREATE TABLE feed (id SERIAL NOT NULL, name TEXT)"]
+                   ["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(NAME)"])
+                (map #(sql/->sql %) actions))))
+        (testing "test running migrations on db"
+          (is (every?
+                #(= [#:next.jdbc{:update-count 0}] %)
+                (#'migrations/exec-actions! db (concat existing-actions actions)))))))))
+
+
+(deftest test-make-and-migrate-create-index-on-existing-model-ok
+  (let [existing-actions '({:action :create-table
+                            :name :feed
+                            :fields {:id {:type :serial
+                                          :null false}
+                                     :name {:type :text}}})]
+    #_{:clj-kondo/ignore [:private-call]}
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly existing-actions)]
+                     [file-util/read-edn (constantly {:feed
+                                                      {:fields {:id {:type :serial
+                                                                     :null false}
+                                                                :name {:type :text}}
+                                                       :indexes {:feed-name-id-unique-idx {:type :btree
+                                                                                           :fields [:name]
+                                                                                           :unique true}}}})]]
+      (let [db config/DATABASE-CONN
+            actions (#'migrations/make-migrations* [] "")
+            queries (map #(spec-util/conform ::sql/->sql %) actions)]
+        (testing "test make-migrations for model changes"
+          (is (= '({:action :create-index
+                    :name :feed-name-id-unique-idx
+                    :table-name :feed
+                    :options {:type :btree
+                              :fields [:name]
+                              :unique true}})
+                actions)))
+        (testing "test converting migration actions to sql queries formatted as edn"
+          (is (= '({:create-unique-index
+                    [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
+                queries)))
+        (testing "test converting actions to sql"
+          (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(NAME)"])
+                (map #(sql/->sql %) actions))))
+        (testing "test running migrations on db"
+          (is (every?
+                #(= [#:next.jdbc{:update-count 0}] %)
+                (#'migrations/exec-actions! db (concat existing-actions actions)))))))))
+
+
+(deftest test-make-and-migrate-drop-index-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (let [existing-actions '({:action :create-table
+                            :name :feed
+                            :fields {:id {:type :serial
+                                          :null false}
+                                     :name {:type :text}}}
+                           {:action :create-index
+                            :name :feed-name-id-idx
+                            :table-name :feed
+                            :options {:type :btree
+                                      :fields [:name :id]
+                                      :unique true}})]
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly existing-actions)]
+                     [file-util/read-edn (constantly {:feed
+                                                      {:fields {:id {:type :serial
+                                                                     :null false}
+                                                                :name {:type :text}}}})]]
+      (let [db config/DATABASE-CONN
+            actions (#'migrations/make-migrations* [] "")
+            queries (map #(spec-util/conform ::sql/->sql %) actions)]
+        (testing "test make-migrations for model changes"
+          (is (= '({:action :drop-index
+                    :name :feed-name-id-idx
+                    :table-name :feed})
+                actions)))
+        (testing "test converting migration actions to sql queries formatted as edn"
+          (is (= '({:drop-index :feed-name-id-idx})
+                queries)))
+        (testing "test converting actions to sql"
+          (is (= '(["DROP INDEX feed_name_id_idx"])
+                (map #(sql/->sql %) actions))))
+        (testing "test running migrations on db"
+          (is (every?
+                #(= [#:next.jdbc{:update-count 0}] %)
+                (#'migrations/exec-actions! db (concat existing-actions actions)))))))))
+
+
+(deftest test-make-and-migrate-alter-index-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (let [existing-actions '({:action :create-table
+                            :name :feed
+                            :fields {:id {:type :serial
+                                          :null false}
+                                     :name {:type :text}}}
+                           {:action :create-index
+                            :name :feed_name_id_idx
+                            :table-name :feed
+                            :options {:type :btree
+                                      :fields [:name :id]
+                                      :unique true}})]
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly existing-actions)]
+                     [file-util/read-edn (constantly {:feed
+                                                      {:fields {:id {:type :serial
+                                                                     :null false}
+                                                                :name {:type :text}}
+                                                       :indexes {:feed_name_id_idx {:type :btree
+                                                                                    :fields [:name]}}}})]]
+      (let [db config/DATABASE-CONN
+            actions (#'migrations/make-migrations* [] "")
+            queries (map #(spec-util/conform ::sql/->sql %) actions)]
+        (testing "test make-migrations for model changes"
+          (is (= '({:action :alter-index
+                    :name :feed_name_id_idx
+                    :options {:fields [:name]
+                              :type :btree}
+                    :table-name :feed})
+                actions)))
+        (testing "test converting migration actions to sql queries formatted as edn"
+          (is (= '([{:drop-index :feed_name_id_idx}
+                    {:create-index
+                     [:feed_name_id_idx :on :feed :using (:btree :name)]}])
+                queries)))
+        (testing "test converting actions to sql"
+          (is (= '((["DROP INDEX feed_name_id_idx"]
+                    ["CREATE INDEX feed_name_id_idx ON FEED USING BTREE(NAME)"]))
+                (map #(sql/->sql %) actions))))
+        (testing "test running migrations on db"
+          (is (every?
+                #(= [#:next.jdbc{:update-count 0}] %)
+                (#'migrations/exec-actions! db (concat existing-actions actions)))))))))

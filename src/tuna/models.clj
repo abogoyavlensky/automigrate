@@ -1,7 +1,9 @@
 (ns tuna.models
   "Module for for transforming models to migrations."
   (:require [clojure.spec.alpha :as s]
-            [slingshot.slingshot :refer [throw+]]))
+            [clojure.string :as str]
+            [slingshot.slingshot :refer [throw+]]
+            [clojure.set :as set]))
 
 
 ; Specs
@@ -103,9 +105,32 @@
   (s/map-of keyword? ::field))
 
 
+(s/def :tuna.models.index/type
+  #{:btree :gin :gist :spgist :brin :hash})
+
+
+(s/def :tuna.models.index/fields
+  (s/coll-of keyword? :min-count 1 :kind vector? :distinct true))
+
+
+(s/def :tuna.models.index/unique true?)
+
+
+(s/def ::index
+  (s/keys
+    :req-un [:tuna.models.index/type
+             :tuna.models.index/fields]
+    :opt-un [:tuna.models.index/unique]))
+
+
+(s/def ::indexes
+  (s/map-of keyword? ::index))
+
+
 (s/def ::model
   (s/keys
-    :req-un [::fields]))
+    :req-un [::fields]
+    :opt-un [::indexes]))
 
 
 (defn- check-referenced-model-exists?
@@ -166,7 +191,35 @@
   models)
 
 
+(defn- validate-indexes
+  [models]
+  (doseq [[model-name model-value] models]
+    (doseq [[_index-name index-options] (:indexes model-value)
+            :let [index-fields (set (:fields index-options))
+                  model-fields (set (keys (:fields model-value)))
+                  missing-fields (set/difference index-fields model-fields)]]
+      (when (seq missing-fields)
+        (throw+ {:type ::missing-indexed-fields
+                 :data {:model-name model-name
+                        :missing-fields missing-fields
+                        :message (format "Missing indexed fields: %s"
+                                   (str/join ", " missing-fields))}}))))
+  models)
+
+
+(defn- validate-models
+  [models]
+  (doseq [[model-name {:keys [fields]}] models]
+    (when (empty? fields)
+      (throw+ {:type ::missing-fields-in-model
+               :data {:model-name model-name}
+               :message (format "Missing fields in model: %s" model-name)})))
+  models)
+
+
 (s/def ::models
   (s/and
     (s/map-of keyword? ::model)
-    validate-foreign-key))
+    validate-models
+    validate-foreign-key
+    validate-indexes))

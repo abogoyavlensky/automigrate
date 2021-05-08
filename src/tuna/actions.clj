@@ -8,13 +8,19 @@
 (def ADD-COLUMN-ACTION :add-column)
 (def ALTER-COLUMN-ACTION :alter-column)
 (def DROP-COLUMN-ACTION :drop-column)
+(def CREATE-INDEX-ACTION :create-index)
+(def DROP-INDEX-ACTION :drop-index)
+(def ALTER-INDEX-ACTION :alter-index)
 
 
 (s/def ::action #{CREATE-TABLE-ACTION
                   DROP-TABLE-ACTION
                   ADD-COLUMN-ACTION
                   ALTER-COLUMN-ACTION
-                  DROP-COLUMN-ACTION})
+                  DROP-COLUMN-ACTION
+                  CREATE-INDEX-ACTION
+                  DROP-INDEX-ACTION
+                  ALTER-INDEX-ACTION})
 
 
 (s/def ::name keyword?)
@@ -84,6 +90,36 @@
   (s/keys
     :req-un [::action
              ::name]))
+
+
+(s/def :tuna.actions.indexes/options
+  ::models/index)
+
+
+(defmethod action CREATE-INDEX-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name
+             ::table-name
+             :tuna.actions.indexes/options]))
+
+
+(defmethod action DROP-INDEX-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name
+             ::table-name]))
+
+
+(defmethod action ALTER-INDEX-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::name
+             ::table-name
+             :tuna.actions.indexes/options]))
 
 
 (s/def ::->migration (s/multi-spec action :action))

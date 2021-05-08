@@ -54,6 +54,23 @@
   (dissoc schema (:name action)))
 
 
+(defmethod apply-action-to-schema actions/CREATE-INDEX-ACTION
+  [schema action]
+  (assoc-in schema [(:table-name action) :indexes (:name action)]
+    (:options action)))
+
+
+(defmethod apply-action-to-schema actions/DROP-INDEX-ACTION
+  [schema action]
+  (map-util/dissoc-in schema [(:table-name action) :indexes] (:name action)))
+
+
+(defmethod apply-action-to-schema actions/ALTER-INDEX-ACTION
+  [schema action]
+  (assoc-in schema [(:table-name action) :indexes (:name action)]
+    (:options action)))
+
+
 (defn current-db-schema
   "Return map of models derived from existing migrations."
   [migrations-files]
