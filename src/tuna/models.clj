@@ -101,8 +101,24 @@
       :req-un [:tuna.models.field/type])))
 
 
+(s/def ::field-vec
+  (s/cat :name keyword?
+    :type :tuna.models.field/type
+    :options (s/? ::options-common)))
+
+
+(defn- convert-fields
+  [acc field]
+  (let [options (assoc (:options field) :type (:type field))]
+    (assoc acc (:name field) options)))
+
+
 (s/def ::fields
-  (s/map-of keyword? ::field))
+  (s/and (s/coll-of ::field-vec)
+    (s/conformer
+      (fn [value]
+        (reduce convert-fields {} value)))
+    (s/map-of keyword? ::field)))
 
 
 (s/def :tuna.models.index/type
@@ -128,9 +144,15 @@
 
 
 (s/def ::model
-  (s/keys
-    :req-un [::fields]
-    :opt-un [::indexes]))
+  (s/and
+    (s/conformer
+      (fn [value]
+        (if (vector? value)
+          {:fields value}
+          value)))
+    (s/keys
+      :req-un [::fields]
+      :opt-un [::indexes])))
 
 
 (defn- check-referenced-model-exists?
