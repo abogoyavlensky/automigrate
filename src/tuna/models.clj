@@ -114,11 +114,7 @@
 
 
 (s/def ::fields
-  (s/and (s/coll-of ::field-vec)
-    (s/conformer
-      (fn [value]
-        (reduce convert-fields {} value)))
-    (s/map-of keyword? ::field)))
+  (s/map-of keyword? ::field))
 
 
 (s/def :tuna.models.index/type
@@ -144,6 +140,18 @@
 
 
 (s/def ::model
+  (s/keys
+    :req-un [::fields]
+    :opt-un [::indexes]))
+
+
+(s/def :tuna.models.fields->internal/fields
+  (s/and
+    (s/coll-of ::field-vec)
+    (s/conformer #(reduce convert-fields {} %))))
+
+
+(s/def ::model->internal
   (s/and
     (s/conformer
       (fn [value]
@@ -151,7 +159,7 @@
           {:fields value}
           value)))
     (s/keys
-      :req-un [::fields]
+      :req-un [:tuna.models.fields->internal/fields]
       :opt-un [::indexes])))
 
 
@@ -239,9 +247,15 @@
   models)
 
 
-(s/def ::models
+(s/def ::internal-models
   (s/and
     (s/map-of keyword? ::model)
     validate-models
     validate-foreign-key
     validate-indexes))
+
+
+(s/def ::->internal-models
+  (s/and
+    (s/map-of keyword? ::model->internal)
+    ::internal-models))

@@ -13,12 +13,9 @@
                                                             :name :feed,
                                                             :fields {:id {:type :serial, :null false}}})))]
                    [file-util/read-edn (constantly {:feed
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :name {:type [:varchar 100]
-                                                                     :null true}
-                                                              :created_at {:type :timestamp
-                                                                           :default [:now]}}}})]]
+                                                    {:fields [[:id :serial {:null false}]
+                                                              [:name [:varchar 100] {:null true}]
+                                                              [:created_at :timestamp {:default [:now]}]]}})]]
     (is (= '({:action :add-column,
               :name :created_at,
               :table-name :feed,
@@ -45,12 +42,9 @@
                                                             :table-name :feed,
                                                             :options {:type :timestamp, :default [:now]}})))]
                    [file-util/read-edn (constantly {:feed
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :name {:type [:varchar 100]
-                                                                     :null true}
-                                                              :created_at {:type :timestamp
-                                                                           :default [:now]}}}})]]
+                                                    [[:id :serial {:null false}]
+                                                     [:name [:varchar 100] {:null true}]
+                                                     [:created_at :timestamp {:default [:now]}]]})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
 
 
@@ -79,10 +73,9 @@
                                                             :changes {:type :text}
                                                             :drop #{:null}})))]
                    [file-util/read-edn (constantly {:feed
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :name {:type :text}
-                                                              :created_at {:type :date}}}})]]
+                                                    {:fields [[:id :serial {:null false}]
+                                                              [:name :text]
+                                                              [:created_at :date]]}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
 
 
@@ -108,10 +101,8 @@
                           :name :created_at
                           :table-name :feed})))]
                    [file-util/read-edn (constantly {:feed
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :name {:type [:varchar 100]
-                                                                     :null true}}}})]]
+                                                    {:fields [[:id :serial {:null false}]
+                                                              [:name [:varchar 100] {:null true}]]}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
 
 
@@ -131,9 +122,8 @@
                         ({:action :drop-table
                           :name :feed})))]
                    [file-util/read-edn (constantly {:account
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :name {:type [:varchar 256]}}}})]]
+                                                    [[:id :serial {:null false}]
+                                                     [:name [:varchar 256]]]})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
 
 
@@ -153,14 +143,11 @@
                                         :unique true}
                                    :name {:type [:varchar 256]}}})))]
                    [file-util/read-edn (constantly {:feed
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :account {:type :integer
-                                                                        :foreign-key [:account :id]}}}
+                                                    {:fields [[:id :serial {:null false}]
+                                                              [:account :integer {:foreign-key [:account :id]}]]}
                                                     :account
-                                                    {:fields {:id {:type :serial
-                                                                   :unique true}
-                                                              :name {:type [:varchar 256]}}}})]]
+                                                    {:fields [[:id :serial {:unique true}]
+                                                              [:name [:varchar 256]]]}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
 
 
@@ -180,9 +167,8 @@
                                     :fields [:name :id]
                                     :unique true}})))]
                    [file-util/read-edn (constantly {:feed
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :name {:type :text}}
+                                                    {:fields [[:id :serial {:null false}]
+                                                              [:name :text]]
                                                      :indexes {:feed_name_id_unique_idx {:type :btree
                                                                                          :fields [:name :id]
                                                                                          :unique true}}}})]]
@@ -208,9 +194,8 @@
                           :name :feed_name_id_unique_idx
                           :table-name :feed})))]
                    [file-util/read-edn (constantly {:feed
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :name {:type :text}}}})]]
+                                                    {:fields [[:id :serial {:null false}]
+                                                              [:name :text]]}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
 
 
@@ -235,9 +220,8 @@
                           :options {:type :btree
                                     :fields [:name :id]}})))]
                    [file-util/read-edn (constantly {:feed
-                                                    {:fields {:id {:type :serial
-                                                                   :null false}
-                                                              :name {:type :text}}
+                                                    {:fields [[:id :serial {:null false}]
+                                                              [:name :text]]
                                                      :indexes {:feed_name_id_idx {:type :btree
                                                                                   :fields [:name :id]}}}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))

@@ -1,5 +1,3 @@
 {:feed
- {:fields {:id {:type :serial
-                :null false}
-           :created_at {:type :timestamp
-                        :default [:now]}}}}
+ [[:id :serial {:null false}]
+  [:created_at :timestamp {:default [:now]}]]}

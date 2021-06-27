@@ -1,7 +1,4 @@
 {:feed
- {:fields {:id {:type :serial
-                :null false}
-           :name {:type [:varchar 100]
-                  :null true}
-           :created_at {:type :timestamp
-                        :default [:now]}}}}
+ {:fields [[:id :serial {:null false}]
+           [:name [:varchar 100] {:null true}]
+           [:created_at :timestamp {:default [:now]}]]}}

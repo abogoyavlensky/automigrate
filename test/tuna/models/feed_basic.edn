@@ -1,3 +1,2 @@
 {:feed
- {:fields {:id {:type :serial
-                :null false}}}}
+ {:fields [[:id :serial {:null false}]]}}
