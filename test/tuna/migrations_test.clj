@@ -22,8 +22,7 @@
 (deftest test-reading-models-from-file-ok
   (let [path (str config/MODELS-DIR "feed_basic.edn")]
     (is (= {:feed
-            {:fields {:id {:type :serial
-                           :null false}}}}
+            {:fields [[:id :serial {:null false}]]}}
           (file-util/read-edn path)))))
 
 
@@ -366,12 +365,10 @@
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly {:feed
-                                                      {:fields {:id {:type :serial
-                                                                     :null false}
-                                                                :name {:type :text}}
-                                                       :indexes {:feed-name-id-unique-idx {:type :btree
-                                                                                           :fields [:name]
-                                                                                           :unique true}}}})]]
+                                                      {:fields [[:id :serial {:null false}]
+                                                                [:name :text]]
+                                                       :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
+                                                                                                   :unique true}]]}})]]
       (let [db config/DATABASE-CONN
             actions (#'migrations/make-migrations* [] "")
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
@@ -414,12 +411,10 @@
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly {:feed
-                                                      {:fields {:id {:type :serial
-                                                                     :null false}
-                                                                :name {:type :text}}
-                                                       :indexes {:feed-name-id-unique-idx {:type :btree
-                                                                                           :fields [:name]
-                                                                                           :unique true}}}})]]
+                                                      {:fields [[:id :serial {:null false}]
+                                                                [:name :text]]
+                                                       :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
+                                                                                                   :unique true}]]}})]]
       (let [db config/DATABASE-CONN
             actions (#'migrations/make-migrations* [] "")
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
@@ -460,9 +455,8 @@
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly {:feed
-                                                      {:fields {:id {:type :serial
-                                                                     :null false}
-                                                                :name {:type :text}}}})]]
+                                                      [[:id :serial {:null false}]
+                                                       [:name :text]]})]]
       (let [db config/DATABASE-CONN
             actions (#'migrations/make-migrations* [] "")
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
@@ -499,11 +493,9 @@
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly {:feed
-                                                      {:fields {:id {:type :serial
-                                                                     :null false}
-                                                                :name {:type :text}}
-                                                       :indexes {:feed_name_id_idx {:type :btree
-                                                                                    :fields [:name]}}}})]]
+                                                      {:fields [[:id :serial {:null false}]
+                                                                [:name :text]]
+                                                       :indexes [[:feed_name_id_idx :btree {:fields [:name]}]]}})]]
       (let [db config/DATABASE-CONN
             actions (#'migrations/make-migrations* [] "")
             queries (map #(spec-util/conform ::sql/->sql %) actions)]

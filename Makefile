@@ -86,7 +86,7 @@ test:
 .PHONY: up  # Run db
 up:
 	@$(INFO) "Running db..."
-	@docker-compose up -d db adminer
+	@docker-compose up -d db adminer test-postgres
 
 
 .PHONY: up-test  # Run db

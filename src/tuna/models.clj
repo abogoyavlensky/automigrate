@@ -101,6 +101,13 @@
       :req-un [:tuna.models.field/type])))
 
 
+(s/def ::field-vec
+  (s/cat
+    :name keyword?
+    :type :tuna.models.field/type
+    :options (s/? ::options-common)))
+
+
 (s/def ::fields
   (s/map-of keyword? ::field))
 
@@ -123,6 +130,15 @@
     :opt-un [:tuna.models.index/unique]))
 
 
+(s/def ::index-vec
+  (s/cat
+    :name keyword?
+    :type :tuna.models.index/type
+    :options (s/keys
+               :req-un [:tuna.models.index/fields]
+               :opt-un [:tuna.models.index/unique])))
+
+
 (s/def ::indexes
   (s/map-of keyword? ::index))
 
@@ -131,6 +147,40 @@
   (s/keys
     :req-un [::fields]
     :opt-un [::indexes]))
+
+
+(defn- item-vec->map
+  [acc field]
+  (let [options (assoc (:options field) :type (:type field))]
+    (assoc acc (:name field) options)))
+
+
+(s/def ::item-vec->map
+  (s/conformer #(reduce item-vec->map {} %)))
+
+
+(s/def :tuna.models.fields->internal/fields
+  (s/and
+    (s/coll-of ::field-vec)
+    ::item-vec->map))
+
+
+(s/def :tuna.models.indexes->internal/indexes
+  (s/and
+    (s/coll-of ::index-vec)
+    ::item-vec->map))
+
+
+(s/def ::model->internal
+  (s/and
+    (s/conformer
+      (fn [value]
+        (if (vector? value)
+          {:fields value}
+          value)))
+    (s/keys
+      :req-un [:tuna.models.fields->internal/fields]
+      :opt-un [:tuna.models.indexes->internal/indexes])))
 
 
 (defn- check-referenced-model-exists?
@@ -217,9 +267,15 @@
   models)
 
 
-(s/def ::models
+(s/def ::internal-models
   (s/and
     (s/map-of keyword? ::model)
     validate-models
     validate-foreign-key
     validate-indexes))
+
+
+(s/def ::->internal-models
+  (s/and
+    (s/map-of keyword? ::model->internal)
+    ::internal-models))

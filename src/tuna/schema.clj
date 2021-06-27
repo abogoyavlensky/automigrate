@@ -79,7 +79,7 @@
                   (flatten))]
     (->> actions
       (reduce apply-action-to-schema {})
-      (spec-util/conform ::models/models))))
+      (spec-util/conform ::models/internal-models))))
 
 
 ; TODO: remove!

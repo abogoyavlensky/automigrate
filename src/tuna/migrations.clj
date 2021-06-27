@@ -133,7 +133,7 @@
   [model-file]
   (->> model-file
     (file-util/read-edn)
-    (spec-util/conform ::models/models)))
+    (spec-util/conform ::models/->internal-models)))
 
 
 (defn- action-dependencies
@@ -381,21 +381,23 @@
 
 (comment
   (let [config {:model-file "src/tuna/models.edn"
+                ;:model-file "test/tuna/models/feed_add_column.edn"
                 :migrations-dir "src/tuna/migrations"
+                ;:migrations-dir "test/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 :number 4}
         db (db-util/db-conn (:db-uri config))
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
       (try+
-        ;(->> (read-models model-file))
-        (->> (make-migrations* migrations-files model-file))
+        (->> (read-models model-file))
+        ;(->> (make-migrations* migrations-files model-file))
         ;     (flatten))
 
-           ;(map #(spec-util/conform ::sql/->sql %)))
-           ;(flatten)
-           ;(map db-util/fmt))
-           ;(map #(db-util/exec! db %)))
+          ;(map #(spec-util/conform ::sql/->sql %)))
+          ;(flatten)
+          ;(map db-util/fmt))
+          ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (:data e)))))
 
