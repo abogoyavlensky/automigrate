@@ -20,19 +20,19 @@
 
 (defmethod apply-action-to-schema actions/CREATE-TABLE-ACTION
   [schema action]
-  (assoc schema (:name action) (select-keys action [:fields])))
+  (assoc schema (:model-name action) (select-keys action [:fields])))
 
 
 (defmethod apply-action-to-schema actions/ADD-COLUMN-ACTION
   [schema action]
-  (assoc-in schema [(:model-name action) :fields (:name action)]
+  (assoc-in schema [(:model-name action) :fields (:field-name action)]
     (:options action)))
 
 
 (defmethod apply-action-to-schema actions/ALTER-COLUMN-ACTION
   [schema action]
   (let [model-name (:model-name action)
-        field-name (:name action)
+        field-name (:field-name action)
         dissoc-actions-fn (fn [schema]
                             (apply map-util/dissoc-in
                               schema
@@ -46,28 +46,28 @@
 
 (defmethod apply-action-to-schema actions/DROP-COLUMN-ACTION
   [schema action]
-  (map-util/dissoc-in schema [(:model-name action) :fields] (:name action)))
+  (map-util/dissoc-in schema [(:model-name action) :fields] (:field-name action)))
 
 
 (defmethod apply-action-to-schema actions/DROP-TABLE-ACTION
   [schema action]
-  (dissoc schema (:name action)))
+  (dissoc schema (:model-name action)))
 
 
 (defmethod apply-action-to-schema actions/CREATE-INDEX-ACTION
   [schema action]
-  (assoc-in schema [(:model-name action) :indexes (:name action)]
+  (assoc-in schema [(:model-name action) :indexes (:index-name action)]
     (:options action)))
 
 
 (defmethod apply-action-to-schema actions/DROP-INDEX-ACTION
   [schema action]
-  (map-util/dissoc-in schema [(:model-name action) :indexes] (:name action)))
+  (map-util/dissoc-in schema [(:model-name action) :indexes] (:index-name action)))
 
 
 (defmethod apply-action-to-schema actions/ALTER-INDEX-ACTION
   [schema action]
-  (assoc-in schema [(:model-name action) :indexes (:name action)]
+  (assoc-in schema [(:model-name action) :indexes (:index-name action)]
     (:options action)))
 
 

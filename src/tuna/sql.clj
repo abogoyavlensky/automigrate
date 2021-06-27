@@ -91,7 +91,7 @@
 (s/def ::create-table->sql
   (s/conformer
     (fn [value]
-      {:create-table [(:name value)]
+      {:create-table [(:model-name value)]
        :with-columns (fields->columns (:fields value))})))
 
 
@@ -100,7 +100,7 @@
   (s/and
     (s/keys
       :req-un [::actions/action
-               ::actions/name
+               ::actions/model-name
                ::fields])
     ::create-table->sql))
 
@@ -113,7 +113,7 @@
   (s/conformer
     (fn [value]
       {:alter-table (:model-name value)
-       :add-column (first (fields->columns [[(:name value) (:options value)]]))})))
+       :add-column (first (fields->columns [[(:field-name value) (:options value)]]))})))
 
 
 (defmethod action->sql actions/ADD-COLUMN-ACTION
@@ -121,7 +121,7 @@
   (s/and
     (s/keys
       :req-un [::actions/action
-               ::actions/name
+               ::actions/field-name
                ::actions/model-name
                ::options])
     ::add-column->sql))
@@ -163,7 +163,7 @@
   (s/conformer
     (fn [action]
       (let [changes (for [[option value] (:changes action)
-                          :let [field-name (:name action)
+                          :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
                       (case option
                         :type {:alter-column [field-name :type value]}
@@ -176,7 +176,7 @@
                                                        [:foreign-key field-name]
                                                        value]}))
             dropped (for [option (:drop action)
-                          :let [field-name (:name action)
+                          :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
                       (case option
                         :null {:alter-column [field-name :set [:not nil]]}
@@ -193,7 +193,7 @@
   (s/and
     (s/keys
       :req-un [::actions/action
-               ::actions/name
+               ::actions/field-name
                ::actions/model-name
                ::changes
                ::actions/drop])
@@ -204,7 +204,7 @@
   (s/conformer
     (fn [value]
       {:alter-table (:model-name value)
-       :drop-column (:name value)})))
+       :drop-column (:field-name value)})))
 
 
 (defmethod action->sql actions/DROP-COLUMN-ACTION
@@ -212,7 +212,7 @@
   (s/and
     (s/keys
       :req-un [::actions/action
-               ::actions/name
+               ::actions/field-name
                ::actions/model-name])
     ::drop-column->sql))
 
@@ -220,7 +220,7 @@
 (s/def ::drop-table->sql
   (s/conformer
     (fn [value]
-      {:drop-table [:if-exists (:name value)]})))
+      {:drop-table [:if-exists (:model-name value)]})))
 
 
 (defmethod action->sql actions/DROP-TABLE-ACTION
@@ -228,7 +228,7 @@
   (s/and
     (s/keys
       :req-un [::actions/action
-               ::actions/name])
+               ::actions/model-name])
     ::drop-table->sql))
 
 
@@ -240,7 +240,7 @@
             index-action (if (true? (:unique options))
                            :create-unique-index
                            :create-index)]
-        {index-action [(:name value) :on (:model-name value)
+        {index-action [(:index-name value) :on (:model-name value)
                        :using (cons index-type (:fields options))]}))))
 
 
@@ -249,7 +249,7 @@
   (s/and
     (s/keys
       :req-un [::actions/action
-               ::actions/name
+               ::actions/index-name
                ::actions/model-name
                :tuna.actions.indexes/options])
     ::create-index->sql))
@@ -258,7 +258,7 @@
 (s/def ::drop-index->sql
   (s/conformer
     (fn [value]
-      {:drop-index (:name value)})))
+      {:drop-index (:index-name value)})))
 
 
 (defmethod action->sql actions/DROP-INDEX-ACTION
@@ -266,7 +266,7 @@
   (s/and
     (s/keys
       :req-un [::actions/action
-               ::actions/name
+               ::actions/index-name
                ::actions/model-name])
     ::drop-index->sql))
 
@@ -283,7 +283,7 @@
   (s/and
     (s/keys
       :req-un [::actions/action
-               ::actions/name
+               ::actions/index-name
                ::actions/model-name
                :tuna.actions.indexes/options])
     ::alter-index->sql))

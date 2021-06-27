@@ -63,11 +63,25 @@
   (file-util/zfill (inc (count file-names))))
 
 
+(defn- extract-item-name
+  [action]
+  (condp contains? (:action action)
+    #{actions/CREATE-TABLE-ACTION
+      actions/DROP-TABLE-ACTION} (:model-name action)
+    #{actions/ADD-COLUMN-ACTION
+      actions/DROP-COLUMN-ACTION
+      actions/ALTER-COLUMN-ACTION} (:field-name action)
+    #{actions/CREATE-INDEX-ACTION
+      actions/DROP-INDEX-ACTION
+      actions/ALTER-INDEX-ACTION} (:index-name action)))
+
+
 (defn- next-migration-name
   [actions]
-  (let [action-name (-> actions first :action name)
-        model-name (-> actions first :name name)]
-    (-> (str/join #"_" [AUTO-MIGRATION-PREFIX action-name model-name])
+  (let [action (-> actions first)
+        action-name (-> action :action name)
+        item-name (-> action extract-item-name name)]
+    (-> (str/join #"_" [AUTO-MIGRATION-PREFIX action-name item-name])
       (str/replace #"-" "_"))))
 
 
@@ -104,14 +118,14 @@
                 drop-field?* (drop-field? fields-removals field-name)]]
       (cond
         new-field?* {:action actions/ADD-COLUMN-ACTION
-                     :name field-name
+                     :field-name field-name
                      :model-name model-name
                      :options options-to-add}
         drop-field?* {:action actions/DROP-COLUMN-ACTION
-                      :name field-name
+                      :field-name field-name
                       :model-name model-name}
         :else {:action actions/ALTER-COLUMN-ACTION
-               :name field-name
+               :field-name field-name
                :model-name model-name
                :changes options-to-add
                :drop (options-dropped options-to-drop)}))))
@@ -141,15 +155,19 @@
 
   return: [[:model-name :field-name] ...]"
   [action]
-  (->> (condp contains? (:action action)
-         #{actions/ADD-COLUMN-ACTION} [(get-in action [:options :foreign-key])]
-         #{actions/ALTER-COLUMN-ACTION} [(get-in action [:changes :foreign-key])]
-         #{actions/CREATE-TABLE-ACTION} (mapv :foreign-key (vals (:fields action)))
-         #{actions/CREATE-INDEX-ACTION
-           actions/ALTER-INDEX-ACTION} (mapv (fn [field] [(:model-name action) field])
-                                         (get-in action [:options :fields]))
-         [])
-    (remove nil?)))
+  (let [fk (case (:action action)
+             actions/ADD-COLUMN-ACTION (get-in action [:options :foreign-key])
+             actions/ALTER-COLUMN-ACTION (get-in action [:changes :foreign-key])
+             nil)]
+    (->> (condp contains? (:action action)
+           #{actions/ADD-COLUMN-ACTION
+             actions/ALTER-COLUMN-ACTION} (cond-> [[(:model-name action) nil]]
+                                            (some? fk) (conj fk))
+           #{actions/CREATE-TABLE-ACTION} (mapv :foreign-key (vals (:fields action)))
+           #{actions/CREATE-INDEX-ACTION
+             actions/ALTER-INDEX-ACTION} (mapv (fn [field] [(:model-name action) field])
+                                           (get-in action [:options :fields]))
+           []))))
 
 
 (defn- parent-action?
@@ -157,11 +175,11 @@
   [deps action]
   (let [model-names (set (map first deps))]
     (condp contains? (:action action)
-      #{actions/CREATE-TABLE-ACTION} (contains? model-names (:name action))
+      #{actions/CREATE-TABLE-ACTION} (contains? model-names (:model-name action))
       #{actions/ADD-COLUMN-ACTION
         actions/ALTER-COLUMN-ACTION} (some
                                        #(and (= (:model-name action) (first %))
-                                          (= (:name action) (last %)))
+                                          (= (:field-name action) (last %)))
                                        deps)
       false)))
 
@@ -214,14 +232,14 @@
                 drop-index?* (drop-index? indexes-removals index-name)]]
       (cond
         new-index?* {:action actions/CREATE-INDEX-ACTION
-                     :name index-name
+                     :index-name index-name
                      :model-name model-name
                      :options options-to-add}
         drop-index?* {:action actions/DROP-INDEX-ACTION
-                      :name index-name
+                      :index-name index-name
                       :model-name model-name}
         :else {:action actions/ALTER-INDEX-ACTION
-               :name index-name
+               :index-name index-name
                :model-name model-name
                :options options-to-alter}))))
 
@@ -243,10 +261,10 @@
                   (concat
                     (cond
                       new-model?* [{:action actions/CREATE-TABLE-ACTION
-                                    :name model-name
+                                    :model-name model-name
                                     :fields (:fields model-diff)}]
                       drop-model?* [{:action actions/DROP-TABLE-ACTION
-                                     :name model-name}]
+                                     :model-name model-name}]
                       :else (parse-fields-diff model-diff model-removals old-model model-name))
                     (parse-indexes-diff model-diff model-removals old-model new-model model-name)))]
     (->> actions
@@ -390,14 +408,14 @@
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
       (try+
-        (->> (read-models model-file))
-        ;(->> (make-migrations* migrations-files model-file))
+        ;(->> (read-models model-file))
+        (->> (make-migrations* migrations-files model-file))
         ;     (flatten))
 
-          ;(map #(spec-util/conform ::sql/->sql %)))
-          ;(flatten)
-          ;(map db-util/fmt))
-          ;(map #(db-util/exec! db %)))
+         ;(map #(spec-util/conform ::sql/->sql %)))
+         ;(flatten)
+         ;(map db-util/fmt))
+         ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (:data e)))))
 

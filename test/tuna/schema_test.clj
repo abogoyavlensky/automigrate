@@ -10,20 +10,20 @@
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
-                                                            :name :feed,
+                                                            :model-name :feed,
                                                             :fields {:id {:type :serial, :null false}}})))]
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name [:varchar 100] {:null true}]
                                                               [:created_at :timestamp {:default [:now]}]]}})]]
     (is (= '({:action :add-column,
-              :name :created_at,
+              :field-name :name,
               :model-name :feed,
-              :options {:type :timestamp, :default [:now]}}
+              :options {:type [:varchar 100], :null true}}
              {:action :add-column,
-              :name :name,
+              :field-name :created_at,
               :model-name :feed,
-              :options {:type [:varchar 100], :null true}})
+              :options {:type :timestamp, :default [:now]}})
           (#'migrations/make-migrations* [] "")))))
 
 
@@ -31,14 +31,14 @@
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
-                                                            :name :feed,
+                                                            :model-name :feed,
                                                             :fields {:id {:type :serial, :null false}}})
                                                           ({:action :add-column,
-                                                            :name :name,
+                                                            :field-name :name,
                                                             :model-name :feed,
                                                             :options {:type [:varchar 100], :null true}}
                                                            {:action :add-column,
-                                                            :name :created_at,
+                                                            :field-name :created_at,
                                                             :model-name :feed,
                                                             :options {:type :timestamp, :default [:now]}})))]
                    [file-util/read-edn (constantly {:feed
@@ -52,23 +52,23 @@
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
-                                                            :name :feed,
+                                                            :model-name :feed,
                                                             :fields {:id {:type :serial, :null false}}})
                                                           ({:action :add-column,
-                                                            :name :name,
+                                                            :field-name :name,
                                                             :model-name :feed,
                                                             :options {:type [:varchar 100], :null true}}
                                                            {:action :add-column,
-                                                            :name :created_at,
+                                                            :field-name :created_at,
                                                             :model-name :feed,
                                                             :options {:type :timestamp, :default [:now]}})
                                                           ({:action :alter-column,
-                                                            :name :created_at,
+                                                            :field-name :created_at,
                                                             :model-name :feed,
                                                             :changes {:type :date}
                                                             :drop #{:default}}
                                                            {:action :alter-column,
-                                                            :name :name,
+                                                            :field-name :name,
                                                             :model-name :feed,
                                                             :changes {:type :text}
                                                             :drop #{:null}})))]
@@ -84,21 +84,21 @@
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
-                          :name :feed
+                          :model-name :feed
                           :fields {:id {:type :serial
                                         :null false}}})
                         ({:action :add-column
-                          :name :name
+                          :field-name :name
                           :model-name :feed
                           :options {:type [:varchar 100]
                                     :null true}}
                          {:action :add-column
-                          :name :created_at
+                          :field-name :created_at
                           :model-name :feed
                           :options {:type :timestamp
                                     :default [:now]}})
                         ({:action :drop-column
-                          :name :created_at
+                          :field-name :created_at
                           :model-name :feed})))]
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
@@ -111,16 +111,16 @@
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
-                          :name :feed
+                          :model-name :feed
                           :fields {:id {:type :serial
                                         :null false}}})
                         ({:action :create-table
-                          :name :account
+                          :model-name :account
                           :fields {:id {:type :serial
                                         :null false}
                                    :name {:type [:varchar 256]}}})
                         ({:action :drop-table
-                          :name :feed})))]
+                          :model-name :feed})))]
                    [file-util/read-edn (constantly {:account
                                                     [[:id :serial {:null false}]
                                                      [:name [:varchar 256]]]})]]
@@ -132,13 +132,13 @@
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
-                          :name :feed
+                          :model-name :feed
                           :fields {:id {:type :serial
                                         :null false}
                                    :account {:type :integer
                                              :foreign-key [:account :id]}}})
                         ({:action :create-table
-                          :name :account
+                          :model-name :account
                           :fields {:id {:type :serial
                                         :unique true}
                                    :name {:type [:varchar 256]}}})))]
@@ -156,12 +156,12 @@
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
-                          :name :feed
+                          :model-name :feed
                           :fields {:id {:type :serial
                                         :null false}
                                    :name {:type :text}}}
                          {:action :create-index
-                          :name :feed_name_id_unique_idx
+                          :index-name :feed_name_id_unique_idx
                           :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]
@@ -179,18 +179,18 @@
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
-                          :name :feed
+                          :model-name :feed
                           :fields {:id {:type :serial
                                         :null false}
                                    :name {:type :text}}}
                          {:action :create-index
-                          :name :feed_name_id_unique_idx
+                          :index-name :feed_name_id_unique_idx
                           :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]
                                     :unique true}}
                          {:action :drop-index
-                          :name :feed_name_id_unique_idx
+                          :index-name :feed_name_id_unique_idx
                           :model-name :feed})))]
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
@@ -203,18 +203,18 @@
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
-                          :name :feed
+                          :model-name :feed
                           :fields {:id {:type :serial
                                         :null false}
                                    :name {:type :text}}}
                          {:action :create-index
-                          :name :feed_name_id_idx
+                          :index-name :feed_name_id_idx
                           :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]
                                     :unique true}}
                          {:action :alter-index
-                          :name :feed_name_id_idx
+                          :index-name :feed_name_id_idx
                           :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]}})))]

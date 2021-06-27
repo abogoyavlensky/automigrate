@@ -23,7 +23,9 @@
                   ALTER-INDEX-ACTION})
 
 
-(s/def ::name keyword?)
+(s/def ::model-name keyword?)
+(s/def ::field-name keyword?)
+(s/def ::index-name keyword?)
 
 
 (defmulti action :action)
@@ -33,22 +35,26 @@
   [_]
   (s/keys
     :req-un [::action
-             ::name
+             ::model-name
              ::models/fields]))
+
+
+(defmethod action DROP-TABLE-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::model-name]))
 
 
 (s/def ::options
   ::models/field)
 
 
-(s/def ::model-name keyword?)
-
-
 (defmethod action ADD-COLUMN-ACTION
   [_]
   (s/keys
     :req-un [::action
-             ::name
+             ::field-name
              ::model-name
              ::options]))
 
@@ -71,7 +77,7 @@
   [_]
   (s/keys
     :req-un [::action
-             ::name
+             ::field-name
              ::model-name
              ::changes
              ::drop]))
@@ -81,15 +87,8 @@
   [_]
   (s/keys
     :req-un [::action
-             ::name
+             ::field-name
              ::model-name]))
-
-
-(defmethod action DROP-TABLE-ACTION
-  [_]
-  (s/keys
-    :req-un [::action
-             ::name]))
 
 
 (s/def :tuna.actions.indexes/options
@@ -100,7 +99,7 @@
   [_]
   (s/keys
     :req-un [::action
-             ::name
+             ::index-name
              ::model-name
              :tuna.actions.indexes/options]))
 
@@ -109,7 +108,7 @@
   [_]
   (s/keys
     :req-un [::action
-             ::name
+             ::index-name
              ::model-name]))
 
 
@@ -117,7 +116,7 @@
   [_]
   (s/keys
     :req-un [::action
-             ::name
+             ::index-name
              ::model-name
              :tuna.actions.indexes/options]))
 
