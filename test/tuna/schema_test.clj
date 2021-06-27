@@ -169,9 +169,8 @@
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]]
-                                                     :indexes {:feed_name_id_unique_idx {:type :btree
-                                                                                         :fields [:name :id]
-                                                                                         :unique true}}}})]]
+                                                     :indexes [[:feed_name_id_unique_idx :btree {:fields [:name :id]
+                                                                                                 :unique true}]]}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
 
 
@@ -222,6 +221,5 @@
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]]
-                                                     :indexes {:feed_name_id_idx {:type :btree
-                                                                                  :fields [:name :id]}}}})]]
+                                                     :indexes [[:feed_name_id_idx :btree {:fields [:name :id]}]]}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))

@@ -382,8 +382,8 @@
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 ;:model-file "test/tuna/models/feed_add_column.edn"
-                ;:migrations-dir "src/tuna/migrations"
-                :migrations-dir "test/tuna/migrations"
+                :migrations-dir "src/tuna/migrations"
+                ;:migrations-dir "test/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 :number 4}
         db (db-util/db-conn (:db-uri config))
