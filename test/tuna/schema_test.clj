@@ -18,11 +18,11 @@
                                                               [:created_at :timestamp {:default [:now]}]]}})]]
     (is (= '({:action :add-column,
               :name :created_at,
-              :table-name :feed,
+              :model-name :feed,
               :options {:type :timestamp, :default [:now]}}
              {:action :add-column,
               :name :name,
-              :table-name :feed,
+              :model-name :feed,
               :options {:type [:varchar 100], :null true}})
           (#'migrations/make-migrations* [] "")))))
 
@@ -35,11 +35,11 @@
                                                             :fields {:id {:type :serial, :null false}}})
                                                           ({:action :add-column,
                                                             :name :name,
-                                                            :table-name :feed,
+                                                            :model-name :feed,
                                                             :options {:type [:varchar 100], :null true}}
                                                            {:action :add-column,
                                                             :name :created_at,
-                                                            :table-name :feed,
+                                                            :model-name :feed,
                                                             :options {:type :timestamp, :default [:now]}})))]
                    [file-util/read-edn (constantly {:feed
                                                     [[:id :serial {:null false}]
@@ -56,20 +56,20 @@
                                                             :fields {:id {:type :serial, :null false}}})
                                                           ({:action :add-column,
                                                             :name :name,
-                                                            :table-name :feed,
+                                                            :model-name :feed,
                                                             :options {:type [:varchar 100], :null true}}
                                                            {:action :add-column,
                                                             :name :created_at,
-                                                            :table-name :feed,
+                                                            :model-name :feed,
                                                             :options {:type :timestamp, :default [:now]}})
                                                           ({:action :alter-column,
                                                             :name :created_at,
-                                                            :table-name :feed,
+                                                            :model-name :feed,
                                                             :changes {:type :date}
                                                             :drop #{:default}}
                                                            {:action :alter-column,
                                                             :name :name,
-                                                            :table-name :feed,
+                                                            :model-name :feed,
                                                             :changes {:type :text}
                                                             :drop #{:null}})))]
                    [file-util/read-edn (constantly {:feed
@@ -89,17 +89,17 @@
                                         :null false}}})
                         ({:action :add-column
                           :name :name
-                          :table-name :feed
+                          :model-name :feed
                           :options {:type [:varchar 100]
                                     :null true}}
                          {:action :add-column
                           :name :created_at
-                          :table-name :feed
+                          :model-name :feed
                           :options {:type :timestamp
                                     :default [:now]}})
                         ({:action :drop-column
                           :name :created_at
-                          :table-name :feed})))]
+                          :model-name :feed})))]
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name [:varchar 100] {:null true}]]}})]]
@@ -162,7 +162,7 @@
                                    :name {:type :text}}}
                          {:action :create-index
                           :name :feed_name_id_unique_idx
-                          :table-name :feed
+                          :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]
                                     :unique true}})))]
@@ -185,13 +185,13 @@
                                    :name {:type :text}}}
                          {:action :create-index
                           :name :feed_name_id_unique_idx
-                          :table-name :feed
+                          :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]
                                     :unique true}}
                          {:action :drop-index
                           :name :feed_name_id_unique_idx
-                          :table-name :feed})))]
+                          :model-name :feed})))]
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]]}})]]
@@ -209,13 +209,13 @@
                                    :name {:type :text}}}
                          {:action :create-index
                           :name :feed_name_id_idx
-                          :table-name :feed
+                          :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]
                                     :unique true}}
                          {:action :alter-index
                           :name :feed_name_id_idx
-                          :table-name :feed
+                          :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]}})))]
                    [file-util/read-edn (constantly {:feed

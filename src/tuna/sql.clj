@@ -91,7 +91,7 @@
 (s/def ::create-table->sql
   (s/conformer
     (fn [value]
-      {(:action value) [(:name value)]
+      {:create-table [(:name value)]
        :with-columns (fields->columns (:fields value))})))
 
 
@@ -112,7 +112,7 @@
 (s/def ::add-column->sql
   (s/conformer
     (fn [value]
-      {:alter-table (:table-name value)
+      {:alter-table (:model-name value)
        :add-column (first (fields->columns [[(:name value) (:options value)]]))})))
 
 
@@ -122,7 +122,7 @@
     (s/keys
       :req-un [::actions/action
                ::actions/name
-               ::actions/table-name
+               ::actions/model-name
                ::options])
     ::add-column->sql))
 
@@ -139,22 +139,22 @@
 
 
 (defn- unique-index-name
-  [table-name field-name]
-  (->> [(name table-name) (name field-name) UNIQUE-INDEX-POSTFIX]
+  [model-name field-name]
+  (->> [(name model-name) (name field-name) UNIQUE-INDEX-POSTFIX]
     (str/join #"-")
     (keyword)))
 
 
 (defn- private-key-index-name
-  [table-name]
-  (->> [(name table-name) PRIVATE-KEY-INDEX-POSTFIX]
+  [model-name]
+  (->> [(name model-name) PRIVATE-KEY-INDEX-POSTFIX]
     (str/join #"-")
     (keyword)))
 
 
 (defn- foreign-key-index-name
-  [table-name field-name]
-  (->> [(name table-name) (name field-name) FOREIGN-KEY-INDEX-POSTFIX]
+  [model-name field-name]
+  (->> [(name model-name) (name field-name) FOREIGN-KEY-INDEX-POSTFIX]
     (str/join #"-")
     (keyword)))
 
@@ -164,7 +164,7 @@
     (fn [action]
       (let [changes (for [[option value] (:changes action)
                           :let [field-name (:name action)
-                                table-name (:table-name action)]]
+                                model-name (:model-name action)]]
                       (case option
                         :type {:alter-column [field-name :type value]}
                         :null (let [operation (if (nil? value) :drop :set)]
@@ -172,20 +172,20 @@
                         :default {:alter-column [field-name :set value]}
                         :unique {:add-index [:unique nil field-name]}
                         :primary-key {:add-index [:primary-key field-name]}
-                        :foreign-key {:add-constraint [(foreign-key-index-name table-name field-name)
+                        :foreign-key {:add-constraint [(foreign-key-index-name model-name field-name)
                                                        [:foreign-key field-name]
                                                        value]}))
             dropped (for [option (:drop action)
                           :let [field-name (:name action)
-                                table-name (:table-name action)]]
+                                model-name (:model-name action)]]
                       (case option
                         :null {:alter-column [field-name :set [:not nil]]}
                         :default {:alter-column [field-name :drop :default]}
-                        :unique {:drop-constraint (unique-index-name table-name field-name)}
-                        :primary-key {:drop-constraint (private-key-index-name table-name)}
-                        :foreign-key {:drop-constraint (foreign-key-index-name table-name field-name)}))
+                        :unique {:drop-constraint (unique-index-name model-name field-name)}
+                        :primary-key {:drop-constraint (private-key-index-name model-name)}
+                        :foreign-key {:drop-constraint (foreign-key-index-name model-name field-name)}))
             all-actions (concat changes dropped)]
-        {:alter-table (cons (:table-name action) all-actions)}))))
+        {:alter-table (cons (:model-name action) all-actions)}))))
 
 
 (defmethod action->sql actions/ALTER-COLUMN-ACTION
@@ -194,7 +194,7 @@
     (s/keys
       :req-un [::actions/action
                ::actions/name
-               ::actions/table-name
+               ::actions/model-name
                ::changes
                ::actions/drop])
     ::alter-column->sql))
@@ -203,7 +203,7 @@
 (s/def ::drop-column->sql
   (s/conformer
     (fn [value]
-      {:alter-table (:table-name value)
+      {:alter-table (:model-name value)
        :drop-column (:name value)})))
 
 
@@ -213,7 +213,7 @@
     (s/keys
       :req-un [::actions/action
                ::actions/name
-               ::actions/table-name])
+               ::actions/model-name])
     ::drop-column->sql))
 
 
@@ -240,7 +240,7 @@
             index-action (if (true? (:unique options))
                            :create-unique-index
                            :create-index)]
-        {index-action [(:name value) :on (:table-name value)
+        {index-action [(:name value) :on (:model-name value)
                        :using (cons index-type (:fields options))]}))))
 
 
@@ -250,7 +250,7 @@
     (s/keys
       :req-un [::actions/action
                ::actions/name
-               ::actions/table-name
+               ::actions/model-name
                :tuna.actions.indexes/options])
     ::create-index->sql))
 
@@ -267,7 +267,7 @@
     (s/keys
       :req-un [::actions/action
                ::actions/name
-               ::actions/table-name])
+               ::actions/model-name])
     ::drop-index->sql))
 
 
@@ -284,7 +284,7 @@
     (s/keys
       :req-un [::actions/action
                ::actions/name
-               ::actions/table-name
+               ::actions/model-name
                :tuna.actions.indexes/options])
     ::alter-index->sql))
 

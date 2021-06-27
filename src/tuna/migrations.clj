@@ -105,14 +105,14 @@
       (cond
         new-field?* {:action actions/ADD-COLUMN-ACTION
                      :name field-name
-                     :table-name model-name
+                     :model-name model-name
                      :options options-to-add}
         drop-field?* {:action actions/DROP-COLUMN-ACTION
                       :name field-name
-                      :table-name model-name}
+                      :model-name model-name}
         :else {:action actions/ALTER-COLUMN-ACTION
                :name field-name
-               :table-name model-name
+               :model-name model-name
                :changes options-to-add
                :drop (options-dropped options-to-drop)}))))
 
@@ -146,7 +146,7 @@
          #{actions/ALTER-COLUMN-ACTION} [(get-in action [:changes :foreign-key])]
          #{actions/CREATE-TABLE-ACTION} (mapv :foreign-key (vals (:fields action)))
          #{actions/CREATE-INDEX-ACTION
-           actions/ALTER-INDEX-ACTION} (mapv (fn [field] [(:table-name action) field])
+           actions/ALTER-INDEX-ACTION} (mapv (fn [field] [(:model-name action) field])
                                          (get-in action [:options :fields]))
          [])
     (remove nil?)))
@@ -160,7 +160,7 @@
       #{actions/CREATE-TABLE-ACTION} (contains? model-names (:name action))
       #{actions/ADD-COLUMN-ACTION
         actions/ALTER-COLUMN-ACTION} (some
-                                       #(and (= (:table-name action) (first %))
+                                       #(and (= (:model-name action) (first %))
                                           (= (:name action) (last %)))
                                        deps)
       false)))
@@ -215,14 +215,14 @@
       (cond
         new-index?* {:action actions/CREATE-INDEX-ACTION
                      :name index-name
-                     :table-name model-name
+                     :model-name model-name
                      :options options-to-add}
         drop-index?* {:action actions/DROP-INDEX-ACTION
                       :name index-name
-                      :table-name model-name}
+                      :model-name model-name}
         :else {:action actions/ALTER-INDEX-ACTION
                :name index-name
-               :table-name model-name
+               :model-name model-name
                :options options-to-alter}))))
 
 

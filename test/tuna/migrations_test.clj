@@ -76,11 +76,11 @@
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
             :name :created_at
-            :table-name :feed
+            :model-name :feed
             :options {:type :timestamp, :default [:now]}}
            {:action :add-column
             :name :name
-            :table-name :feed
+            :model-name :feed
             :options {:type [:varchar 100] :null true}})
         (-> (str config/MIGRATIONS-DIR "0002_auto_add_column_created_at.edn")
           (file-util/read-edn))))
@@ -105,16 +105,16 @@
              :model-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :alter-column
-            :changes {:primary-key true}
-            :drop #{}
-            :name :id
-            :table-name :feed}
-           {:action :alter-column
             :changes {:type :text}
             :drop #{:null}
             :name :name
-            :table-name :feed})
-        (-> (str config/MIGRATIONS-DIR "0002_auto_alter_column_id.edn")
+            :model-name :feed}
+           {:action :alter-column
+            :changes {:primary-key true}
+            :drop #{}
+            :name :id
+            :model-name :feed})
+        (-> (str config/MIGRATIONS-DIR "0002_auto_alter_column_name.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -122,7 +122,7 @@
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0002_auto_alter_column_id"})
+            :name "0002_auto_alter_column_name"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
@@ -138,7 +138,7 @@
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-column
             :name :name
-            :table-name :feed})
+            :model-name :feed})
         (-> (str config/MIGRATIONS-DIR "0002_auto_drop_column_name.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
@@ -205,18 +205,18 @@
                                                                          :default [:now]}}
                                                    :action :create-table}
                                                   {:name :day
-                                                   :table-name :account
+                                                   :model-name :account
                                                    :options {:type :date}
                                                    :action :add-column}
                                                   {:name :number
-                                                   :table-name :account
+                                                   :model-name :account
                                                    :changes {:type :integer
                                                              :unique true
                                                              :default 0}
                                                    :drop #{:primary-key :null}
                                                    :action :alter-column}
                                                   {:name :url
-                                                   :table-name :feed
+                                                   :model-name :feed
                                                    :action :drop-column}
                                                   {:name :feed
                                                    :action :drop-table}
@@ -225,25 +225,25 @@
                                                                       :foreign-key [:account :id]}}
                                                    :action :create-table}
                                                   {:name :account
-                                                   :table-name :feed
+                                                   :model-name :feed
                                                    :changes nil
                                                    :drop #{:foreign-key}
                                                    :action :alter-column}
                                                   {:name :account
-                                                   :table-name :feed
+                                                   :model-name :feed
                                                    :changes {:foreign-key [:account :id]}
                                                    :drop #{}
                                                    :action :alter-column}
                                                   {:name :feed_name_idx
-                                                   :table-name :feed
+                                                   :model-name :feed
                                                    :options {:type :btree
                                                              :fields [:name]}
                                                    :action :create-index}
                                                   {:name :feed_name_idx
-                                                   :table-name :feed
+                                                   :model-name :feed
                                                    :action :drop-index}
                                                   {:name :feed_name_idx
-                                                   :table-name :feed
+                                                   :model-name :feed
                                                    :options {:type :btree
                                                              :fields [:name]}
                                                    :action :alter-index}))]]
@@ -280,10 +280,10 @@
                    :fields {:id {:type :serial, :unique true},
                             :foo1 {:type :integer, :foreign-key [:foo1 :id]},
                             :account {:type :integer, :foreign-key [:account :id]}}}
-                  {:action :drop-column, :name :created_at, :table-name :feed}
-                  {:action :add-column, :name :foo1, :table-name :account, :options {:type :integer, :foreign-key [:foo1 :id]}}
-                  {:action :add-column, :name :slug, :table-name :account, :options {:type :text, :null false, :unique true}}
-                  {:action :add-column, :name :bar1, :table-name :feed, :options {:type :integer, :foreign-key [:account :id]}}
+                  {:action :drop-column, :name :created_at, :model-name :feed}
+                  {:action :add-column, :name :foo1, :model-name :account, :options {:type :integer, :foreign-key [:foo1 :id]}}
+                  {:action :add-column, :name :slug, :model-name :account, :options {:type :text, :null false, :unique true}}
+                  {:action :add-column, :name :bar1, :model-name :feed, :options {:type :integer, :foreign-key [:account :id]}}
                   {:action :create-table,
                    :name :articles,
                    :fields {:id {:type :serial, :unique true}, :bar1 {:type :integer, :foreign-key [:bar1 :id]}}})]
@@ -295,10 +295,10 @@
               :fields {:id {:type :serial, :unique true},
                        :foo1 {:type :integer, :foreign-key [:foo1 :id]},
                        :account {:type :integer, :foreign-key [:account :id]}}}
-             {:action :drop-column, :name :created_at, :table-name :feed}
-             {:action :add-column, :name :foo1, :table-name :account, :options {:type :integer, :foreign-key [:foo1 :id]}}
-             {:action :add-column, :name :slug, :table-name :account, :options {:type :text, :null false, :unique true}}
-             {:action :add-column, :name :bar1, :table-name :feed, :options {:type :integer, :foreign-key [:account :id]}}
+             {:action :add-column, :name :slug, :model-name :account, :options {:type :text, :null false, :unique true}}
+             {:action :drop-column, :name :created_at, :model-name :feed}
+             {:action :add-column, :name :bar1, :model-name :feed, :options {:type :integer, :foreign-key [:account :id]}}
+             {:action :add-column, :name :foo1, :model-name :account, :options {:type :integer, :foreign-key [:foo1 :id]}}
              {:action :create-table,
               :name :articles,
               :fields {:id {:type :serial, :unique true}, :bar1 {:type :integer, :foreign-key [:bar1 :id]}}})
@@ -308,7 +308,7 @@
 (deftest test-sort-actions-with-create-index-ok
   (let [actions '({:action :create-index
                    :name :feed-name-id-idx
-                   :table-name :feed
+                   :model-name :feed
                    :options {:type :btree
                              :fields [:name :id]}}
                   {:action :create-table
@@ -317,7 +317,7 @@
                                  :unique true}}}
                   {:action :add-column
                    :name :name
-                   :table-name :feed
+                   :model-name :feed
                    :options {:type :text}})]
 
     (is (= '({:action :create-table
@@ -326,11 +326,11 @@
                             :unique true}}}
              {:action :add-column
               :name :name
-              :table-name :feed
+              :model-name :feed
               :options {:type :text}}
              {:action :create-index
               :name :feed-name-id-idx
-              :table-name :feed
+              :model-name :feed
               :options {:type :btree
                         :fields [:name :id]}})
           (#'migrations/sort-actions actions)))))
@@ -339,21 +339,21 @@
 (deftest test-sort-actions-with-alter-index-ok
   (let [actions '({:action :alter-index
                    :name :feed-name-id-idx
-                   :table-name :feed
+                   :model-name :feed
                    :options {:type :btree
                              :fields [:name :id]}}
                   {:action :add-column
                    :name :name
-                   :table-name :feed
+                   :model-name :feed
                    :options {:type :text}})]
 
     (is (= '({:action :add-column
               :name :name
-              :table-name :feed
+              :model-name :feed
               :options {:type :text}}
              {:action :alter-index
               :name :feed-name-id-idx
-              :table-name :feed
+              :model-name :feed
               :options {:type :btree
                         :fields [:name :id]}})
           (#'migrations/sort-actions actions)))))
@@ -380,7 +380,7 @@
                              :name {:type :text}}}
                    {:action :create-index
                     :name :feed-name-id-unique-idx
-                    :table-name :feed
+                    :model-name :feed
                     :options {:type :btree
                               :fields [:name]
                               :unique true}})
@@ -421,7 +421,7 @@
         (testing "test make-migrations for model changes"
           (is (= '({:action :create-index
                     :name :feed-name-id-unique-idx
-                    :table-name :feed
+                    :model-name :feed
                     :options {:type :btree
                               :fields [:name]
                               :unique true}})
@@ -448,7 +448,7 @@
                                      :name {:type :text}}}
                            {:action :create-index
                             :name :feed-name-id-idx
-                            :table-name :feed
+                            :model-name :feed
                             :options {:type :btree
                                       :fields [:name :id]
                                       :unique true}})]
@@ -463,7 +463,7 @@
         (testing "test make-migrations for model changes"
           (is (= '({:action :drop-index
                     :name :feed-name-id-idx
-                    :table-name :feed})
+                    :model-name :feed})
                 actions)))
         (testing "test converting migration actions to sql queries formatted as edn"
           (is (= '({:drop-index :feed-name-id-idx})
@@ -486,7 +486,7 @@
                                      :name {:type :text}}}
                            {:action :create-index
                             :name :feed_name_id_idx
-                            :table-name :feed
+                            :model-name :feed
                             :options {:type :btree
                                       :fields [:name :id]
                                       :unique true}})]
@@ -504,7 +504,7 @@
                     :name :feed_name_id_idx
                     :options {:fields [:name]
                               :type :btree}
-                    :table-name :feed})
+                    :model-name :feed})
                 actions)))
         (testing "test converting migration actions to sql queries formatted as edn"
           (is (= '([{:drop-index :feed_name_id_idx}
