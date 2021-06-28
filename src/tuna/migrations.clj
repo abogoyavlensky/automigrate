@@ -19,7 +19,8 @@
             [tuna.schema :as schema]
             [tuna.util.file :as file-util]
             [tuna.util.db :as db-util]
-            [tuna.util.spec :as spec-util]))
+            [tuna.util.spec :as spec-util]
+            [tuna.util.model :as model-util]))
 
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
@@ -161,13 +162,16 @@
              nil)]
     (->> (condp contains? (:action action)
            #{actions/ADD-COLUMN-ACTION
-             actions/ALTER-COLUMN-ACTION} (cond-> [[(:model-name action) nil]]
-                                            (some? fk) (conj fk))
-           #{actions/CREATE-TABLE-ACTION} (mapv :foreign-key (vals (:fields action)))
+             actions/ALTER-COLUMN-ACTION
+             actions/DROP-COLUMN-ACTION} (cond-> [[(:model-name action) nil]]
+                                           (some? fk) (conj (model-util/kw->vec fk)))
+           #{actions/CREATE-TABLE-ACTION} (mapv (comp model-util/kw->vec :foreign-key)
+                                            (vals (:fields action)))
            #{actions/CREATE-INDEX-ACTION
              actions/ALTER-INDEX-ACTION} (mapv (fn [field] [(:model-name action) field])
                                            (get-in action [:options :fields]))
-           []))))
+           [])
+      (remove nil?))))
 
 
 (defn- parent-action?

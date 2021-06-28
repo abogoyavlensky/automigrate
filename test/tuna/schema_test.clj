@@ -136,7 +136,7 @@
                           :fields {:id {:type :serial
                                         :null false}
                                    :account {:type :integer
-                                             :foreign-key [:account :id]}}})
+                                             :foreign-key :account/id}}})
                         ({:action :create-table
                           :model-name :account
                           :fields {:id {:type :serial
@@ -144,7 +144,7 @@
                                    :name {:type [:varchar 256]}}})))]
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
-                                                              [:account :integer {:foreign-key [:account :id]}]]}
+                                                              [:account :integer {:foreign-key :account/id}]]}
                                                     :account
                                                     {:fields [[:id :serial {:unique true}]
                                                               [:name [:varchar 256]]]}})]]

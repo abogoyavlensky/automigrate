@@ -11,6 +11,7 @@
                                         tuna.util.test test-util
                                         tuna.util.spec spec-util
                                         tuna.util.map map-util
+                                        tuna.util.model model-util
                                         clojure.java.io io
                                         clojure.edn edn
                                         clojure.string str

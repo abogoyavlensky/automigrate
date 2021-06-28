@@ -3,7 +3,8 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [tuna.actions :as actions]
-            [tuna.util.db :as db-util]))
+            [tuna.util.db :as db-util]
+            [tuna.util.model :as model-util]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
@@ -57,7 +58,7 @@
     :tuna.models.field/foreign-key
     (s/conformer
       (fn [value]
-        (cons :references value)))))
+        (cons :references (model-util/kw->vec value))))))
 
 
 (s/def ::options->sql

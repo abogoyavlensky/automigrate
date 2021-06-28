@@ -222,7 +222,7 @@
                                                    :action :drop-table}
                                                   {:model-name :feed
                                                    :fields {:account {:type :serial
-                                                                      :foreign-key [:account :id]}}
+                                                                      :foreign-key :account/id}}
                                                    :action :create-table}
                                                   {:field-name :account
                                                    :model-name :feed
@@ -231,7 +231,7 @@
                                                    :action :alter-column}
                                                   {:field-name :account
                                                    :model-name :feed
-                                                   :changes {:foreign-key [:account :id]}
+                                                   :changes {:foreign-key :account/id}
                                                    :drop #{}
                                                    :action :alter-column}
                                                   {:index-name :feed_name_idx
@@ -276,17 +276,17 @@
                   {:action :create-table,
                    :model-name :foo,
                    :fields {:id {:type :serial, :unique true},
-                            :account {:type :integer, :foreign-key [:account :id]}}}
+                            :account {:type :integer, :foreign-key :account/id}}}
                   {:action :create-table,
                    :model-name :bar,
                    :fields {:id {:type :serial, :unique true},
-                            :foo1 {:type :integer, :foreign-key [:foo :id]},
-                            :account {:type :integer, :foreign-key [:account :id]}}}
+                            :foo1 {:type :integer, :foreign-key :foo/id},
+                            :account {:type :integer, :foreign-key :account/id}}}
                   {:action :add-column,
                    :field-name :account,
                    :model-name :foo,
                    :options {:type :integer,
-                             :foreign-key [:account :id]}}
+                             :foreign-key :account/id}}
                   {:action :create-table,
                    :model-name :account,
                    :fields {:id {:type :serial, :unique true, :primary-key true}
@@ -297,18 +297,18 @@
                        :created_at {:type :timestamp}}}
              {:action :create-table,
               :model-name :foo,
-              :fields {:id {:type :serial, :unique true}, :account {:type :integer, :foreign-key [:account :id]}}}
-             {:action :create-table,
-              :model-name :bar,
-              :fields {:id {:type :serial, :unique true},
-                       :foo1 {:type :integer, :foreign-key [:foo :id]},
-                       :account {:type :integer, :foreign-key [:account :id]}}}
+              :fields {:id {:type :serial, :unique true}, :account {:type :integer, :foreign-key :account/id}}}
              {:action :add-column,
               :field-name :account,
               :model-name :foo,
               :options {:type :integer,
-                        :foreign-key [:account :id]}}
-             {:action :drop-column, :field-name :created_at, :model-name :account})
+                        :foreign-key :account/id}}
+             {:action :drop-column, :field-name :created_at, :model-name :account}
+             {:action :create-table,
+              :model-name :bar,
+              :fields {:id {:type :serial, :unique true},
+                       :foo1 {:type :integer, :foreign-key :foo/id},
+                       :account {:type :integer, :foreign-key :account/id}}})
           (#'migrations/sort-actions actions)))))
 
 
