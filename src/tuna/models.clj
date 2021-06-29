@@ -3,7 +3,8 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [slingshot.slingshot :refer [throw+]]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [tuna.util.model :as model-util]))
 
 
 ; Specs
@@ -67,7 +68,7 @@
 
 
 (s/def :tuna.models.field/foreign-key
-  (s/coll-of keyword? :count 2))
+  qualified-keyword?)
 
 
 (s/def :tuna.models.field/default
@@ -232,7 +233,8 @@
   [models]
   (doseq [[_model-name model-value] models]
     (doseq [[field-name field-options] (:fields model-value)
-            :let [[fk-model-name fk-field-name] (:foreign-key field-options)
+            :let [[fk-model-name fk-field-name] (model-util/kw->vec
+                                                  (:foreign-key field-options))
                   fk-field-options (get-in models [fk-model-name :fields fk-field-name])]]
       (when (and (some? fk-model-name) (some? fk-field-name))
         (check-referenced-model-exists? models fk-model-name)

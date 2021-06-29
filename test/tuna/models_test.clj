@@ -24,7 +24,7 @@
                                :null false
                                :unique true}
                           :account {:type :integer
-                                    :foreign-key [:missing-model :id]}}}
+                                    :foreign-key :missing-model/id}}}
                 :account
                 {:fields {:id {:type :serial
                                :unique true}
@@ -39,7 +39,7 @@
                                :null false
                                :unique true}
                           :account {:type :integer
-                                    :foreign-key [:account :missing-field]}}}
+                                    :foreign-key :account/missing-field}}}
                 :account
                 {:fields {:name {:type [:varchar 256]}}}}]
     (is (thrown-with-msg? ExceptionInfo #"Referenced field :missing-field of model :account is missing"
@@ -52,7 +52,7 @@
                                :null false
                                :unique true}
                           :account {:type :integer
-                                    :foreign-key [:account :id]}}}
+                                    :foreign-key :account/id}}}
                 :account
                 {:fields {:id {:type :serial}}}}]
     (is (thrown-with-msg? ExceptionInfo #"Referenced field :id of model :account is not unique"
@@ -65,7 +65,7 @@
                                :null false
                                :unique true}
                           :account {:type :integer
-                                    :foreign-key [:account :id]}}}
+                                    :foreign-key :account/id}}}
                 :account
                 {:fields {:id {:type :serial
                                :unique true}}}}]
@@ -78,7 +78,7 @@
                                :null false
                                :unique true}
                           :account {:type :integer
-                                    :foreign-key [:account :id]}}}
+                                    :foreign-key :account/id}}}
                 :account
                 {:fields {:id {:type :uuid
                                :unique true}}}}]
