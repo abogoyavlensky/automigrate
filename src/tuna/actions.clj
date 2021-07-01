@@ -90,19 +90,22 @@
 
 
 (s/def ::changes
-  (d/dict*
-    ^:opt {:type (s/and
-                   (d/dict*
-                     ^:opt {:from :tuna.models.field/type
-                            :to :tuna.models.field/type})
-                   check-option-state)
-           :unique (option-states :tuna.models.field/unique)
-           :null (option-states :tuna.models.field/null)
-           :primary-key (option-states :tuna.models.field/primary-key)
-           :default (option-states :tuna.models.field/default)
-           :foreign-key (option-states :tuna.models.field/foreign-key)}))
+  (s/and
+    (d/dict*
+      ^:opt {:type (s/and
+                     (d/dict*
+                       ^:opt {:from :tuna.models.field/type
+                              :to :tuna.models.field/type})
+                     check-option-state)
+             :unique (option-states :tuna.models.field/unique)
+             :null (option-states :tuna.models.field/null)
+             :primary-key (option-states :tuna.models.field/primary-key)
+             :default (option-states :tuna.models.field/default)
+             :foreign-key (option-states :tuna.models.field/foreign-key)})
+    #(> (count (keys %)) 0)))
 
 
+; TODO: remove
 (comment
   (let [data {:type {:from :integer
                      :to :text}
