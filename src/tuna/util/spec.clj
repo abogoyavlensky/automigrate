@@ -4,6 +4,17 @@
             [slingshot.slingshot :refer [throw+]]))
 
 
+(defn tagged->value
+  "Convert tagged value to vector or identity without a tag."
+  [tagged]
+  (let [value-type (first tagged)
+        value (last tagged)]
+    (case value-type
+      :fn (cond-> [(:name value)]
+                  (some? (:val value)) (conj (:val value)))
+      value)))
+
+
 (defn conform
   "Conform data to spec or throw explained data."
   [spec data]

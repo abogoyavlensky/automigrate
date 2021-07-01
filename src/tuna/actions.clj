@@ -1,6 +1,8 @@
 (ns tuna.actions
   (:require [clojure.spec.alpha :as s]
-            [tuna.models :as models]))
+            [spec-dict :as d]
+            [tuna.models :as models]
+            [tuna.util.spec :as spec-util]))
 
 
 (def CREATE-TABLE-ACTION :create-table)
@@ -11,6 +13,8 @@
 (def CREATE-INDEX-ACTION :create-index)
 (def DROP-INDEX-ACTION :drop-index)
 (def ALTER-INDEX-ACTION :alter-index)
+
+(def EMPTY-OPTION :EMPTY)
 
 
 (s/def ::action #{CREATE-TABLE-ACTION
@@ -58,13 +62,64 @@
              ::model-name
              ::options]))
 
+; TODO: remove old impl
+;(s/def ::changes
+;  (s/nilable
+;    (s/merge
+;      ::models/options-common
+;      (s/keys
+;        :opt-un [:tuna.models.field/type]))))
+
+
+(defn- check-option-state
+  [value]
+  (not= (:from value) (:to value)))
+
+
+(defn- option-states
+  [field-spec]
+  (s/and
+    (d/dict*
+      ^:opt {:from (s/and (s/or :empty #{EMPTY-OPTION}
+                                :value field-spec)
+                          (s/conformer spec-util/tagged->value))
+             :to (s/and (s/or :empty #{EMPTY-OPTION}
+                              :value field-spec)
+                        (s/conformer spec-util/tagged->value))})
+    check-option-state))
+
 
 (s/def ::changes
-  (s/nilable
-    (s/merge
-      ::models/options-common
-      (s/keys
-        :opt-un [:tuna.models.field/type]))))
+  (d/dict*
+    ^:opt {:type (s/and
+                   (d/dict*
+                     ^:opt {:from :tuna.models.field/type
+                            :to :tuna.models.field/type})
+                   check-option-state)
+           :unique (option-states :tuna.models.field/unique)
+           :null (option-states :tuna.models.field/null)
+           :primary-key (option-states :tuna.models.field/primary-key)
+           :default (option-states :tuna.models.field/default)
+           :foreign-key (option-states :tuna.models.field/foreign-key)}))
+
+
+(comment
+  (let [data {:type {:from :integer
+                     :to :text}
+              :unique {:from true
+                       :to EMPTY-OPTION}}]
+    (s/explain ::changes data)))
+
+
+
+; TODO: implement new logic
+;(s/def :tuna.actions.changes/type
+;  (s/keys
+;    :req-un []))
+;
+;(s/def ::changes
+;  (s/keys
+;    :opt-un []))
 
 
 (s/def ::drop
