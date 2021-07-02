@@ -81,11 +81,11 @@
   (s/and
     (d/dict*
       ^:opt {:from (s/and (s/or :empty #{EMPTY-OPTION}
-                                :value field-spec)
-                          (s/conformer spec-util/tagged->value))
+                            :value field-spec)
+                     (s/conformer spec-util/tagged->value))
              :to (s/and (s/or :empty #{EMPTY-OPTION}
-                              :value field-spec)
-                        (s/conformer spec-util/tagged->value))})
+                          :value field-spec)
+                   (s/conformer spec-util/tagged->value))})
     check-option-state))
 
 
@@ -111,8 +111,10 @@
                      :to :text}
               :unique {:from true
                        :to EMPTY-OPTION}}]
-    (s/explain ::changes data)))
-
+    ;(s/explain ::changes data)))
+    ;(reduce-kv #(assoc %1 %2 (:from %3)) {} data)))
+    ;(model-util/changes-to-add data model-util/BACKWARD-OPTION-KEY)
+    (model-util/changes-to-drop data model-util/OPTION-KEY-BACKWARD)))
 
 
 ; TODO: implement new logic

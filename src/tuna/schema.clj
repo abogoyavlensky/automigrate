@@ -4,7 +4,8 @@
             [tuna.actions :as actions]
             [tuna.models :as models]
             [tuna.util.map :as map-util]
-            [tuna.util.spec :as spec-util]))
+            [tuna.util.spec :as spec-util]
+            [tuna.util.model :as model-util]))
 
 
 (defn- load-migrations-from-files
@@ -33,14 +34,19 @@
   [schema action]
   (let [model-name (:model-name action)
         field-name (:field-name action)
+        direction model-util/OPTION-KEY-FORWARD
+        to-add (model-util/changes-to-add (:changes action) direction)
+        to-drop (model-util/changes-to-drop (:changes action) direction)
         dissoc-actions-fn (fn [schema]
                             (apply map-util/dissoc-in
                               schema
                               [model-name :fields field-name]
-                              (:drop action)))]
+                              to-drop))]
+                              ;(:drop action)))]
 
     (-> schema
-      (update-in [model-name :fields field-name] merge (:changes action))
+      ;(update-in [model-name :fields field-name] merge (:changes action))
+      (update-in [model-name :fields field-name] merge to-add)
       (dissoc-actions-fn))))
 
 

@@ -11,7 +11,7 @@
         value (last tagged)]
     (case value-type
       :fn (cond-> [(:name value)]
-                  (some? (:val value)) (conj (:val value)))
+            (some? (:val value)) (conj (:val value)))
       value)))
 
 

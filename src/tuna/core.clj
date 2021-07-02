@@ -3,7 +3,7 @@
   (:require [clojure.spec.alpha :as s]
             [tuna.migrations :as migrations]))
 
-; TODO: try to check args without assertion
+; Enable asserts for spec in function's pre and post conditions
 (s/check-asserts true)
 
 

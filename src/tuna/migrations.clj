@@ -412,8 +412,8 @@
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
       (try+
-        (->> (read-models model-file))
-        ;(->> (make-migrations* migrations-files model-file))
+        ;(->> (read-models model-file))
+        (->> (make-migrations* migrations-files model-file))
         ;     (flatten))
 
          ;(map #(spec-util/conform ::sql/->sql %)))
