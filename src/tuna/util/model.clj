@@ -2,6 +2,8 @@
   (:require [clojure.spec.alpha :as s]))
 
 
+(def EMPTY-OPTION :EMPTY)
+
 (def OPTION-KEY-FORWARD :to)
 (def OPTION-KEY-BACKWARD :from)
 
@@ -18,16 +20,20 @@
 
 
 (defn changes-to-add
-  [changes option-key]
-  {:pre [(s/assert ::option-key option-key)]}
-  (reduce-kv #(assoc %1 %2 (get %3 option-key)) {} changes))
+  ([changes]
+   (changes-to-add changes OPTION-KEY-FORWARD))
+  ([changes option-key]
+   {:pre [(s/assert ::option-key option-key)]}
+   (reduce-kv #(assoc %1 %2 (get %3 option-key)) {} changes)))
 
 
 (defn changes-to-drop
-  [changes option-key]
-  {:pre [(s/assert ::option-key option-key)]}
-  (->> changes
-       ; TODO: use var instead of :EMPTY val!
-    (filter #(= :EMPTY (get (val %) option-key)))
-    (map key)
-    (set)))
+  ([changes]
+   (changes-to-drop changes OPTION-KEY-FORWARD))
+  ([changes option-key]
+   {:pre [(s/assert ::option-key option-key)]}
+   (->> changes
+        ; TODO: use var instead of :EMPTY val!
+     (filter #(= EMPTY-OPTION (get (val %) option-key)))
+     (map key)
+     (set))))

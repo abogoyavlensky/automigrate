@@ -21,5 +21,6 @@
   (let [conformed (s/conform spec data)]
     (case conformed
       ::s/invalid (throw+ {:type ::s/invalid
-                           :data (s/explain-data spec data)})
+                           ; TODO: update with more sophisticated error messages' handling
+                           :data (s/explain spec data)})
       conformed)))

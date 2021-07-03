@@ -105,6 +105,30 @@
     (set/difference #{:type})))
 
 
+(defn- assoc-option-to-add
+  [old-fields changes option-key new-option-value]
+  (let [old-option-value (or (get old-fields option-key)
+                           model-util/EMPTY-OPTION)]
+    (-> changes
+      (assoc-in [option-key :from] old-option-value)
+      (assoc-in [option-key :to] new-option-value))))
+
+
+(defn- assoc-option-to-drop
+  [old-fields changes option-key]
+  (-> changes
+    (assoc-in [option-key :from] (get old-fields option-key))
+    (assoc-in [option-key :to] model-util/EMPTY-OPTION)))
+
+
+(defn- get-changes
+  [old-model options-to-add options-to-drop]
+  (let [old-fields (:fields old-model)]
+    (as-> {} $
+          (reduce-kv (partial assoc-option-to-add old-fields) $ options-to-add)
+          (reduce (partial assoc-option-to-drop old-fields) $ options-to-drop))))
+
+
 (defn- parse-fields-diff
   "Return field's migrations for model."
   [model-diff removals old-model model-name]
@@ -114,7 +138,9 @@
                          (set/union (set (keys fields-removals))))]
     (for [field-name changed-fields
           :let [options-to-add (get fields-diff field-name)
-                options-to-drop (get fields-removals field-name)
+                options-to-drop (-> (get fields-removals field-name)
+                                  (options-dropped))
+                changes (get-changes old-model options-to-add options-to-drop)
                 new-field?* (new-field? old-model fields-diff field-name)
                 drop-field?* (drop-field? fields-removals field-name)]]
       (cond
@@ -128,8 +154,7 @@
         :else {:action actions/ALTER-COLUMN-ACTION
                :field-name field-name
                :model-name model-name
-               :changes options-to-add
-               :drop (options-dropped options-to-drop)}))))
+               :changes changes}))))
 
 
 (defn- new-model?
@@ -156,9 +181,10 @@
 
   return: [[:model-name :field-name] ...]"
   [action]
-  (let [fk (case (:action action)
+  (let [changes-to-add (model-util/changes-to-add (:changes action))
+        fk (case (:action action)
              actions/ADD-COLUMN-ACTION (get-in action [:options :foreign-key])
-             actions/ALTER-COLUMN-ACTION (get-in action [:changes :foreign-key])
+             actions/ALTER-COLUMN-ACTION (:foreign-key changes-to-add)
              nil)]
     (->> (condp contains? (:action action)
            #{actions/ADD-COLUMN-ACTION

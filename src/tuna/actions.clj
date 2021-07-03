@@ -2,7 +2,8 @@
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
             [tuna.models :as models]
-            [tuna.util.spec :as spec-util]))
+            [tuna.util.spec :as spec-util]
+            [tuna.util.model :as model-util]))
 
 
 (def CREATE-TABLE-ACTION :create-table)
@@ -13,8 +14,6 @@
 (def CREATE-INDEX-ACTION :create-index)
 (def DROP-INDEX-ACTION :drop-index)
 (def ALTER-INDEX-ACTION :alter-index)
-
-(def EMPTY-OPTION :EMPTY)
 
 
 (s/def ::action #{CREATE-TABLE-ACTION
@@ -62,14 +61,6 @@
              ::model-name
              ::options]))
 
-; TODO: remove old impl
-;(s/def ::changes
-;  (s/nilable
-;    (s/merge
-;      ::models/options-common
-;      (s/keys
-;        :opt-un [:tuna.models.field/type]))))
-
 
 (defn- check-option-state
   [value]
@@ -80,10 +71,10 @@
   [field-spec]
   (s/and
     (d/dict*
-      ^:opt {:from (s/and (s/or :empty #{EMPTY-OPTION}
+      ^:opt {:from (s/and (s/or :empty #{model-util/EMPTY-OPTION}
                             :value field-spec)
                      (s/conformer spec-util/tagged->value))
-             :to (s/and (s/or :empty #{EMPTY-OPTION}
+             :to (s/and (s/or :empty #{model-util/EMPTY-OPTION}
                           :value field-spec)
                    (s/conformer spec-util/tagged->value))})
     check-option-state))
@@ -110,27 +101,8 @@
   (let [data {:type {:from :integer
                      :to :text}
               :unique {:from true
-                       :to EMPTY-OPTION}}]
-    ;(s/explain ::changes data)))
-    ;(reduce-kv #(assoc %1 %2 (:from %3)) {} data)))
-    ;(model-util/changes-to-add data model-util/BACKWARD-OPTION-KEY)
+                       :to model-util/EMPTY-OPTION}}]
     (model-util/changes-to-drop data model-util/OPTION-KEY-BACKWARD)))
-
-
-; TODO: implement new logic
-;(s/def :tuna.actions.changes/type
-;  (s/keys
-;    :req-un []))
-;
-;(s/def ::changes
-;  (s/keys
-;    :opt-un []))
-
-
-(s/def ::drop
-  (s/coll-of #{:primary-key :unique :default :null :foreign-key}
-    :kind set?
-    :distinct true))
 
 
 (defmethod action ALTER-COLUMN-ACTION
@@ -139,8 +111,7 @@
     :req-un [::action
              ::field-name
              ::model-name
-             ::changes
-             ::drop]))
+             ::changes]))
 
 
 (defmethod action DROP-COLUMN-ACTION

@@ -34,9 +34,8 @@
   [schema action]
   (let [model-name (:model-name action)
         field-name (:field-name action)
-        direction model-util/OPTION-KEY-FORWARD
-        to-add (model-util/changes-to-add (:changes action) direction)
-        to-drop (model-util/changes-to-drop (:changes action) direction)
+        to-add (model-util/changes-to-add (:changes action))
+        to-drop (model-util/changes-to-drop (:changes action))
         dissoc-actions-fn (fn [schema]
                             (apply map-util/dissoc-in
                               schema
