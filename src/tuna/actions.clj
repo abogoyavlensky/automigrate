@@ -2,7 +2,6 @@
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
             [tuna.models :as models]
-            [tuna.util.spec :as spec-util]
             [tuna.util.model :as model-util]))
 
 
@@ -62,37 +61,15 @@
              ::options]))
 
 
-(defn- check-option-state
-  [value]
-  (not= (:from value) (:to value)))
-
-
-(defn- option-states
-  [field-spec]
-  (s/and
-    (d/dict*
-      ^:opt {:from (s/and (s/or :empty #{model-util/EMPTY-OPTION}
-                            :value field-spec)
-                     (s/conformer spec-util/tagged->value))
-             :to (s/and (s/or :empty #{model-util/EMPTY-OPTION}
-                          :value field-spec)
-                   (s/conformer spec-util/tagged->value))})
-    check-option-state))
-
-
 (s/def ::changes
   (s/and
     (d/dict*
-      ^:opt {:type (s/and
-                     (d/dict*
-                       ^:opt {:from :tuna.models.field/type
-                              :to :tuna.models.field/type})
-                     check-option-state)
-             :unique (option-states :tuna.models.field/unique)
-             :null (option-states :tuna.models.field/null)
-             :primary-key (option-states :tuna.models.field/primary-key)
-             :default (option-states :tuna.models.field/default)
-             :foreign-key (option-states :tuna.models.field/foreign-key)})
+      (d/->opt (model-util/generate-type-option :tuna.models.field/type))
+      (d/->opt (model-util/generate-changes [:tuna.models.field/unique
+                                             :tuna.models.field/null
+                                             :tuna.models.field/primary-key
+                                             :tuna.models.field/default
+                                             :tuna.models.field/foreign-key])))
     #(> (count (keys %)) 0)))
 
 
@@ -102,7 +79,8 @@
                      :to :text}
               :unique {:from true
                        :to model-util/EMPTY-OPTION}}]
-    (model-util/changes-to-drop data model-util/OPTION-KEY-BACKWARD)))
+    ;(model-util/changes-to-add data model-util/OPTION-KEY-FORWARD)))
+    (s/explain ::changes data)))
 
 
 (defmethod action ALTER-COLUMN-ACTION

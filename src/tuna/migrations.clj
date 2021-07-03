@@ -106,8 +106,9 @@
 
 
 (defn- assoc-option-to-add
-  [old-fields changes option-key new-option-value]
-  (let [old-option-value (or (get old-fields option-key)
+  [old-field changes option-key new-option-value]
+  (let [old-option-value (if (contains? old-field option-key)
+                           (get old-field option-key)
                            model-util/EMPTY-OPTION)]
     (-> changes
       (assoc-in [option-key :from] old-option-value)
@@ -115,18 +116,17 @@
 
 
 (defn- assoc-option-to-drop
-  [old-fields changes option-key]
+  [old-field changes option-key]
   (-> changes
-    (assoc-in [option-key :from] (get old-fields option-key))
+    (assoc-in [option-key :from] (get old-field option-key))
     (assoc-in [option-key :to] model-util/EMPTY-OPTION)))
 
 
 (defn- get-changes
-  [old-model options-to-add options-to-drop]
-  (let [old-fields (:fields old-model)]
-    (as-> {} $
-          (reduce-kv (partial assoc-option-to-add old-fields) $ options-to-add)
-          (reduce (partial assoc-option-to-drop old-fields) $ options-to-drop))))
+  [old-options options-to-add options-to-drop]
+  (as-> {} $
+        (reduce-kv (partial assoc-option-to-add old-options) $ options-to-add)
+        (reduce (partial assoc-option-to-drop old-options) $ options-to-drop)))
 
 
 (defn- parse-fields-diff
@@ -140,7 +140,9 @@
           :let [options-to-add (get fields-diff field-name)
                 options-to-drop (-> (get fields-removals field-name)
                                   (options-dropped))
-                changes (get-changes old-model options-to-add options-to-drop)
+                changes (get-changes (get-in old-model [:fields field-name])
+                          options-to-add
+                          options-to-drop)
                 new-field?* (new-field? old-model fields-diff field-name)
                 drop-field?* (drop-field? fields-removals field-name)]]
       (cond
@@ -454,15 +456,15 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 9}]
+                :number 15}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(migrate config)))
+    (migrate config)))
     ;(explain config)))
-    (migration-list config)))
+    ;(migration-list config)))
 
 
 ; TODO: remove!

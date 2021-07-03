@@ -34,18 +34,16 @@
   [schema action]
   (let [model-name (:model-name action)
         field-name (:field-name action)
-        to-add (model-util/changes-to-add (:changes action))
-        to-drop (model-util/changes-to-drop (:changes action))
+        changes-to-add (model-util/changes-to-add (:changes action))
+        changes-to-drop (model-util/changes-to-drop (:changes action))
         dissoc-actions-fn (fn [schema]
                             (apply map-util/dissoc-in
                               schema
                               [model-name :fields field-name]
-                              to-drop))]
-                              ;(:drop action)))]
+                              changes-to-drop))]
 
     (-> schema
-      ;(update-in [model-name :fields field-name] merge (:changes action))
-      (update-in [model-name :fields field-name] merge to-add)
+      (update-in [model-name :fields field-name] merge changes-to-add)
       (dissoc-actions-fn))))
 
 
