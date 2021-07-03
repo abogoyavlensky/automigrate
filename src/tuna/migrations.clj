@@ -138,11 +138,7 @@
                          (set/union (set (keys fields-removals))))]
     (for [field-name changed-fields
           :let [options-to-add (get fields-diff field-name)
-                options-to-drop (-> (get fields-removals field-name)
-                                  (options-dropped))
-                changes (get-changes (get-in old-model [:fields field-name])
-                          options-to-add
-                          options-to-drop)
+                options-to-drop (get fields-removals field-name)
                 new-field?* (new-field? old-model fields-diff field-name)
                 drop-field?* (drop-field? fields-removals field-name)]]
       (cond
@@ -156,7 +152,9 @@
         :else {:action actions/ALTER-COLUMN-ACTION
                :field-name field-name
                :model-name model-name
-               :changes changes}))))
+               :changes (get-changes (get-in old-model [:fields field-name])
+                          options-to-add
+                          (options-dropped options-to-drop))}))))
 
 
 (defn- new-model?

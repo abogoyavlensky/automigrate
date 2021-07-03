@@ -105,16 +105,16 @@
              :model-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :alter-column
-            :changes {:primary-key true}
-            :drop #{}
-            :field-name :id
+            :changes {:type {:from [:varchar 100] :to :text}
+                      :null {:from true :to :EMPTY}}
+            :field-name :name
             :model-name :feed}
            {:action :alter-column
-            :changes {:type :text}
-            :drop #{:null}
-            :field-name :name
+            :changes {:primary-key {:from :EMPTY
+                                    :to true}}
+            :field-name :id
             :model-name :feed})
-        (-> (str config/MIGRATIONS-DIR "0002_auto_alter_column_id.edn")
+        (-> (str config/MIGRATIONS-DIR "0002_auto_alter_column_name.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -122,7 +122,7 @@
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0002_auto_alter_column_id"})
+            :name "0002_auto_alter_column_name"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
@@ -210,10 +210,11 @@
                                                    :action :add-column}
                                                   {:field-name :number
                                                    :model-name :account
-                                                   :changes {:type :integer
-                                                             :unique true
-                                                             :default 0}
-                                                   :drop #{:primary-key :null}
+                                                   :changes {:type {:to :integer :from :text}
+                                                             :unique {:to true :from :EMPTY}
+                                                             :default {:to 0 :from :EMPTY}
+                                                             :primary-key {:to :EMPTY :from true}
+                                                             :null {:to :EMPTY :from true}}
                                                    :action :alter-column}
                                                   {:field-name :url
                                                    :model-name :feed
@@ -226,13 +227,11 @@
                                                    :action :create-table}
                                                   {:field-name :account
                                                    :model-name :feed
-                                                   :changes nil
-                                                   :drop #{:foreign-key}
+                                                   :changes {:foreign-key {:to :EMPTY :from :account/id}}
                                                    :action :alter-column}
                                                   {:field-name :account
                                                    :model-name :feed
-                                                   :changes {:foreign-key :account/id}
-                                                   :drop #{}
+                                                   :changes {:foreign-key {:to :account/id :from :EMPTY}}
                                                    :action :alter-column}
                                                   {:index-name :feed_name_idx
                                                    :model-name :feed

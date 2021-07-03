@@ -1,7 +1,8 @@
 (ns tuna.util.model
   (:require [clojure.spec.alpha :as s]
-            [tuna.util.spec :as spec-util]
-            [spec-dict :as d]))
+            [spec-dict :as d]
+            [medley.core :as medley]
+            [tuna.util.spec :as spec-util]))
 
 
 (def EMPTY-OPTION :EMPTY)
@@ -31,7 +32,9 @@
    (changes-to-add changes OPTION-KEY-FORWARD))
   ([changes option-key]
    {:pre [(s/assert ::option-key option-key)]}
-   (reduce-kv #(assoc %1 %2 (get %3 option-key)) {} changes)))
+   (->> changes
+     (medley/remove-kv #(= EMPTY-OPTION (-> %2 (get option-key))))
+     (reduce-kv #(assoc %1 %2 (get %3 option-key)) {}))))
 
 
 (defn changes-to-drop

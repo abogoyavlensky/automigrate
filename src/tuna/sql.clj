@@ -304,3 +304,17 @@
     (if (sequential? formatted-action)
       (map #(db-util/fmt %) formatted-action)
       (db-util/fmt formatted-action))))
+
+
+; TODO: remove!
+(comment
+  (require '[tuna.util.spec :as spec-util])
+  (let [action {:action :alter-column,
+                :changes {:default {:from :EMPTY, :to 0},
+                          :primary-key {:from true, :to :EMPTY},
+                          :type {:from :text, :to :integer},
+                          :unique {:from :EMPTY, :to true}
+                          :null {:to :EMPTY :from true}},
+                :field-name :number,
+                :model-name :account}]
+    (spec-util/conform ::->sql action)))
