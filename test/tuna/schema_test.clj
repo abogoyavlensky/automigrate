@@ -65,13 +65,13 @@
                                                           ({:action :alter-column,
                                                             :field-name :created_at,
                                                             :model-name :feed,
-                                                            :changes {:type :date}
-                                                            :drop #{:default}}
+                                                            :changes {:type {:to :date :from :timestamp}
+                                                                      :default {:to :EMPTY :from [:now]}}}
                                                            {:action :alter-column,
                                                             :field-name :name,
                                                             :model-name :feed,
-                                                            :changes {:type :text}
-                                                            :drop #{:null}})))]
+                                                            :changes {:type {:to :text :from [:varchar 50]}
+                                                                      :null {:to :EMPTY :from true}}})))]
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]

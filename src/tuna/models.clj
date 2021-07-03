@@ -4,21 +4,11 @@
             [clojure.string :as str]
             [slingshot.slingshot :refer [throw+]]
             [clojure.set :as set]
-            [tuna.util.model :as model-util]))
+            [tuna.util.model :as model-util]
+            [tuna.util.spec :as spec-util]))
 
 
 ; Specs
-
-(defn- tagged->value
-  "Convert tagged value to vector or identity without a tag."
-  [tagged]
-  (let [value-type (first tagged)
-        value (last tagged)]
-    (case value-type
-      :fn (cond-> [(:name value)]
-            (some? (:val value)) (conj (:val value)))
-      value)))
-
 
 (s/def :tuna.models.field/type
   (s/and
@@ -43,7 +33,7 @@
                          :varchar
                          :float}
             :val pos-int?))
-    (s/conformer tagged->value)))
+    (s/conformer spec-util/tagged->value)))
 
 
 (def type-groups
@@ -83,7 +73,7 @@
             :name keyword?
             :val (s/? #((some-fn int? string?) %))))
     (s/conformer
-      tagged->value)))
+      spec-util/tagged->value)))
 
 
 (s/def ::options-common

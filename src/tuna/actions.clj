@@ -1,6 +1,8 @@
 (ns tuna.actions
   (:require [clojure.spec.alpha :as s]
-            [tuna.models :as models]))
+            [spec-dict :as d]
+            [tuna.models :as models]
+            [tuna.util.model :as model-util]))
 
 
 (def CREATE-TABLE-ACTION :create-table)
@@ -60,17 +62,25 @@
 
 
 (s/def ::changes
-  (s/nilable
-    (s/merge
-      ::models/options-common
-      (s/keys
-        :opt-un [:tuna.models.field/type]))))
+  (s/and
+    (d/dict*
+      (d/->opt (model-util/generate-type-option :tuna.models.field/type))
+      (d/->opt (model-util/generate-changes [:tuna.models.field/unique
+                                             :tuna.models.field/null
+                                             :tuna.models.field/primary-key
+                                             :tuna.models.field/default
+                                             :tuna.models.field/foreign-key])))
+    #(> (count (keys %)) 0)))
 
 
-(s/def ::drop
-  (s/coll-of #{:primary-key :unique :default :null :foreign-key}
-    :kind set?
-    :distinct true))
+; TODO: remove
+(comment
+  (let [data {:type {:from :integer
+                     :to :text}
+              :unique {:from true
+                       :to model-util/EMPTY-OPTION}}]
+    ;(model-util/changes-to-add data model-util/OPTION-KEY-FORWARD)))
+    (s/explain ::changes data)))
 
 
 (defmethod action ALTER-COLUMN-ACTION
@@ -79,8 +89,7 @@
     :req-un [::action
              ::field-name
              ::model-name
-             ::changes
-             ::drop]))
+             ::changes]))
 
 
 (defmethod action DROP-COLUMN-ACTION

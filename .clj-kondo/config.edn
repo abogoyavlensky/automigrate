@@ -5,6 +5,7 @@
            :unresolved-symbol {:exclude [(slingshot.slingshot/try+ [e])]}
            :consistent-alias {:aliases {honey.sql honey
                                         clojure.spec.alpha s
+                                        spec-dict d
                                         clojure.java.jdbc jdbc
                                         tuna.util.db db-util
                                         tuna.util.file file-util

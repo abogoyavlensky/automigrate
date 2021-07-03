@@ -2,6 +2,7 @@
   "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
+            [spec-dict :as d]
             [tuna.actions :as actions]
             [tuna.util.db :as db-util]
             [tuna.util.model :as model-util]))
@@ -129,14 +130,15 @@
 
 
 (s/def ::changes
-  (s/nilable
-    (s/keys
-      :opt-un [:tuna.sql.option->sql/type
-               :tuna.sql.option->sql/null
-               :tuna.sql.option->sql/primary-key
-               :tuna.sql.option->sql/unique
-               :tuna.sql.option->sql/default
-               :tuna.sql.option->sql/foreign-key])))
+  (s/and
+    (d/dict*
+      (d/->opt (model-util/generate-type-option :tuna.sql.option->sql/type))
+      (d/->opt (model-util/generate-changes [:tuna.sql.option->sql/null
+                                             :tuna.sql.option->sql/primary-key
+                                             :tuna.sql.option->sql/unique
+                                             :tuna.sql.option->sql/default
+                                             :tuna.sql.option->sql/foreign-key])))
+    #(> (count (keys %)) 0)))
 
 
 (defn- unique-index-name
@@ -163,7 +165,8 @@
 (s/def ::alter-column->sql
   (s/conformer
     (fn [action]
-      (let [changes (for [[option value] (:changes action)
+      (let [changes-to-add (model-util/changes-to-add (:changes action))
+            changes (for [[option value] changes-to-add
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
                       (case option
@@ -176,7 +179,9 @@
                         :foreign-key {:add-constraint [(foreign-key-index-name model-name field-name)
                                                        [:foreign-key field-name]
                                                        value]}))
-            dropped (for [option (:drop action)
+
+            changes-to-drop (model-util/changes-to-drop (:changes action))
+            dropped (for [option changes-to-drop
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
                       (case option
@@ -196,8 +201,7 @@
       :req-un [::actions/action
                ::actions/field-name
                ::actions/model-name
-               ::changes
-               ::actions/drop])
+               ::changes])
     ::alter-column->sql))
 
 
@@ -300,3 +304,17 @@
     (if (sequential? formatted-action)
       (map #(db-util/fmt %) formatted-action)
       (db-util/fmt formatted-action))))
+
+
+; TODO: remove!
+(comment
+  (require '[tuna.util.spec :as spec-util])
+  (let [action {:action :alter-column,
+                :changes {:default {:from :EMPTY, :to 0},
+                          :primary-key {:from true, :to :EMPTY},
+                          :type {:from :text, :to :integer},
+                          :unique {:from :EMPTY, :to true}
+                          :null {:to :EMPTY :from true}},
+                :field-name :number,
+                :model-name :account}]
+    (spec-util/conform ::->sql action)))
