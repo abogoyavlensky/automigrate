@@ -70,7 +70,9 @@
                                              ::fields/null
                                              ::fields/primary-key
                                              ::fields/default
-                                             ::fields/foreign-key])))
+                                             ::fields/foreign-key
+                                             ::fields/on-delete
+                                             ::fields/on-update])))
     #(> (count (keys %)) 0)))
 
 

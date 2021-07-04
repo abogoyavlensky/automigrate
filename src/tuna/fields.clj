@@ -73,8 +73,8 @@
       spec-util/tagged->value)))
 
 
-(s/def ::options-common
-  (d/dict*
+(s/def ::options-basic
+  (d/dict
     (d/->opt (spec-util/specs->dict
                [::null
                 ::primary-key
@@ -104,21 +104,46 @@
 
 (s/def ::options-foreign-key
   (d/dict*
-    (d/->opt (spec-util/specs->dict [::on-delete
-                                     ::on-update]))))
+    (d/->opt (spec-util/specs->dict
+               [::on-delete
+                ::on-update]))))
+
+
+(defmulti options
+  "Add foreign key specific options to common options if needed."
+  (fn [value]
+    (cond
+      (contains? value FOREIGN-KEY-OPTION) FOREIGN-KEY-OPTION
+      :else nil)))
+
+
+(defmethod options FOREIGN-KEY-OPTION
+  [_]
+  (d/dict
+    ::options-basic
+    ::options-foreign-key))
+
+
+(defmethod options :default
+  [_]
+  ::options-basic)
+
+
+(s/def ::options (s/multi-spec options identity))
 
 
 (s/def ::field
-  (d/dict*
-    {:type ::type}
-    ::options-common))
+  (s/merge
+    ::options
+    (s/keys
+      :req-un [::type])))
 
 
 (s/def ::field-vec
   (s/cat
     :name keyword?
     :type ::type
-    :options (s/? ::options-common)))
+    :options (s/? ::options)))
 
 
 (s/def ::fields
@@ -127,34 +152,10 @@
 
 ;;;;;;;;;;;;;;;
 
-(defmulti opts
-  "Add foreign key specific options to common options if needed."
-  (fn [value]
-    (cond
-      (contains? value FOREIGN-KEY-OPTION) FOREIGN-KEY-OPTION
-      :else nil)))
-
-
-(defmethod opts FOREIGN-KEY-OPTION
-  [_]
-  (d/dict*
-    ::options-common
-    ::options-foreign-key))
-
-
-(defmethod opts :default
-  [_]
-  (prn _)
-  ::options-common)
-
-
-(s/def ::opt (s/multi-spec opts identity))
-
-
 (comment
   (let [data {:null true
               ;:foreign-key :account/id}
               :on-delete FK-CASCADE}
-        data2 {:null false
-               :default [:now]}]
-    (s/explain ::opts data)))
+        data2 {:null false, :type :serial}]
+    ;(s/explain ::opts data)
+    (s/explain ::options-basic data)))
