@@ -460,9 +460,9 @@
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    (migrate config)))
+    ;(migrate config)))
     ;(explain config)))
-    ;(migration-list config)))
+    (migration-list config)))
 
 
 ; TODO: remove!

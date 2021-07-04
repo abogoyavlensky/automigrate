@@ -2,7 +2,8 @@
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
             [medley.core :as medley]
-            [tuna.util.spec :as spec-util]))
+            [tuna.util.spec :as spec-util]
+            [clojure.string :as str]))
 
 
 (def EMPTY-OPTION :EMPTY)
@@ -25,6 +26,19 @@
 (defn kw->name
   [kw]
   (-> kw name keyword))
+
+
+(defn kw->kebab-case
+  [kw]
+  (-> kw
+    (name)
+    (str/replace #"_" "-")
+    (keyword)))
+
+
+(defn map-kw-keys->kebab-case
+  [map-kw]
+  (medley/map-keys kw->kebab-case map-kw))
 
 
 (defn changes-to-add
