@@ -75,14 +75,14 @@
              :model-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
+            :field-name :created-at
+            :model-name :feed
+            :options {:type :timestamp, :default [:now]}}
+           {:action :add-column
             :field-name :name
             :model-name :feed
-            :options {:type [:varchar 100] :null true}}
-           {:action :add-column
-            :field-name :created_at
-            :model-name :feed
-            :options {:type :timestamp, :default [:now]}})
-        (-> (str config/MIGRATIONS-DIR "0002_auto_add_column_name.edn")
+            :options {:type [:varchar 100] :null true}})
+        (-> (str config/MIGRATIONS-DIR "0002_auto_add_column_created_at.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -90,7 +90,7 @@
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0002_auto_add_column_name"})
+            :name "0002_auto_add_column_created_at"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
@@ -491,7 +491,7 @@
                                           :null false}
                                      :name {:type :text}}}
                            {:action :create-index
-                            :index-name :feed_name_id_idx
+                            :index-name :feed-name-id-idx
                             :model-name :feed
                             :options {:type :btree
                                       :fields [:name :id]
@@ -507,15 +507,15 @@
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
         (testing "test make-migrations for model changes"
           (is (= '({:action :alter-index
-                    :index-name :feed_name_id_idx
+                    :index-name :feed-name-id-idx
                     :options {:fields [:name]
                               :type :btree}
                     :model-name :feed})
                 actions)))
         (testing "test converting migration actions to sql queries formatted as edn"
-          (is (= '([{:drop-index :feed_name_id_idx}
+          (is (= '([{:drop-index :feed-name-id-idx}
                     {:create-index
-                     [:feed_name_id_idx :on :feed :using (:btree :name)]}])
+                     [:feed-name-id-idx :on :feed :using (:btree :name)]}])
                 queries)))
         (testing "test converting actions to sql"
           (is (= '((["DROP INDEX feed_name_id_idx"]

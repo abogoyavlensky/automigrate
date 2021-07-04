@@ -17,13 +17,13 @@
                                                               [:name [:varchar 100] {:null true}]
                                                               [:created_at :timestamp {:default [:now]}]]}})]]
     (is (= '({:action :add-column,
+              :field-name :created-at,
+              :model-name :feed,
+              :options {:type :timestamp, :default [:now]}}
+             {:action :add-column,
               :field-name :name,
               :model-name :feed,
-              :options {:type [:varchar 100], :null true}}
-             {:action :add-column,
-              :field-name :created_at,
-              :model-name :feed,
-              :options {:type :timestamp, :default [:now]}})
+              :options {:type [:varchar 100], :null true}})
           (#'migrations/make-migrations* [] "")))))
 
 
@@ -38,7 +38,7 @@
                                                             :model-name :feed,
                                                             :options {:type [:varchar 100], :null true}}
                                                            {:action :add-column,
-                                                            :field-name :created_at,
+                                                            :field-name :created-at,
                                                             :model-name :feed,
                                                             :options {:type :timestamp, :default [:now]}})))]
                    [file-util/read-edn (constantly {:feed
@@ -59,11 +59,11 @@
                                                             :model-name :feed,
                                                             :options {:type [:varchar 100], :null true}}
                                                            {:action :add-column,
-                                                            :field-name :created_at,
+                                                            :field-name :created-at,
                                                             :model-name :feed,
                                                             :options {:type :timestamp, :default [:now]}})
                                                           ({:action :alter-column,
-                                                            :field-name :created_at,
+                                                            :field-name :created-at,
                                                             :model-name :feed,
                                                             :changes {:type {:to :date :from :timestamp}
                                                                       :default {:to :EMPTY :from [:now]}}}
@@ -161,7 +161,7 @@
                                         :null false}
                                    :name {:type :text}}}
                          {:action :create-index
-                          :index-name :feed_name_id_unique_idx
+                          :index-name :feed-name-id-unique-idx
                           :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]
@@ -208,13 +208,13 @@
                                         :null false}
                                    :name {:type :text}}}
                          {:action :create-index
-                          :index-name :feed_name_id_idx
+                          :index-name :feed-name-id-idx
                           :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]
                                     :unique true}}
                          {:action :alter-index
-                          :index-name :feed_name_id_idx
+                          :index-name :feed-name-id-idx
                           :model-name :feed
                           :options {:type :btree
                                     :fields [:name :id]}})))]

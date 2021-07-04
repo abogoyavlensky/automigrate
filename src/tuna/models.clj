@@ -150,16 +150,22 @@
   (s/conformer #(reduce item-vec->map {} %)))
 
 
+(s/def ::map-kw->kebab-case
+  (s/conformer model-util/map-kw-keys->kebab-case))
+
+
 (s/def :tuna.models.fields->internal/fields
   (s/and
     (s/coll-of ::field-vec)
-    ::item-vec->map))
+    ::item-vec->map
+    ::map-kw->kebab-case))
 
 
 (s/def :tuna.models.indexes->internal/indexes
   (s/and
     (s/coll-of ::index-vec)
-    ::item-vec->map))
+    ::item-vec->map
+    ::map-kw->kebab-case))
 
 
 (s/def ::model->internal
