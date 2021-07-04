@@ -2,6 +2,7 @@
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
             [tuna.models :as models]
+            [tuna.fields :as fields]
             [tuna.util.model :as model-util]))
 
 
@@ -38,7 +39,7 @@
   (s/keys
     :req-un [::action
              ::model-name
-             ::models/fields]))
+             ::fields/fields]))
 
 
 (defmethod action DROP-TABLE-ACTION
@@ -49,7 +50,7 @@
 
 
 (s/def ::options
-  ::models/field)
+  ::fields/field)
 
 
 (defmethod action ADD-COLUMN-ACTION
@@ -64,12 +65,12 @@
 (s/def ::changes
   (s/and
     (d/dict*
-      (d/->opt (model-util/generate-type-option :tuna.models.field/type))
-      (d/->opt (model-util/generate-changes [:tuna.models.field/unique
-                                             :tuna.models.field/null
-                                             :tuna.models.field/primary-key
-                                             :tuna.models.field/default
-                                             :tuna.models.field/foreign-key])))
+      (d/->opt (model-util/generate-type-option ::fields/type))
+      (d/->opt (model-util/generate-changes [::fields/unique
+                                             ::fields/null
+                                             ::fields/primary-key
+                                             ::fields/default
+                                             ::fields/foreign-key])))
     #(> (count (keys %)) 0)))
 
 

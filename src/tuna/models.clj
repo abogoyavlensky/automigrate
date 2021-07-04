@@ -5,102 +5,7 @@
             [slingshot.slingshot :refer [throw+]]
             [clojure.set :as set]
             [tuna.util.model :as model-util]
-            [tuna.util.spec :as spec-util]))
-
-
-; Specs
-
-(s/def :tuna.models.field/type
-  (s/and
-    ; TODO: switch available fields according to db dialect!
-    (s/or
-      :kw #{:integer
-            :smallint
-            :bigint
-            :float
-            :real
-            :serial
-            :uuid
-            :boolean
-            :text
-            :timestamp
-            :date
-            :time
-            :point
-            :json
-            :jsonb}
-      :fn (s/cat :name #{:char
-                         :varchar
-                         :float}
-            :val pos-int?))
-    (s/conformer spec-util/tagged->value)))
-
-
-(def type-groups
-  "Type groups for definition of type's relations.
-
-  Used for foreign-key field type validation."
-  {:int #{:integer :serial :bigint :smallint}
-   :char #{:varchar :text :uuid}})
-
-
-(defn check-type-group
-  [t]
-  (some->> type-groups
-    (filter #(contains? (val %) t))
-    (first)
-    (key)))
-
-
-(s/def :tuna.models.field/null boolean?)
-(s/def :tuna.models.field/primary-key true?)
-(s/def :tuna.models.field/unique true?)
-
-
-(s/def :tuna.models.field/foreign-key
-  qualified-keyword?)
-
-
-(s/def :tuna.models.field/default
-  ; TODO: update with dynamic value related to field's type
-  (s/and
-    (s/or
-      :int integer?
-      :bool boolean?
-      :str string?
-      :nil nil?
-      :fn (s/cat
-            :name keyword?
-            :val (s/? #((some-fn int? string?) %))))
-    (s/conformer
-      spec-util/tagged->value)))
-
-
-(s/def ::options-common
-  (s/keys
-    :opt-un [:tuna.models.field/null
-             :tuna.models.field/primary-key
-             :tuna.models.field/unique
-             :tuna.models.field/default
-             :tuna.models.field/foreign-key]))
-
-
-(s/def ::field
-  (s/merge
-    ::options-common
-    (s/keys
-      :req-un [:tuna.models.field/type])))
-
-
-(s/def ::field-vec
-  (s/cat
-    :name keyword?
-    :type :tuna.models.field/type
-    :options (s/? ::options-common)))
-
-
-(s/def ::fields
-  (s/map-of keyword? ::field))
+            [tuna.fields :as fields]))
 
 
 (s/def :tuna.models.index/type
@@ -136,7 +41,8 @@
 
 (s/def ::model
   (s/keys
-    :req-un [::fields]
+    :req-un [::fields/fields]
+    ; TODO: move indexes to separated file
     :opt-un [::indexes]))
 
 
@@ -156,7 +62,7 @@
 
 (s/def :tuna.models.fields->internal/fields
   (s/and
-    (s/coll-of ::field-vec)
+    (s/coll-of ::fields/field-vec)
     ::item-vec->map
     ::map-kw->kebab-case))
 
@@ -212,8 +118,8 @@
                     :referenced-field fk-field-name}
              :message (format "Referenced field %s of model %s is not unique"
                         fk-field-name fk-model-name)}))
-  (let [field-type-group (check-type-group (:type field-options))
-        fk-field-type-group (check-type-group (:type fk-field-options))]
+  (let [field-type-group (fields/check-type-group (:type field-options))
+        fk-field-type-group (fields/check-type-group (:type fk-field-options))]
     (when-not (and (some? field-type-group)
                 (some? fk-field-type-group)
                 (= field-type-group fk-field-type-group))

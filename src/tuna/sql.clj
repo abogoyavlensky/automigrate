@@ -4,6 +4,7 @@
             [clojure.string :as str]
             [spec-dict :as d]
             [tuna.actions :as actions]
+            [tuna.fields :as fields]
             [tuna.util.db :as db-util]
             [tuna.util.model :as model-util]))
 
@@ -16,13 +17,13 @@
 
 (s/def :tuna.sql.option->sql/type
   (s/and
-    :tuna.models.field/type
+    ::fields/type
     (s/conformer identity)))
 
 
 (s/def :tuna.sql.option->sql/null
   (s/and
-    :tuna.models.field/null
+    ::fields/null
     (s/conformer
       (fn [value]
         (if (true? value)
@@ -32,7 +33,7 @@
 
 (s/def :tuna.sql.option->sql/primary-key
   (s/and
-    :tuna.models.field/primary-key
+    ::fields/primary-key
     (s/conformer
       (fn [_]
         [:primary-key]))))
@@ -40,7 +41,7 @@
 
 (s/def :tuna.sql.option->sql/unique
   (s/and
-    :tuna.models.field/unique
+    ::fields/unique
     (s/conformer
       (fn [_]
         :unique))))
@@ -48,7 +49,7 @@
 
 (s/def :tuna.sql.option->sql/default
   (s/and
-    :tuna.models.field/default
+    ::fields/default
     (s/conformer
       (fn [value]
         [:default value]))))
@@ -56,7 +57,7 @@
 
 (s/def :tuna.sql.option->sql/foreign-key
   (s/and
-    :tuna.models.field/foreign-key
+    ::fields/foreign-key
     (s/conformer
       (fn [value]
         (cons :references (model-util/kw->vec value))))))
