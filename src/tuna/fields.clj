@@ -1,6 +1,10 @@
 (ns tuna.fields
   (:require [clojure.spec.alpha :as s]
+            [spec-dict :as d]
             [tuna.util.spec :as spec-util]))
+
+
+(def FOREIGN-KEY-OPTION :foreign-key)
 
 
 (s/def ::type
@@ -70,19 +74,44 @@
 
 
 (s/def ::options-common
-  (s/keys
-    :opt-un [::null
-             ::primary-key
-             ::unique
-             ::default
-             ::foreign-key]))
+  (d/dict*
+    (d/->opt (spec-util/specs->dict
+               [::null
+                ::primary-key
+                ::unique
+                ::default
+                ::foreign-key]))))
+
+
+(def FK-CASCADE :cascade)
+(def FK-SET-NULL :set-null)
+(def FK-SET-DEFAULT :set-default)
+(def FK-RESTRICT :restrict)
+(def FK-NO-ACTION :no-action)
+
+
+(def FK-ACTIONS
+  #{FK-CASCADE
+    FK-SET-NULL
+    FK-SET-DEFAULT
+    FK-RESTRICT
+    FK-NO-ACTION})
+
+
+(s/def ::on-delete FK-ACTIONS)
+(s/def ::on-update FK-ACTIONS)
+
+
+(s/def ::options-foreign-key
+  (d/dict*
+    (d/->opt (spec-util/specs->dict [::on-delete
+                                     ::on-update]))))
 
 
 (s/def ::field
-  (s/merge
-    ::options-common
-    (s/keys
-      :req-un [::type])))
+  (d/dict*
+    {:type ::type}
+    ::options-common))
 
 
 (s/def ::field-vec
@@ -96,12 +125,36 @@
   (s/map-of keyword? ::field))
 
 
-; TODO: uncomment!
-;(defmulti field :type)
-;
-;(defmethod field FOREIGN-KEY-FIELD
-;  [_]
-;  (s/keys
-;    :req-un [::action
-;             ::model-name
-;             ::models/fields]))
+;;;;;;;;;;;;;;;
+
+(defmulti opts
+  "Add foreign key specific options to common options if needed."
+  (fn [value]
+    (cond
+      (contains? value FOREIGN-KEY-OPTION) FOREIGN-KEY-OPTION
+      :else nil)))
+
+
+(defmethod opts FOREIGN-KEY-OPTION
+  [_]
+  (d/dict*
+    ::options-common
+    ::options-foreign-key))
+
+
+(defmethod opts :default
+  [_]
+  (prn _)
+  ::options-common)
+
+
+(s/def ::opt (s/multi-spec opts identity))
+
+
+(comment
+  (let [data {:null true
+              ;:foreign-key :account/id}
+              :on-delete FK-CASCADE}
+        data2 {:null false
+               :default [:now]}]
+    (s/explain ::opts data)))

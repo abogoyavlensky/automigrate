@@ -74,16 +74,6 @@
     #(> (count (keys %)) 0)))
 
 
-; TODO: remove
-(comment
-  (let [data {:type {:from :integer
-                     :to :text}
-              :unique {:from true
-                       :to model-util/EMPTY-OPTION}}]
-    ;(model-util/changes-to-add data model-util/OPTION-KEY-FORWARD)))
-    (s/explain ::changes data)))
-
-
 (defmethod action ALTER-COLUMN-ACTION
   [_]
   (s/keys

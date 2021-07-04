@@ -24,6 +24,7 @@
 
 
 (defn kw->name
+  "Convert full qualified keyword to keywordized name."
   [kw]
   (-> kw name keyword))
 
