@@ -438,8 +438,8 @@
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
       (try+
-        (->> (read-models model-file))
-        ;(->> (make-migrations* migrations-files model-file))
+        ;(->> (read-models model-file))
+        (->> (make-migrations* migrations-files model-file))
         ;     (flatten))
 
          ;(map #(spec-util/conform ::sql/->sql %)))
@@ -454,15 +454,15 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 15}]
+                :number 17}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
     ;(migrate config)))
-    ;(explain config)))
-    (migration-list config)))
+    (explain config)))
+    ;(migration-list config)))
 
 
 ; TODO: remove!
@@ -489,7 +489,7 @@
     ;  (catch [:type ::s/invalid] e
     ;    (:data e)))))
 
-    (->> #_{:alter-table :feed}
+    (->> {:alter-table :feed
             ;:alter-column [:name :type [:varchar 10]]}
 
             ;:alter-column [:name :set [:not nil]]}
@@ -506,10 +506,10 @@
 
              ;:add-index [:constraint :feed-account-fkey [:foreign-key :id] [:references :account :id]]}
              ;:add-index [[:constraint :feed-account-fkey] [:foreign-key :id] [:references :account :id]]}
-             ;:add-constraint [:feed-account-fkey [:foreign-key :id] [:references :account :id]]}
+             :add-constraint [:feed-account-fkey [:foreign-key :id] [:references :account :id] [:raw "on delete"] :set-null]}
 
 
-        {:create-index [:some-index-idx :on :feed :using [:btree :name :id]]}
+        ;{:create-index [:some-index-idx :on :feed :using [:btree :name :id]]}
         ;{:create-unique-index [:some-index-idx :on :feed :using [:btree :name :id]]}
         ;{:drop-index :some-index-idx}
         (db-util/fmt))))

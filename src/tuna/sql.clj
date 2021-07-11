@@ -3,10 +3,12 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [spec-dict :as d]
+            [medley.core :as medley]
             [tuna.actions :as actions]
             [tuna.fields :as fields]
             [tuna.util.db :as db-util]
-            [tuna.util.model :as model-util]))
+            [tuna.util.model :as model-util]
+            [tuna.util.spec :as spec-util]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
@@ -55,22 +57,65 @@
         [:default value]))))
 
 
+(defn- fk-opt->raw
+  [option value]
+  (mapv db-util/kw->raw [option value]))
+
+
+(s/def ::foreign-key
+  (d/dict*
+    {:foreign-field ::fields/foreign-key}
+    ^:opt {fields/ON-DELETE-OPTION ::fields/on-delete
+           fields/ON-UPDATE-OPTION ::fields/on-update}))
+
+
 (s/def :tuna.sql.option->sql/foreign-key
   (s/and
-    ::fields/foreign-key
+    ::foreign-key
     (s/conformer
       (fn [value]
-        (cons :references (model-util/kw->vec value))))))
+        (let [foreign-field (model-util/kw->vec (:foreign-field value))
+              on-delete (fields/ON-DELETE-OPTION value)
+              on-update (fields/ON-UPDATE-OPTION value)]
+          (cond-> [(cons :references foreign-field)]
+            (some? on-delete) (concat (fk-opt->raw fields/ON-DELETE-OPTION on-delete))
+            (some? on-update) (concat (fk-opt->raw fields/ON-UPDATE-OPTION on-update))))))))
+
+
+(def ^:private options-specs
+  [:tuna.sql.option->sql/null
+   :tuna.sql.option->sql/primary-key
+   :tuna.sql.option->sql/unique
+   :tuna.sql.option->sql/default
+   :tuna.sql.option->sql/foreign-key])
+
+
+(defn ->foreign-key-map
+  [field-options]
+  (when-let [foreign-field (get field-options fields/FOREIGN-KEY-OPTION)]
+    (-> {:foreign-field foreign-field}
+      (medley/assoc-some fields/ON-DELETE-OPTION
+        (get field-options fields/ON-DELETE-OPTION))
+      (medley/assoc-some fields/ON-UPDATE-OPTION
+        (get field-options fields/ON-UPDATE-OPTION)))))
+
+
+(s/def ::->foreign-key-map
+  (s/conformer
+    (fn [value]
+      (if-let [foreign-key (->foreign-key-map value)]
+        (-> value
+          (assoc fields/FOREIGN-KEY-OPTION foreign-key)
+          (dissoc fields/ON-DELETE-OPTION fields/ON-UPDATE-OPTION))
+        value))))
 
 
 (s/def ::options->sql
-  (s/keys
-    :req-un [:tuna.sql.option->sql/type]
-    :opt-un [:tuna.sql.option->sql/null
-             :tuna.sql.option->sql/primary-key
-             :tuna.sql.option->sql/unique
-             :tuna.sql.option->sql/default
-             :tuna.sql.option->sql/foreign-key]))
+  (s/and
+    ::->foreign-key-map
+    (d/dict*
+      {:type :tuna.sql.option->sql/type}
+      (d/->opt (spec-util/specs->dict options-specs)))))
 
 
 (s/def ::fields
@@ -81,9 +126,9 @@
   [fields]
   (reduce
     (fn [acc [field-name options]]
-      (conj acc (->> (dissoc options :type)
+      (conj acc (->> (dissoc options :type :foreign-key)
                   (vals)
-                  (concat [field-name (:type options)]))))
+                  (concat [field-name (:type options)] (:foreign-key options)))))
     []
     fields))
 
@@ -134,11 +179,7 @@
   (s/and
     (d/dict*
       (d/->opt (model-util/generate-type-option :tuna.sql.option->sql/type))
-      (d/->opt (model-util/generate-changes [:tuna.sql.option->sql/null
-                                             :tuna.sql.option->sql/primary-key
-                                             :tuna.sql.option->sql/unique
-                                             :tuna.sql.option->sql/default
-                                             :tuna.sql.option->sql/foreign-key])))
+      (d/->opt (model-util/generate-changes options-specs)))
     #(> (count (keys %)) 0)))
 
 
@@ -166,6 +207,7 @@
 (s/def ::alter-column->sql
   (s/conformer
     (fn [action]
+      #p action
       (let [changes-to-add (model-util/changes-to-add (:changes action))
             changes (for [[option value] changes-to-add
                           :let [field-name (:field-name action)
@@ -310,12 +352,23 @@
 ; TODO: remove!
 (comment
   (require '[tuna.util.spec :as spec-util])
-  (let [action {:action :alter-column,
-                :changes {:default {:from :EMPTY, :to 0},
-                          :primary-key {:from true, :to :EMPTY},
-                          :type {:from :text, :to :integer},
-                          :unique {:from :EMPTY, :to true}
-                          :null {:to :EMPTY :from true}},
-                :field-name :number,
-                :model-name :account}]
-    (spec-util/conform ::->sql action)))
+  (let [alter-column {:action :alter-column,
+                      :changes {:default {:from :EMPTY, :to 0},
+                                :primary-key {:from true, :to :EMPTY},
+                                :type {:from :text, :to :integer},
+                                :unique {:from :EMPTY, :to true}
+                                :null {:to :EMPTY :from true}},
+                      :field-name :number
+                      :model-name :account}
+        alter-column-fk {:action :alter-column,
+                         :field-name :task,
+                         :model-name :feed,
+                         :changes {:on-delete {:from :cascade, :to :set-null}}}
+        create-table {:action :create-table
+                      :model-name :foo1
+                      :fields
+                      {:id {:type :serial, :unique true}
+                       :account {:type :integer
+                                 :foreign-key :account/id
+                                 :on-delete :cascade}}}]
+    (spec-util/conform ::->sql alter-column-fk)))

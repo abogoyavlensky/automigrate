@@ -2,7 +2,8 @@
   "Utils for working with database."
   (:require [next.jdbc :as jdbc]
             [next.jdbc.result-set :as jdbc-rs]
-            [honey.sql :as honey]))
+            [honey.sql :as honey]
+            [clojure.string :as str]))
 
 
 (def MIGRATIONS-TABLE
@@ -85,3 +86,8 @@
                        [:name [:varchar 256] [:not nil] :unique]
                        [:created_at :timestamp [:default [:now]]]]}
     (exec! db)))
+
+
+(defn kw->raw
+  [kw]
+  [:raw (str/replace (name kw) #"-" " ")])

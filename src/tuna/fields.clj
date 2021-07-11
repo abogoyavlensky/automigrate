@@ -147,6 +147,6 @@
               :foreign-key :account/id
               :on-delete FK-CASCADE}
               ;:type :integer}
-        data2 {:null false, :type :serial}]
-    ;(s/explain ::opts data)
-    (s/explain ::options-strict data)))
+        data2 {:null false, :type :serial}]))
+;(s/explain ::opts data)
+;(s/explain ::options-strict data)))
