@@ -3,7 +3,6 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [spec-dict :as d]
-            [medley.core :as medley]
             [tuna.actions :as actions]
             [tuna.fields :as fields]
             [tuna.util.db :as db-util]
@@ -71,15 +70,25 @@
 
 (s/def :tuna.sql.option->sql/foreign-key
   (s/and
-    ::foreign-key
     (s/conformer
       (fn [value]
-        (let [foreign-field (model-util/kw->vec (:foreign-field value))
-              on-delete (fields/ON-DELETE-OPTION value)
-              on-update (fields/ON-UPDATE-OPTION value)]
-          (cond-> [(cons :references foreign-field)]
-            (some? on-delete) (concat (fk-opt->raw fields/ON-DELETE-OPTION on-delete))
-            (some? on-update) (concat (fk-opt->raw fields/ON-UPDATE-OPTION on-update))))))))
+        [(cons :references (model-util/kw->vec value))]))))
+
+
+(s/def :tuna.sql.option->sql/on-delete
+  (s/and
+    ::fields/on-delete
+    (s/conformer
+      (fn [value]
+        (fk-opt->raw fields/ON-DELETE-OPTION value)))))
+
+
+(s/def :tuna.sql.option->sql/on-update
+  (s/and
+    ::fields/on-update
+    (s/conformer
+      (fn [value]
+        (fk-opt->raw fields/ON-UPDATE-OPTION value)))))
 
 
 (def ^:private options-specs
@@ -87,35 +96,33 @@
    :tuna.sql.option->sql/primary-key
    :tuna.sql.option->sql/unique
    :tuna.sql.option->sql/default
-   :tuna.sql.option->sql/foreign-key])
+   :tuna.sql.option->sql/foreign-key
+   :tuna.sql.option->sql/on-delete
+   :tuna.sql.option->sql/on-update])
 
 
-(defn ->foreign-key-map
-  [field-options]
-  (when-let [foreign-field (get field-options fields/FOREIGN-KEY-OPTION)]
-    (-> {:foreign-field foreign-field}
-      (medley/assoc-some fields/ON-DELETE-OPTION
-        (get field-options fields/ON-DELETE-OPTION))
-      (medley/assoc-some fields/ON-UPDATE-OPTION
-        (get field-options fields/ON-UPDATE-OPTION)))))
-
-
-(s/def ::->foreign-key-map
+(s/def ::->foreign-key-complete
   (s/conformer
     (fn [value]
-      (if-let [foreign-key (->foreign-key-map value)]
-        (-> value
-          (assoc fields/FOREIGN-KEY-OPTION foreign-key)
-          (dissoc fields/ON-DELETE-OPTION fields/ON-UPDATE-OPTION))
+      (if-let [foreign-key (:foreign-key value)]
+        (let [on-delete (get value fields/ON-DELETE-OPTION)
+              on-update (get value fields/ON-UPDATE-OPTION)
+              foreign-key-complete (cond-> foreign-key
+                                     (some? on-delete) (concat on-delete)
+                                     (some? on-update) (concat on-update))]
+          (-> value
+            (assoc fields/FOREIGN-KEY-OPTION foreign-key-complete)
+            (dissoc fields/ON-DELETE-OPTION fields/ON-UPDATE-OPTION)))
         value))))
 
 
 (s/def ::options->sql
   (s/and
-    ::->foreign-key-map
     (d/dict*
       {:type :tuna.sql.option->sql/type}
-      (d/->opt (spec-util/specs->dict options-specs)))))
+      (d/->opt (spec-util/specs->dict options-specs)))
+    ::->foreign-key-complete))
+; TODO: add conformer output validation!
 
 
 (s/def ::fields
@@ -207,7 +214,6 @@
 (s/def ::alter-column->sql
   (s/conformer
     (fn [action]
-      #p action
       (let [changes-to-add (model-util/changes-to-add (:changes action))
             changes (for [[option value] changes-to-add
                           :let [field-name (:field-name action)
@@ -371,4 +377,7 @@
                        :account {:type :integer
                                  :foreign-key :account/id
                                  :on-delete :cascade}}}]
-    (spec-util/conform ::->sql alter-column-fk)))
+                                 ;:on-update fields/FK-SET-DEFAULT}}}]
+    ;(spec-util/conform ::->sql alter-column-fk)))
+    ;(spec-util/conform ::->sql create-table)
+    (->sql create-table)))

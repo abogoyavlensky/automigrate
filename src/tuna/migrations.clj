@@ -454,7 +454,7 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 17}]
+                :number 16}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
