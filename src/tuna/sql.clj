@@ -7,7 +7,8 @@
             [tuna.fields :as fields]
             [tuna.util.db :as db-util]
             [tuna.util.model :as model-util]
-            [tuna.util.spec :as spec-util]))
+            [tuna.util.spec :as spec-util]
+            [medley.core :as medley]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
@@ -211,10 +212,32 @@
     (keyword)))
 
 
+(defn- foreign-key-changes
+  "Return full option changes or nil if option should be dropped."
+  [options changes-to-add changes-to-drop]
+  (let [keys-to-add (set (keys changes-to-add))]
+    (if (contains? changes-to-drop :foreign-key)
+      nil
+      (when (or (some keys-to-add [:foreign-key :on-delete :on-update])
+              (some changes-to-drop [:on-delete :on-update]))
+        (:foreign-key options)))))
+
+
+(defn- get-changes
+  [action]
+  (let [changes-to-add (model-util/changes-to-add (:changes action))
+        changes-to-drop (model-util/changes-to-drop (:changes action))
+        foreign-key (foreign-key-changes (:options action) changes-to-add changes-to-drop)]
+    {:changes-to-add (-> changes-to-add
+                       (dissoc :on-delete :on-update)
+                       (medley/assoc-some :foreign-key foreign-key))
+     :changes-to-drop (disj changes-to-drop :on-delete :on-update)}))
+
+
 (s/def ::alter-column->sql
   (s/conformer
     (fn [action]
-      (let [changes-to-add (model-util/changes-to-add (:changes action))
+      (let [{:keys [changes-to-add changes-to-drop]} (get-changes action)
             changes (for [[option value] changes-to-add
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
@@ -225,11 +248,13 @@
                         :default {:alter-column [field-name :set value]}
                         :unique {:add-index [:unique nil field-name]}
                         :primary-key {:add-index [:primary-key field-name]}
-                        :foreign-key {:add-constraint [(foreign-key-index-name model-name field-name)
-                                                       [:foreign-key field-name]
-                                                       value]}))
+                        ; TODO: drop constraint if foreign-key has been changed key itself!
+                        :foreign-key [{:drop-constraint [[:raw "IF EXISTS"] (foreign-key-index-name model-name field-name)]}
+                                      {:add-constraint
+                                       (concat [(foreign-key-index-name model-name field-name)
+                                                [:foreign-key field-name]]
+                                         value)}]))
 
-            changes-to-drop (model-util/changes-to-drop (:changes action))
             dropped (for [option changes-to-drop
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
@@ -239,7 +264,7 @@
                         :unique {:drop-constraint (unique-index-name model-name field-name)}
                         :primary-key {:drop-constraint (private-key-index-name model-name)}
                         :foreign-key {:drop-constraint (foreign-key-index-name model-name field-name)}))
-            all-actions (concat changes dropped)]
+            all-actions (concat (flatten changes) dropped)]
         {:alter-table (cons (:model-name action) all-actions)}))))
 
 
@@ -250,6 +275,7 @@
       :req-un [::actions/action
                ::actions/field-name
                ::actions/model-name
+               ::options
                ::changes])
     ::alter-column->sql))
 
@@ -369,15 +395,23 @@
         alter-column-fk {:action :alter-column,
                          :field-name :task,
                          :model-name :feed,
-                         :changes {:on-delete {:from :cascade, :to :set-null}}}
+                         :options {:type :integer
+                                   :foreign-key :account/id
+                                   :on-delete :set-null
+                                   :on-update :cascade}
+                         :changes {:on-delete {:from :cascade, :to :set-null}
+                                   :on-update {:from :EMPTY, :to :cascade}}}
         create-table {:action :create-table
                       :model-name :foo1
                       :fields
                       {:id {:type :serial, :unique true}
                        :account {:type :integer
                                  :foreign-key :account/id
-                                 :on-delete :cascade}}}]
-                                 ;:on-update fields/FK-SET-DEFAULT}}}]
-    ;(spec-util/conform ::->sql alter-column-fk)))
-    ;(spec-util/conform ::->sql create-table)
-    (->sql create-table)))
+                                 :on-delete :cascade}}}
+        action {:action :alter-column,
+                :field-name :account,
+                :model-name :feed,
+                :options {:type :integer},
+                :changes {:foreign-key {:from :feed/id
+                                        :to :EMPTY}}}]
+    (spec-util/conform ::->sql action)))

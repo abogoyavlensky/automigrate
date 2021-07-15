@@ -82,6 +82,7 @@
     :req-un [::action
              ::field-name
              ::model-name
+             ::options
              ::changes]))
 
 
