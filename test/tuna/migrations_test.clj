@@ -105,16 +105,20 @@
              :model-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :alter-column
-            :changes {:type {:from [:varchar 100] :to :text}
-                      :null {:from true :to :EMPTY}}
-            :field-name :name
-            :model-name :feed}
-           {:action :alter-column
             :changes {:primary-key {:from :EMPTY
                                     :to true}}
+            :options {:null false
+                      :primary-key true
+                      :type :serial}
             :field-name :id
+            :model-name :feed}
+           {:action :alter-column
+            :changes {:type {:from [:varchar 100] :to :text}
+                      :null {:from true :to :EMPTY}}
+            :options {:type :text}
+            :field-name :name
             :model-name :feed})
-        (-> (str config/MIGRATIONS-DIR "0002_auto_alter_column_name.edn")
+        (-> (str config/MIGRATIONS-DIR "0002_auto_alter_column_id.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -122,7 +126,7 @@
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0002_auto_alter_column_name"})
+            :name "0002_auto_alter_column_id"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
@@ -215,6 +219,9 @@
                                                              :default {:to 0 :from :EMPTY}
                                                              :primary-key {:to :EMPTY :from true}
                                                              :null {:to :EMPTY :from true}}
+                                                   :options {:type :integer
+                                                             :unique true
+                                                             :default 0}
                                                    :action :alter-column}
                                                   {:field-name :url
                                                    :model-name :feed
@@ -228,10 +235,14 @@
                                                   {:field-name :account
                                                    :model-name :feed
                                                    :changes {:foreign-key {:to :EMPTY :from :account/id}}
+                                                   :options {:type :serial
+                                                             :foreign-key :account/id}
                                                    :action :alter-column}
                                                   {:field-name :account
                                                    :model-name :feed
                                                    :changes {:foreign-key {:to :account/id :from :EMPTY}}
+                                                   :options {:type :integer
+                                                             :foreign-key :account/id}
                                                    :action :alter-column}
                                                   {:index-name :feed_name_idx
                                                    :model-name :feed
@@ -259,7 +270,8 @@
             "DROP TABLE IF EXISTS feed"
             "CREATE TABLE feed (account SERIAL REFERENCES ACCOUNT(ID))"
             "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
-            "ALTER TABLE feed ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) REFERENCES ACCOUNT(ID)"
+            (str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey,"
+              " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) REFERENCES ACCOUNT(ID)")
             "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"
             "DROP INDEX feed_name_idx"
             "DROP INDEX feed_name_idx"

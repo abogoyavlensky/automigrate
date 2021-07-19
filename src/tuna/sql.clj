@@ -249,6 +249,7 @@
                         :unique {:add-index [:unique nil field-name]}
                         :primary-key {:add-index [:primary-key field-name]}
                         ; TODO: drop constraint if foreign-key has been changed key itself!
+                        ; Don't drop if foreign-key was empty!
                         :foreign-key [{:drop-constraint [[:raw "IF EXISTS"] (foreign-key-index-name model-name field-name)]}
                                       {:add-constraint
                                        (concat [(foreign-key-index-name model-name field-name)
