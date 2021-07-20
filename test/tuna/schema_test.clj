@@ -223,3 +223,64 @@
                                                               [:name :text]]
                                                      :indexes [[:feed_name_id_idx :btree {:fields [:name :id]}]]}})]]
     (is (not (seq (#'migrations/make-migrations* [] ""))))))
+
+
+(deftest test-make-migrations*-create-table-with-fk-on-delete-restore-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (let [existing-actions '({:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial
+                                          :unique true
+                                          :primary-key true}}}
+                           {:action :create-table
+                            :model-name :feed
+                            :fields {:id {:type :serial}
+                                     :name {:type :text}
+                                     :account {:type :integer
+                                               :foreign-key :account/id
+                                               :on-delete :cascade}}})
+        existing-models {:feed
+                         {:fields [[:id :serial]
+                                   [:name :text]
+                                   [:account :integer {:foreign-key :account/id
+                                                       :on-delete :cascade}]]}
+                         :account [[:id :serial {:unique true
+                                                 :primary-key true}]]}]
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly existing-actions)]
+                     [file-util/read-edn (constantly existing-models)]]
+      (is (not (seq (#'migrations/make-migrations* [] "")))))))
+
+
+(deftest test-make-migrations*-alter-column-with-fk-on-delete-restore-ok
+  #_{:clj-kondo/ignore [:private-call]}
+  (let [existing-actions '({:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial
+                                          :unique true
+                                          :primary-key true}}}
+                           {:action :create-table
+                            :model-name :feed
+                            :fields {:id {:type :serial}
+                                     :name {:type :text}
+                                     :account {:type :integer
+                                               :foreign-key :account/id
+                                               :on-delete :cascade}}}
+                           {:action :alter-column
+                            :field-name :account
+                            :model-name :feed
+                            :options {:type :integer
+                                      :foreign-key :account/id
+                                      :on-delete :set-null}
+                            :changes {:on-delete {:from :cascade :to :set-null}}})
+        existing-models {:feed
+                         {:fields [[:id :serial]
+                                   [:name :text]
+                                   [:account :integer {:foreign-key :account/id
+                                                       :on-delete :set-null}]]}
+                         :account [[:id :serial {:unique true
+                                                 :primary-key true}]]}]
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly existing-actions)]
+                     [file-util/read-edn (constantly existing-models)]]
+      (is (not (seq (#'migrations/make-migrations* [] "")))))))

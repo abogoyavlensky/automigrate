@@ -131,7 +131,7 @@
 
 (defn- parse-fields-diff
   "Return field's migrations for model."
-  [model-diff removals old-model model-name]
+  [{:keys [model-diff removals old-model new-model model-name]}]
   (let [fields-diff (:fields model-diff)
         fields-removals (:fields removals)
         changed-fields (-> (set (keys fields-diff))
@@ -140,7 +140,9 @@
           :let [options-to-add (get fields-diff field-name)
                 options-to-drop (get fields-removals field-name)
                 new-field?* (new-field? old-model fields-diff field-name)
-                drop-field?* (drop-field? fields-removals field-name)]]
+                drop-field?* (drop-field? fields-removals field-name)
+                field-options-old (get-in old-model [:fields field-name])
+                field-options-new (get-in new-model [:fields field-name])]]
       (cond
         new-field?* {:action actions/ADD-COLUMN-ACTION
                      :field-name field-name
@@ -152,7 +154,8 @@
         :else {:action actions/ALTER-COLUMN-ACTION
                :field-name field-name
                :model-name model-name
-               :changes (get-changes (get-in old-model [:fields field-name])
+               :options field-options-new
+               :changes (get-changes field-options-old
                           options-to-add
                           (options-dropped options-to-drop))}))))
 
@@ -295,7 +298,11 @@
                                     :fields (:fields model-diff)}]
                       drop-model?* [{:action actions/DROP-TABLE-ACTION
                                      :model-name model-name}]
-                      :else (parse-fields-diff model-diff model-removals old-model model-name))
+                      :else (parse-fields-diff {:model-diff model-diff
+                                                :removals model-removals
+                                                :old-model old-model
+                                                :new-model new-model
+                                                :model-name model-name}))
                     (parse-indexes-diff model-diff model-removals old-model new-model model-name)))]
     (->> actions
       (flatten)
@@ -454,15 +461,15 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 15}]
+                :number 17}]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(migrate config)))
+    (migrate config)))
     ;(explain config)))
-    (migration-list config)))
+    ;(migration-list config)))
 
 
 ; TODO: remove!
@@ -489,7 +496,7 @@
     ;  (catch [:type ::s/invalid] e
     ;    (:data e)))))
 
-    (->> #_{:alter-table :feed}
+    (->> {:alter-table :feed
             ;:alter-column [:name :type [:varchar 10]]}
 
             ;:alter-column [:name :set [:not nil]]}
@@ -506,10 +513,10 @@
 
              ;:add-index [:constraint :feed-account-fkey [:foreign-key :id] [:references :account :id]]}
              ;:add-index [[:constraint :feed-account-fkey] [:foreign-key :id] [:references :account :id]]}
-             ;:add-constraint [:feed-account-fkey [:foreign-key :id] [:references :account :id]]}
+             :add-constraint [:feed-account-fkey [:foreign-key :id] [:references :account :id] [:raw "on delete"] :set-null]}
 
 
-        {:create-index [:some-index-idx :on :feed :using [:btree :name :id]]}
+        ;{:create-index [:some-index-idx :on :feed :using [:btree :name :id]]}
         ;{:create-unique-index [:some-index-idx :on :feed :using [:btree :name :id]]}
         ;{:drop-index :some-index-idx}
         (db-util/fmt))))

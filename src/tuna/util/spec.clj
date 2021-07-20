@@ -24,3 +24,9 @@
                            ; TODO: update with more sophisticated error messages' handling
                            :data (s/explain spec data)})
       conformed)))
+
+
+(defn specs->dict
+  [specs]
+  {:pre [(s/assert (s/coll-of qualified-keyword?) specs)]}
+  (reduce #(assoc %1 (-> %2 name keyword) %2) {} specs))
