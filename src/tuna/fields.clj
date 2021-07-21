@@ -50,7 +50,7 @@
     (s/conformer spec-util/tagged->value)))
 
 
-(def type-groups
+(def ^:private type-groups
   "Type groups for definition of type's relations.
 
   Used for foreign-key field type validation."
@@ -123,10 +123,19 @@
     validate-fk-options))
 
 
+(defn- validate-default-and-null
+  [{:keys [default null] :as field}]
+  (if (and (false? null) (nil? default) (contains? field :default))
+    false
+    true))
+
+
 (s/def ::field
-  (d/dict*
-    {:type ::type}
-    ::options))
+  (s/and
+    (d/dict*
+      {:type ::type}
+      ::options)
+    validate-default-and-null))
 
 
 (s/def ::field-vec
