@@ -260,7 +260,7 @@
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
                       (case option
-                        :null {:alter-column [field-name :set [:not nil]]}
+                        :null {:alter-column [field-name :drop [:not nil]]}
                         :default {:alter-column [field-name :drop :default]}
                         :unique {:drop-constraint (unique-index-name model-name field-name)}
                         :primary-key {:drop-constraint (private-key-index-name model-name)}
