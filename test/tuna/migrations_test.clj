@@ -264,7 +264,7 @@
             "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"
             "ALTER TABLE account ADD COLUMN day DATE"
             (str "ALTER TABLE account ALTER COLUMN number TYPE INTEGER, ADD UNIQUE(number), "
-              "ALTER COLUMN number SET DEFAULT 0, ALTER COLUMN number SET NOT NULL, "
+              "ALTER COLUMN number SET DEFAULT 0, ALTER COLUMN number DROP NOT NULL, "
               "DROP CONSTRAINT account_pkey")
             "ALTER TABLE feed DROP COLUMN url"
             "DROP TABLE IF EXISTS feed"
