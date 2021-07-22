@@ -110,3 +110,14 @@
   (let [models {:feed {:fields {}}}]
     (is (thrown-with-msg? ExceptionInfo #"Missing fields in model: :feed"
           (#'models/validate-models models)))))
+
+
+(deftest test-validate-validate-fields-name
+  (testing "check valid model fields ok"
+    (let [fields [{:name :id}
+                  {:name :text}]]
+      (is (true? (#'models/validate-fields-name fields)))))
+  (testing "check duplicated model fields err"
+    (let [fields [{:name :id}
+                  {:name :id}]]
+      (is (false? (#'models/validate-fields-name fields))))))
