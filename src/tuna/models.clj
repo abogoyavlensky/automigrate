@@ -60,19 +60,17 @@
   (s/conformer model-util/map-kw-keys->kebab-case))
 
 
-(defn- validate-fields-name
+(defn- validate-fields-duplication
   "Check if model's fields are duplicated."
   [fields]
   (->> (map :name fields)
-    (frequencies)
-    (vals)
-    (every? #(= 1 %))))
+    (model-util/has-duplicates?)))
 
 
 (s/def :tuna.models.fields->internal/fields
   (s/and
     (s/coll-of ::fields/field-vec)
-    validate-fields-name
+    validate-fields-duplication
     ::item-vec->map
     ::map-kw->kebab-case))
 
@@ -155,6 +153,13 @@
   models)
 
 
+(defn- validate-indexes-duplication
+  [models]
+  (->> (vals models)
+    (mapcat (comp keys :indexes))
+    (model-util/has-duplicates?)))
+
+
 (defn- validate-indexes
   [models]
   (doseq [[model-name model-value] models]
@@ -186,6 +191,7 @@
     (s/map-of keyword? ::model)
     validate-models
     validate-foreign-key
+    validate-indexes-duplication
     validate-indexes))
 
 

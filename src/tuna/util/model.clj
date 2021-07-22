@@ -99,3 +99,12 @@
              ^:opt {:from type-spec
                     :to type-spec})
            check-option-state)})
+
+
+(defn has-duplicates?
+  "Check duplicated items in collection."
+  [items]
+  (->> items
+    (frequencies)
+    (vals)
+    (every? #(= 1 %))))
