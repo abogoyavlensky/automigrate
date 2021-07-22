@@ -60,9 +60,19 @@
   (s/conformer model-util/map-kw-keys->kebab-case))
 
 
+(defn- validate-fields-name
+  "Check if model's fields are duplicated."
+  [fields]
+  (->> (map :name fields)
+    (frequencies)
+    (vals)
+    (every? #(= 1 %))))
+
+
 (s/def :tuna.models.fields->internal/fields
   (s/and
     (s/coll-of ::fields/field-vec)
+    validate-fields-name
     ::item-vec->map
     ::map-kw->kebab-case))
 
