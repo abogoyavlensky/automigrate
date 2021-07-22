@@ -64,9 +64,7 @@
   "Check if model's fields are duplicated."
   [fields]
   (->> (map :name fields)
-    (frequencies)
-    (vals)
-    (every? #(= 1 %))))
+    (model-util/has-duplicates?)))
 
 
 (s/def :tuna.models.fields->internal/fields
@@ -155,6 +153,13 @@
   models)
 
 
+(defn- validate-indexes-duplication
+  [models]
+  (->> (vals models)
+    (mapcat (comp keys :indexes))
+    (model-util/has-duplicates?)))
+
+
 (defn- validate-indexes
   [models]
   (doseq [[model-name model-value] models]
@@ -186,6 +191,7 @@
     (s/map-of keyword? ::model)
     validate-models
     validate-foreign-key
+    validate-indexes-duplication
     validate-indexes))
 
 

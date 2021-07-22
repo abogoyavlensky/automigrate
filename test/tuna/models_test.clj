@@ -112,7 +112,7 @@
           (#'models/validate-models models)))))
 
 
-(deftest test-validate-validate-fields-name
+(deftest test-validate-validate-fields-duplication
   (testing "check valid model fields ok"
     (let [fields [{:name :id}
                   {:name :text}]]
@@ -121,3 +121,22 @@
     (let [fields [{:name :id}
                   {:name :id}]]
       (is (false? (#'models/validate-fields-duplication fields))))))
+
+
+(deftest test-validate-validate-indexes-duplication
+  (testing "check valid model indexes ok"
+    (let [fields {:feed
+                  {:indexes {:feed_name_id_ids {:type :btree
+                                                :fields [:id :name]}}}
+                  :account
+                  {:indexes {:account_name_id_ids {:type :btree
+                                                   :fields [:id]}}}}]
+      (is (true? (#'models/validate-indexes-duplication fields)))))
+  (testing "check valid model indexes ok"
+    (let [fields {:feed
+                  {:indexes {:feed_name_id_ids {:type :btree
+                                                :fields [:id :name]}}}
+                  :account
+                  {:indexes {:feed_name_id_ids {:type :btree
+                                                :fields [:id]}}}}]
+      (is (false? (#'models/validate-indexes-duplication fields))))))
