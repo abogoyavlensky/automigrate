@@ -58,7 +58,6 @@
     (derive :text :string)
     (derive :varchar :string)
     (derive :char :string)
-    ; TODO: probably should be different parent type for date and time
     (derive :date :timestamp)
     (derive :time :timestamp)
     (derive :uuid :string)
