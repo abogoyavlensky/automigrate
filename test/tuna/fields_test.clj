@@ -35,3 +35,34 @@
     (is (false?
           (#'fields/validate-default-and-null {:null false
                                                :default nil})))))
+
+
+(deftest test-validate-default-with-type
+  (testing "check default is int and type integer ok"
+    (is (true?
+          (#'fields/validate-default-and-type {:type :integer
+                                               :default 10}))))
+  (testing "check default is string and type integer err"
+    (is (false?
+          (#'fields/validate-default-and-type {:type :integer
+                                               :default "wrong"}))))
+  (testing "check default is int and type varchar err"
+    (is (false?
+          (#'fields/validate-default-and-type {:type [:varchar 20]
+                                               :default 10}))))
+  (testing "check default is int and type timestamp ok"
+    (is (true?
+          (#'fields/validate-default-and-type {:type :timestamp
+                                               :default [:now]}))))
+  (testing "check default is int and type float ok"
+    (is (true?
+          (#'fields/validate-default-and-type {:type :float
+                                               :default 10.0}))))
+  (testing "check default is int and type float err"
+    (is (false?
+          (#'fields/validate-default-and-type {:type :float
+                                               :default 10}))))
+  (testing "check default is int and type float as nil ok"
+    (is (true?
+          (#'fields/validate-default-and-type {:type :float
+                                               :default nil})))))
