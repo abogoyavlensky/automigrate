@@ -50,11 +50,26 @@
     (s/conformer spec-util/tagged->value)))
 
 
-(def type-groups
+(def ^:private type-hierarchy
+  (-> (make-hierarchy)
+    (derive :smallint :integer)
+    (derive :bigint :integer)
+    (derive :serial :integer)
+    (derive :text :string)
+    (derive :varchar :string)
+    (derive :char :string)
+    (derive :date :timestamp)
+    (derive :time :timestamp)
+    (derive :uuid :string)
+    (derive :bool :boolean)
+    (derive :real :float)))
+
+
+(def ^:private type-groups
   "Type groups for definition of type's relations.
 
   Used for foreign-key field type validation."
-  ; TODO: instead try to use derive!
+  ; TODO: use derive with make-hierarchy!
   {:int #{:integer :serial :bigint :smallint}
    :char #{:varchar :text :uuid}})
 
@@ -123,10 +138,58 @@
     validate-fk-options))
 
 
+(defn- validate-default-and-null
+  [{:keys [null default] :as options}]
+  (if (and (false? null) (nil? default) (contains? options :default))
+    false
+    true))
+
+
+(defmulti validate-default-and-type
+  (fn [{field-type :type}]
+    (if (vector? field-type)
+      (first field-type)
+      field-type))
+  :hierarchy #'type-hierarchy)
+
+
+(defmethod validate-default-and-type :integer
+  [{:keys [default]}]
+  (or (integer? default) (nil? default)))
+
+
+(defmethod validate-default-and-type :string
+  [{:keys [default]}]
+  (or (string? default) (nil? default)))
+
+
+(defmethod validate-default-and-type :boolean
+  [{:keys [default]}]
+  (or (boolean? default) (nil? default)))
+
+
+(defmethod validate-default-and-type :timestamp
+  [{:keys [default]}]
+  (or (s/valid? (s/tuple #{:now}) default) (nil? default)))
+
+
+(defmethod validate-default-and-type :float
+  [{:keys [default]}]
+  (or (float? default) (nil? default)))
+
+
+(defmethod validate-default-and-type :default
+  [_]
+  true)
+
+
 (s/def ::field
-  (d/dict*
-    {:type ::type}
-    ::options))
+  (s/and
+    (d/dict*
+      {:type ::type}
+      ::options)
+    validate-default-and-null
+    validate-default-and-type))
 
 
 (s/def ::field-vec
