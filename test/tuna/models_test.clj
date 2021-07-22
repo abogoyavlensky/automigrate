@@ -116,8 +116,8 @@
   (testing "check valid model fields ok"
     (let [fields [{:name :id}
                   {:name :text}]]
-      (is (true? (#'models/validate-fields-name fields)))))
+      (is (true? (#'models/validate-fields-duplication fields)))))
   (testing "check duplicated model fields err"
     (let [fields [{:name :id}
                   {:name :id}]]
-      (is (false? (#'models/validate-fields-name fields))))))
+      (is (false? (#'models/validate-fields-duplication fields))))))
