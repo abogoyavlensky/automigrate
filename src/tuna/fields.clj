@@ -140,9 +140,16 @@
 
 (defn- validate-default-and-null
   [{:keys [null default] :as options}]
-  (if (and (false? null) (nil? default) (contains? options :default))
-    false
-    true))
+  (not (and (false? null)
+         (nil? default)
+         (contains? options :default))))
+
+
+(defn- validate-fk-options-and-null
+  [{:keys [null on-delete on-update]}]
+  (not (and (false? null)
+         (or (= :set-null on-delete)
+           (= :set-null on-update)))))
 
 
 (defmulti validate-default-and-type
@@ -189,6 +196,7 @@
       {:type ::type}
       ::options)
     validate-default-and-null
+    validate-fk-options-and-null
     validate-default-and-type))
 
 
