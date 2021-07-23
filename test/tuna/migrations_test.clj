@@ -11,7 +11,8 @@
             [tuna.util.spec :as spec-util]
             [tuna.util.test :as test-util]
             [tuna.testing-config :as config])
-  (:import [java.io FileNotFoundException]))
+  (:import [java.io FileNotFoundException]
+           [clojure.lang ExceptionInfo]))
 
 
 (use-fixtures :each
@@ -664,3 +665,21 @@
                                          {:drop-constraint :feed-account-fkey})})
         expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey")])]
     (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
+
+
+(deftest test-validate-migration-numbers
+  (testing "check there are duplicates of migrations' numbers err"
+    (let [names ["0001_test"
+                 "0002_foo"
+                 "0002_bar"
+                 "0003_bar"
+                 "0003_bar"
+                 "0003_bar"]]
+      (is (thrown? ExceptionInfo
+            (#'migrations/validate-migration-numbers names)))))
+  (testing "check there are no duplicates of migrations' numbers ok"
+    (let [names ["0001_test"
+                 "0002_foo"
+                 "0003_bar"]]
+      (is (= names
+            (#'migrations/validate-migration-numbers names))))))
