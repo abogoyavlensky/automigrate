@@ -437,7 +437,7 @@
           (println "Successfully migrated: " migration-name))))))
 
 
-(defn list-migration
+(defn list-migrations
   "Print migration list with status."
   [{:keys [migrations-dir db-uri]}]
   ; TODO: reduce duplication with `migrate` fn!
@@ -487,7 +487,7 @@
     ;(make-migrations config)))
     ;(migrate config)))
     ;(explain config)))
-    (list-migration config)))
+    (list-migrations config)))
 
 
 ; TODO: remove!

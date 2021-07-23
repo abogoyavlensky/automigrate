@@ -31,5 +31,5 @@
                     :make-migrations migrations/make-migrations
                     :migrate migrations/migrate
                     :explain migrations/explain
-                    :list-migration migrations/list-migration)]
+                    :list-migrations migrations/list-migrations)]
     (action-fn (dissoc args :action))))
