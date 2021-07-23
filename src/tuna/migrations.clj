@@ -83,7 +83,8 @@
   [migrations-dir]
   (->> (file-util/list-files migrations-dir)
     (map #(.getName %))
-    (sort)))
+    (sort)
+    (validate-migration-numbers)))
 
 
 (defn- next-migration-number
@@ -442,7 +443,6 @@
   [{:keys [migrations-dir db-uri]}]
   ; TODO: reduce duplication with `migrate` fn!
   (let [migration-names (migrations-list migrations-dir)
-        _ (validate-migration-numbers migration-names)
         db (db-util/db-conn db-uri)
         _ (db-util/create-migrations-table db)
         migrated (already-migrated db)]
