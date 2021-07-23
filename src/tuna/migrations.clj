@@ -50,6 +50,34 @@
     (db-util/exec! db)))
 
 
+(defn- get-migration-name
+  "Return migration name without file format."
+  [file-name]
+  (first (str/split file-name #"\.")))
+
+
+(defn- get-migration-number
+  [migration-name]
+  (first (str/split migration-name #"_")))
+
+
+(defn- validate-migration-numbers
+  [migrations]
+  (let [duplicated-numbers (->> migrations
+                             (map get-migration-number)
+                             (frequencies)
+                             (filter #(> (val %) 1))
+                             (keys)
+                             (set))]
+    (when (seq duplicated-numbers)
+      (throw+ {:type ::duplicated-migration-numbers
+               :numbers duplicated-numbers
+               :message (str "There are duplicated migrations' numbers: "
+                          (str/join ", " duplicated-numbers)
+                          ". Please resolve the conflict and try again.")}))
+    migrations))
+
+
 (defn- migrations-list
   "Get migrations' files list."
   [migrations-dir]
@@ -333,11 +361,6 @@
       (println "There are no changes in models."))))
 
 
-(defn- migration-number
-  [migration-name]
-  (first (str/split migration-name #"_")))
-
-
 (defn- get-migration-by-number
   "Return migration file name by number.
 
@@ -346,7 +369,7 @@
   [migration-names number]
   ; TODO: add args validation!
   (->> migration-names
-    (filter #(= number (migration-number %)))
+    (filter #(= number (get-migration-number %)))
     (first)))
 
 
@@ -376,12 +399,6 @@
     (db-util/exec! db)
     (map :name)
     (set)))
-
-
-(defn- get-migration-name
-  "Return migration name without file format."
-  [file-name]
-  (first (str/split file-name #"\.")))
 
 
 (defn- exec-action!
@@ -425,6 +442,7 @@
   [{:keys [migrations-dir db-uri]}]
   ; TODO: reduce duplication with `migrate` fn!
   (let [migration-names (migrations-list migrations-dir)
+        _ (validate-migration-numbers migration-names)
         db (db-util/db-conn db-uri)
         _ (db-util/create-migrations-table db)
         migrated (already-migrated db)]
