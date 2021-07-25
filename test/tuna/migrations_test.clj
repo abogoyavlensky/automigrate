@@ -417,7 +417,7 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions! db (concat existing-actions actions)))))))))
+                (#'migrations/exec-actions! db (concat existing-actions actions) :forward))))))))
 
 
 (deftest test-make-and-migrate-create-index-on-existing-model-ok
@@ -455,7 +455,7 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions! db (concat existing-actions actions)))))))))
+                (#'migrations/exec-actions! db (concat existing-actions actions) :forward))))))))
 
 
 (deftest test-make-and-migrate-drop-index-ok
@@ -493,7 +493,7 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions! db (concat existing-actions actions)))))))))
+                (#'migrations/exec-actions! db (concat existing-actions actions) :forward))))))))
 
 
 (deftest test-make-and-migrate-alter-index-ok
@@ -537,7 +537,7 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions! db (concat existing-actions actions)))))))))
+                (#'migrations/exec-actions! db (concat existing-actions actions) :forward))))))))
 
 
 (defn- test-make-and-migrate-ok!
@@ -558,7 +558,7 @@
       (testing "test running migrations on db"
         (is (every?
               #(= [#:next.jdbc{:update-count 0}] %)
-              (#'migrations/exec-actions! db (concat existing-actions actions))))))))
+              (#'migrations/exec-actions! db (concat existing-actions actions) :forward)))))))
 
 
 (deftest test-make-and-migrate-add-fk-field-on-delete-ok

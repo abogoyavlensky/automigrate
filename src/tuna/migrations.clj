@@ -44,12 +44,22 @@
     (.mkdir (java.io.File. migrations-dir))))
 
 
-(defn- save-migration
+(defn- save-migration!
   "Save migration to db after applying it."
   [db migration-name]
   (->> {:insert-into db-util/MIGRATIONS-TABLE
         :values [{:name migration-name}]}
-    (db-util/exec! db)))
+    (db-util/exec! db))
+  (println "Successfully migrated: " migration-name))
+
+
+(defn- delete-migration!
+  "Delete unapplied migration from db."
+  [db migration-name]
+  (->> {:delete-from db-util/MIGRATIONS-TABLE
+        :where [:= :name migration-name]}
+    (db-util/exec! db))
+  (println "Successfully unapplied: " migration-name))
 
 
 (defn- get-migration-name
@@ -413,9 +423,11 @@
     (map :name)))
 
 
-(defn- exec-action!
-  "Perform action on a database."
-  [db action]
+(defmulti exec-action! :direction)
+
+
+(defmethod exec-action! FORWARD-DIRECTION
+  [{:keys [db action]}]
   (let [formatted-action (spec-util/conform ::sql/->sql action)]
     (if (sequential? formatted-action)
       (doseq [sub-action formatted-action]
@@ -423,11 +435,18 @@
       (db-util/exec! db formatted-action))))
 
 
+(defmethod exec-action! BACKWARD-DIRECTION
+  [_])
+  ; TODO: implement backward migration!
+
+
 (defn- exec-actions!
   "Perform list of actions on a database."
-  [db actions]
+  [db actions direction]
   (doseq [action actions]
-    (exec-action! db action)))
+    (exec-action! {:db db
+                   :action action
+                   :direction direction})))
 
 
 (defn- current-migration-number
@@ -467,13 +486,15 @@
     (if (= target-number* current-number)
       []
       (condp contains? direction
-        #{FORWARD-DIRECTION} (->> all-migrations-detailed
-                               (drop-while #(>= current-number (:number-int %)))
-                               (take-while #(>= target-number* (:number-int %))))
-        #{BACKWARD-DIRECTION} (->> all-migrations-detailed
-                                (drop-while #(>= target-number* (:number-int %)))
-                                (take-while #(>= current-number (:number-int %)))
-                                (sort-by :number-int >))))))
+        #{FORWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
+                                            (drop-while #(>= current-number (:number-int %)))
+                                            (take-while #(>= target-number* (:number-int %))))
+                              :direction direction}
+        #{BACKWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
+                                             (drop-while #(>= target-number* (:number-int %)))
+                                             (take-while #(>= current-number (:number-int %)))
+                                             (sort-by :number-int >))
+                               :direction direction}))))
 
 
 (defn migrate
@@ -483,14 +504,19 @@
         _ (db-util/create-migrations-table db)
         migrated (already-migrated db)
         all-migrations (migrations-list migrations-dir)
-        to-migrate (get-migrations-to-migrate all-migrations migrated number)]
+        {:keys [to-migrate direction]}
+        (get-migrations-to-migrate all-migrations migrated number)]
     (if (seq to-migrate)
-      (doseq [{:keys [migration-name file-name]} to-migrate]
-        (jdbc/with-transaction [tx db]
-          (let [actions (read-migration file-name migrations-dir)]
-            (exec-actions! tx actions))
-          (save-migration db migration-name)
-          (println "Successfully migrated: " migration-name)))
+      (do
+        (when (= BACKWARD-DIRECTION direction)
+          (println "WARNING: backward migrations aren't implemented yet. Database schema hasn't been changed!"))
+        (doseq [{:keys [migration-name file-name]} to-migrate]
+          (jdbc/with-transaction [tx db]
+            (let [actions (read-migration file-name migrations-dir)]
+              (exec-actions! tx actions direction))
+            (if (= direction FORWARD-DIRECTION)
+              (save-migration! db migration-name)
+              (delete-migration! db migration-name)))))
       (println "Noting to migrate."))))
 
 
@@ -534,17 +560,17 @@
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 17}
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
+                ;:number 17}
         db (db-util/db-conn (:db-uri config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(migrate config)))
+    (migrate config)))
     ;(explain config)))
-    (list-migrations config)))
+    ;(list-migrations config)))
 
 
 ; TODO: remove!
