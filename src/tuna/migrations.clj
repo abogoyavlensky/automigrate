@@ -26,6 +26,8 @@
 (def ^:private DROPPED-ENTITY-VALUE 0)
 (def ^:private DEFAULT-ROOT-NODE :root)
 (def ^:private AUTO-MIGRATION-PREFIX "auto")
+(def ^:private FORWARD-DIRECTION :forward)
+(def ^:private BACKWARD-DIRECTION :backward)
 
 
 (defn- read-migration
@@ -58,7 +60,17 @@
 
 (defn- get-migration-number
   [migration-name]
-  (first (str/split migration-name #"_")))
+  (-> (str/split migration-name #"_")
+    (first)
+    (Integer/parseInt)))
+
+
+(defn- get-migration-type
+  "Return migration type by migration file extension."
+  [migration-name]
+  (-> (str/split migration-name #"\.")
+    (last)
+    (keyword)))
 
 
 (defn- validate-migration-numbers
@@ -214,9 +226,9 @@
   return: [[:model-name :field-name] ...]"
   [action]
   (let [changes-to-add (model-util/changes-to-add (:changes action))
-        fk (case (:action action)
-             actions/ADD-COLUMN-ACTION (get-in action [:options :foreign-key])
-             actions/ALTER-COLUMN-ACTION (:foreign-key changes-to-add)
+        fk (condp contains? (:action action)
+             #{actions/ADD-COLUMN-ACTION} (get-in action [:options :foreign-key])
+             #{actions/ALTER-COLUMN-ACTION} (:foreign-key changes-to-add)
              nil)]
     (->> (condp contains? (:action action)
            #{actions/ADD-COLUMN-ACTION
@@ -377,9 +389,8 @@
 (defn explain
   "Generate raw sql from migration."
   [{:keys [migrations-dir number] :as _args}]
-  (let [number* (file-util/zfill number)
-        migration-names (migrations-list migrations-dir)
-        file-name (get-migration-by-number migration-names number*)]
+  (let [migration-names (migrations-list migrations-dir)
+        file-name (get-migration-by-number migration-names number)]
     (when-not (some? file-name)
       (throw+ {:type ::no-migration-by-number
                :number number}))
@@ -396,10 +407,10 @@
   "Get names of previously migrated migrations from db."
   [db]
   (->> {:select [:name]
-        :from [db-util/MIGRATIONS-TABLE]}
+        :from [db-util/MIGRATIONS-TABLE]
+        :order-by [:created-at]}
     (db-util/exec! db)
-    (map :name)
-    (set)))
+    (map :name)))
 
 
 (defn- exec-action!
@@ -419,23 +430,67 @@
     (exec-action! db action)))
 
 
+(defn- current-migration-number
+  "Return current migration name."
+  [migrated]
+  (if (seq migrated)
+    (let [res (->> (last migrated)
+                (get-migration-number))]
+      res)
+    0))
+
+
+(defn- detailed-migration
+  "Return detailed info for each migration file."
+  [file-name]
+  {:file-name file-name
+   :migration-name (get-migration-name file-name)
+   :number-int (get-migration-number file-name)
+   :migration-type (get-migration-type file-name)})
+
+
+(defn- get-migrations-to-migrate
+  "Return migrations to migrate and migration direction."
+  [all-migrations migrated target-number]
+  (let [all-migrations-detailed (map detailed-migration all-migrations)
+        all-numbers (set (map :number-int all-migrations-detailed))
+        last-number (apply max all-numbers)
+        target-number* (or target-number last-number)
+        current-number (current-migration-number migrated)
+        direction (if (> target-number* current-number)
+                    FORWARD-DIRECTION
+                    BACKWARD-DIRECTION)]
+    (when-not (contains? all-numbers target-number*)
+      (throw+ {:type ::missing-target-migration-number
+               :number target-number*
+               :message "Missing target migration number"}))
+    (when (= target-number* current-number)
+      (condp contains? direction
+        #{FORWARD-DIRECTION} (->> all-migrations-detailed
+                               (drop-while #(>= current-number (:number-int %)))
+                               (take-while #(>= target-number* (:number-int %))))
+        #{BACKWARD-DIRECTION} (->> all-migrations-detailed
+                                (drop-while #(>= target-number* (:number-int %)))
+                                (take-while #(>= current-number (:number-int %)))
+                                (sort-by :number-int >))))))
+
+
 (defn migrate
   "Run migration on a db."
-  [{:keys [migrations-dir db-uri]}]
-  (let [migration-names (->> (migrations-list migrations-dir)
-                          (mapv (juxt get-migration-name identity)))
-        db (db-util/db-conn db-uri)
+  [{:keys [migrations-dir db-uri number]}]
+  (let [db (db-util/db-conn db-uri)
         _ (db-util/create-migrations-table db)
-        migrated (already-migrated db)]
-    (if (= migrated (set (map first migration-names)))
-      (println "Noting to migrate.")
-      (doseq [[migration-name file-name] migration-names
-              :when (not (contains? migrated migration-name))]
+        migrated (already-migrated db)
+        all-migrations (migrations-list migrations-dir)
+        to-migrate (get-migrations-to-migrate all-migrations migrated number)]
+    (if (seq #p to-migrate)
+      (doseq [{:keys [migration-name file-name]} to-migrate]
         (jdbc/with-transaction [tx db]
           (let [actions (read-migration file-name migrations-dir)]
             (exec-actions! tx actions))
           (save-migration db migration-name)
-          (println "Successfully migrated: " migration-name))))))
+          (println "Successfully migrated: " migration-name)))
+      (println "Noting to migrate."))))
 
 
 (defn list-migrations
@@ -445,7 +500,7 @@
   (let [migration-names (migrations-list migrations-dir)
         db (db-util/db-conn db-uri)
         _ (db-util/create-migrations-table db)
-        migrated (already-migrated db)]
+        migrated (set (already-migrated db))]
     (doseq [file-name migration-names
             :let [migration-name (get-migration-name file-name)
                   sign (if (contains? migrated migration-name) "✓" " ")]]
@@ -479,7 +534,8 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 17}]
+                :number 17}
+        db (db-util/db-conn (:db-uri config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))

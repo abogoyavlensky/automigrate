@@ -148,15 +148,15 @@
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
-             :db-uri config/DATABASE-URL})
-  (is (= '({:id 1
-            :name "0001_auto_create_table_feed"}
-           {:id 2
-            :name "0002_auto_drop_column_name"})
-        (->> {:select [:*]
-              :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/exec! config/DATABASE-CONN)
-          (map #(dissoc % :created_at))))))
+             :db-uri config/DATABASE-URL}))
+  ;(is (= '({:id 1
+  ;          :name "0001_auto_create_table_feed"}
+  ;         {:id 2
+  ;          :name "0002_auto_drop_column_name"})
+  ;      (->> {:select [:*]
+  ;            :from [db-util/MIGRATIONS-TABLE]}
+  ;        (db-util/exec! config/DATABASE-CONN)
+  ;        (map #(dissoc % :created_at))))))
 
 
 (deftest test-migrate-migrations-with-drop-table-ok
