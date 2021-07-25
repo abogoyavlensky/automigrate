@@ -464,7 +464,8 @@
       (throw+ {:type ::missing-target-migration-number
                :number target-number*
                :message "Missing target migration number"}))
-    (when (= target-number* current-number)
+    (if (= target-number* current-number)
+      []
       (condp contains? direction
         #{FORWARD-DIRECTION} (->> all-migrations-detailed
                                (drop-while #(>= current-number (:number-int %)))
@@ -483,7 +484,7 @@
         migrated (already-migrated db)
         all-migrations (migrations-list migrations-dir)
         to-migrate (get-migrations-to-migrate all-migrations migrated number)]
-    (if (seq #p to-migrate)
+    (if (seq to-migrate)
       (doseq [{:keys [migration-name file-name]} to-migrate]
         (jdbc/with-transaction [tx db]
           (let [actions (read-migration file-name migrations-dir)]
