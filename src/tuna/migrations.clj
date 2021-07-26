@@ -479,7 +479,8 @@
         direction (if (> target-number* current-number)
                     FORWARD-DIRECTION
                     BACKWARD-DIRECTION)]
-    (when-not (contains? all-numbers target-number*)
+    (when-not (or (contains? all-numbers target-number*)
+                (= 0 target-number*))
       (throw+ {:type ::missing-target-migration-number
                :number target-number*
                :message "Missing target migration number"}))
@@ -508,15 +509,19 @@
         (get-migrations-to-migrate all-migrations migrated number)]
     (if (seq to-migrate)
       (do
-        (when (= BACKWARD-DIRECTION direction)
-          (println "WARNING: backward migrations aren't implemented yet. Database schema hasn't been changed!"))
         (doseq [{:keys [migration-name file-name]} to-migrate]
+          (if (= direction FORWARD-DIRECTION)
+            (println (str "Migrating: " migration-name "..."))
+            (println (str "Unapplying: " migration-name "...")))
           (jdbc/with-transaction [tx db]
             (let [actions (read-migration file-name migrations-dir)]
               (exec-actions! tx actions direction))
             (if (= direction FORWARD-DIRECTION)
               (save-migration! db migration-name)
-              (delete-migration! db migration-name)))))
+              (delete-migration! db migration-name))))
+        (when (= BACKWARD-DIRECTION direction)
+          (println (str "\nWARNING: backward migration isn't fully implemented yet."
+                     "\nDatabase schema hasn't been changed!"))))
       (println "Noting to migrate."))))
 
 
@@ -560,16 +565,16 @@
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
-                ;:number 17}
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :number 6}
         db (db-util/db-conn (:db-uri config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    (migrate config)))
     ;(explain config)))
+    (migrate config)))
     ;(list-migrations config)))
 
 
