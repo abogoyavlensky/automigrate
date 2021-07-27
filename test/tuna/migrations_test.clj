@@ -98,6 +98,100 @@
           (map #(dissoc % :created_at))))))
 
 
+(deftest test-migrate-forward-to-number-ok
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_basic.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_alter_column.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (testing "test migrate forward to specific number"
+    (core/run {:action :migrate
+               :migrations-dir config/MIGRATIONS-DIR
+               :db-uri config/DATABASE-URL
+               :number 2})
+    (is (= #{"0001_auto_create_table_feed"
+             "0002_auto_add_column_created_at"}
+          (->> {:select [:*]
+                :from [db-util/MIGRATIONS-TABLE]}
+            (db-util/exec! config/DATABASE-CONN)
+            (map :name)
+            (set)))))
+  (testing "test nothing to migrate forward with current number"
+    (core/run {:action :migrate
+               :migrations-dir config/MIGRATIONS-DIR
+               :db-uri config/DATABASE-URL
+               :number 2})
+    (is (= #{"0001_auto_create_table_feed"
+             "0002_auto_add_column_created_at"}
+          (->> {:select [:*]
+                :from [db-util/MIGRATIONS-TABLE]}
+            (db-util/exec! config/DATABASE-CONN)
+            (map :name)
+            (set)))))
+  (testing "test migrate forward all"
+    (core/run {:action :migrate
+               :migrations-dir config/MIGRATIONS-DIR
+               :db-uri config/DATABASE-URL})
+    (is (= #{"0001_auto_create_table_feed"
+             "0002_auto_add_column_created_at"
+             "0003_auto_alter_column_id"}
+          (->> {:select [:*]
+                :from [db-util/MIGRATIONS-TABLE]}
+            (db-util/exec! config/DATABASE-CONN)
+            (map :name)
+            (set))))))
+
+
+(deftest test-migrate-backward-to-number-ok
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_basic.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (core/run {:action :make-migrations
+             :model-file (str config/MODELS-DIR "feed_alter_column.edn")
+             :migrations-dir config/MIGRATIONS-DIR})
+  (core/run {:action :migrate
+             :migrations-dir config/MIGRATIONS-DIR
+             :db-uri config/DATABASE-URL})
+  (is (= #{"0001_auto_create_table_feed"
+           "0002_auto_add_column_created_at"
+           "0003_auto_alter_column_id"}
+        (->> {:select [:*]
+              :from [db-util/MIGRATIONS-TABLE]}
+          (db-util/exec! config/DATABASE-CONN)
+          (map :name)
+          (set))))
+  (testing "test migrate backward to specific number"
+    (core/run {:action :migrate
+               :migrations-dir config/MIGRATIONS-DIR
+               :db-uri config/DATABASE-URL
+               :number 2})
+    (is (= #{"0001_auto_create_table_feed"
+             "0002_auto_add_column_created_at"}
+          (->> {:select [:*]
+                :from [db-util/MIGRATIONS-TABLE]}
+            (db-util/exec! config/DATABASE-CONN)
+            (map :name)
+            (set)))))
+  (testing "test unapply all migrations "
+    (core/run {:action :migrate
+               :migrations-dir config/MIGRATIONS-DIR
+               :db-uri config/DATABASE-URL
+               :number 0})
+    (is (= #{}
+          (->> {:select [:*]
+                :from [db-util/MIGRATIONS-TABLE]}
+            (db-util/exec! config/DATABASE-CONN)
+            (map :name)
+            (set))))))
+
+
 (deftest test-migrate-migrations-with-alter-columns-ok
   (core/run {:action :make-migrations
              :model-file (str config/MODELS-DIR "feed_add_column.edn")
@@ -148,15 +242,15 @@
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
-             :db-uri config/DATABASE-URL}))
-  ;(is (= '({:id 1
-  ;          :name "0001_auto_create_table_feed"}
-  ;         {:id 2
-  ;          :name "0002_auto_drop_column_name"})
-  ;      (->> {:select [:*]
-  ;            :from [db-util/MIGRATIONS-TABLE]}
-  ;        (db-util/exec! config/DATABASE-CONN)
-  ;        (map #(dissoc % :created_at))))))
+             :db-uri config/DATABASE-URL})
+  (is (= '({:id 1
+            :name "0001_auto_create_table_feed"}
+           {:id 2
+            :name "0002_auto_drop_column_name"})
+        (->> {:select [:*]
+              :from [db-util/MIGRATIONS-TABLE]}
+          (db-util/exec! config/DATABASE-CONN)
+          (map #(dissoc % :created_at))))))
 
 
 (deftest test-migrate-migrations-with-drop-table-ok
