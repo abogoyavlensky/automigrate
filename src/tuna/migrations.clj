@@ -28,6 +28,9 @@
 (def ^:private AUTO-MIGRATION-PREFIX "auto")
 (def ^:private FORWARD-DIRECTION :forward)
 (def ^:private BACKWARD-DIRECTION :backward)
+(def ^:private AUTO-MIGRATION-EXT :edn)
+(def ^:private SQL-MIGRATION-EXT :sql)
+(def ^:private SQL-MIGRATION-TEMPLATE "-- FORWARD\n\n\n-- BACKWARD\n")
 
 
 (defn- read-migration
@@ -128,7 +131,7 @@
       actions/ALTER-INDEX-ACTION} (:index-name action)))
 
 
-(defn- next-migration-name
+(defn- get-next-migration-name
   [actions]
   (let [action (-> actions first)
         action-name (-> action :action name)
@@ -361,27 +364,60 @@
       (map #(spec-util/conform ::actions/->migration %)))))
 
 
-(defn make-migrations
-  "Make new migrations based on models' definitions automatically."
+(defn- get-next-migration-file-name
+  "Return next migration file name based on existing migrations."
+  [{:keys [migration-type migrations-dir next-migration-name]}]
+  (let [migration-names (migrations-list migrations-dir)
+        migration-number (next-migration-number migration-names)
+        migration-file-name (str migration-number "_" next-migration-name)]
+    ; TODO: build file file path properly!
+    (str migrations-dir "/" migration-file-name "." (name migration-type))))
+
+
+(defn- make-next-migration
+  "Return actions for next migration."
+  [{:keys [model-file migrations-dir]}]
+  (-> (file-util/list-files migrations-dir)
+    (make-migrations* model-file)
+    (flatten)
+    (seq)))
+
+
+(defmulti make-migrations :type)
+
+
+(defmethod make-migrations :default
+  ; Make new migrations based on models' definitions automatically.
   [{:keys [model-file migrations-dir] :as _args}]
-  ; TODO: remove second level of let!
-  (let [migrations-files (file-util/list-files migrations-dir)
-        migrations (-> (make-migrations* migrations-files model-file)
-                     (flatten))]
-    (if (seq migrations)
-      (let [_ (create-migrations-dir migrations-dir)
-            migration-names (migrations-list migrations-dir)
-            migration-number (next-migration-number migration-names)
-            migration-name (next-migration-name migrations)
-            migration-file-name (str migration-number "_" migration-name)
-            migration-file-name-full-path (str migrations-dir "/" migration-file-name ".edn")]
-        (spit migration-file-name-full-path
-          (with-out-str
-            (pprint/pprint migrations)))
-        (println (str "Created migration: " migration-file-name)))
-        ; TODO: print all changes from migration
-      ; TODO: use some special tool for printing to console
-      (println "There are no changes in models."))))
+  (if-let [next-migration (make-next-migration {:model-file model-file
+                                                :migrations-dir migrations-dir})]
+    (let [_ (create-migrations-dir migrations-dir)
+          next-migration-name (get-next-migration-name next-migration)
+          migration-file-name-full-path (get-next-migration-file-name
+                                          {:migration-type AUTO-MIGRATION-EXT
+                                           :migrations-dir migrations-dir
+                                           :next-migration-name next-migration-name})]
+      (spit migration-file-name-full-path
+        (with-out-str
+          (pprint/pprint next-migration)))
+      ; TODO: print all changes from migration in verbose mode
+      (println (str "Created migration: " migration-file-name-full-path)))
+    (println "There are no changes in models.")))
+
+
+(defmethod make-migrations SQL-MIGRATION-EXT
+  ; Make new migrations based on models' definitions automatically.
+  [{next-migration-name :name
+    migrations-dir :migrations-dir
+    migration-type :type}]
+  (let [_ (create-migrations-dir migrations-dir)
+        next-migration-name* (str/replace next-migration-name #"-" "_")
+        migration-file-name-full-path (get-next-migration-file-name
+                                        {:migration-type migration-type
+                                         :migrations-dir migrations-dir
+                                         :next-migration-name next-migration-name*})]
+    (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
+    (println (str "Created migration: " migration-file-name-full-path))))
 
 
 (defn- get-migration-by-number
@@ -566,15 +602,17 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 6}
+                :name "some-new-table"
+                :type :sql}
+                ;:number 6}
         db (db-util/db-conn (:db-uri config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)))
+    (make-migrations config)))
     ;(explain config)))
-    (migrate config)))
+    ;(migrate config)))
     ;(list-migrations config)))
 
 
