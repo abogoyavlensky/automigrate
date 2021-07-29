@@ -279,7 +279,7 @@
 
 (deftest test-explain-basic-migration-ok
   #_{:clj-kondo/ignore [:private-call]}
-  (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed"])]
+  (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed.edn"])]
                    [file-util/safe-println (constantly nil)]
                    [migrations/read-migration (constantly
                                                 '({:model-name :feed

@@ -470,10 +470,11 @@
     (first)))
 
 
-(defmulti explain* #(get-migration-type (:file-name %)))
+(defmulti explain*
+  (juxt #(get-migration-type (:file-name %)) :direction))
 
 
-(defmethod explain* :default
+(defmethod explain* [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
   ; Generate raw sql from migration.
   [{:keys [file-name migrations-dir] :as _args}]
   (->> (read-migration {:file-name file-name
@@ -484,19 +485,36 @@
     (file-util/safe-println)))
 
 
-(defmethod explain* SQL-MIGRATION-EXT
+(defmethod explain* [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
+  [_]
+  (println "WARNING: backward migration isn't fully implemented yet."))
+
+
+(defmethod explain* [SQL-MIGRATION-EXT FORWARD-DIRECTION]
   ; Generate raw sql from migration.
   [{:keys [file-name migrations-dir] :as _args}]
   ; TODO: print sql for migrations by directions!
   (->> (read-migration {:file-name file-name
                         :migrations-dir migrations-dir})
+    (first)
+    (get-forward-sql-migration)
+    (file-util/safe-println)))
+
+
+(defmethod explain* [SQL-MIGRATION-EXT BACKWARD-DIRECTION]
+  ; Generate raw sql from migration.
+  [{:keys [file-name migrations-dir] :as _args}]
+  ; TODO: print sql for migrations by directions!
+  (->> (read-migration {:file-name file-name
+                        :migrations-dir migrations-dir})
+    (first)
+    (get-backward-sql-migration)
     (file-util/safe-println)))
 
 
 (defn explain
   ; Generate raw sql from migration.
-  [{:keys [migrations-dir number] :as _args}]
-  ; TODO: reduce code duplication!
+  [{:keys [migrations-dir number direction] :or {direction FORWARD-DIRECTION} :as _args}]
   (let [migration-names (migrations-list migrations-dir)
         file-name (get-migration-by-number migration-names number)]
     (when-not (some? file-name)
@@ -505,12 +523,9 @@
     (file-util/safe-println
       [(format "SQL for migration %s:\n" file-name)])
     (explain* {:file-name file-name
-               :migrations-dir migrations-dir})))
-    ;(->> (read-migration file-name migrations-dir)
-    ;     (mapv sql/->sql)
-    ;     ; TODO: maybe remove!?
-    ;     (flatten)
-    ;     (file-util/safe-println))))
+               :migrations-dir migrations-dir
+               :direction direction})))
+
 
 (defn- already-migrated
   "Get names of previously migrated migrations from db."
@@ -680,18 +695,20 @@
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 ;:name "some-new-table"
                 ;:type :sql}
-                ;:number 9}
+                :number 8
+                ;:direction FORWARD-DIRECTION}
+                :direction BACKWARD-DIRECTION}
         db (db-util/db-conn (:db-uri config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(explain config)))
-    (migrate config)))
+    (explain config)))
+    ;(migrate config)))
     ;(list-migrations config)))
 
 

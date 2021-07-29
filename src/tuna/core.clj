@@ -17,6 +17,12 @@
 (s/def ::name (s/conformer name))
 
 
+(s/def ::direction
+  (s/and
+    (s/conformer keyword)
+    #{:forward :backward}))
+
+
 (s/def ::run-args
   (s/keys
     :req-un [::migrations-dir]
@@ -24,7 +30,8 @@
              ::number
              ::db-uri
              ::type
-             ::name]))
+             ::name
+             ::direction]))
 
 
 (defn run
