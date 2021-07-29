@@ -396,7 +396,7 @@
         migration-number (next-migration-number migration-names)
         migration-file-name (str migration-number "_" next-migration-name)]
     ; TODO: build file file path properly!
-    (str migrations-dir "/" migration-file-name "." (name migration-type))))
+    (str migrations-dir migration-file-name "." (name migration-type))))
 
 
 (defn- auto-migration?
