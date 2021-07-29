@@ -332,7 +332,7 @@
 
 
 (defn- make-migrations*
-  [migrations-files model-file]
+  [model-file migrations-files]
   (let [old-schema (schema/current-db-schema migrations-files)
         new-schema (read-models model-file)
         [alterations removals] (differ/diff old-schema new-schema)
@@ -374,10 +374,17 @@
     (str migrations-dir "/" migration-file-name "." (name migration-type))))
 
 
+(defn- auto-migration?
+  "Return true if migration has been created automatically false otherwise."
+  [f]
+  (str/ends-with? (.getName f) (str "." (name AUTO-MIGRATION-EXT))))
+
+
 (defn- make-next-migration
   "Return actions for next migration."
   [{:keys [model-file migrations-dir]}]
-  (-> (file-util/list-files migrations-dir)
+  (->> (file-util/list-files migrations-dir)
+    (filter auto-migration?)
     (make-migrations* model-file)
     (flatten)
     (seq)))
@@ -587,7 +594,7 @@
         model-file (:model-file config)]
       (try+
         (->> (read-models model-file))
-        ;(->> (make-migrations* migrations-files model-file))
+        ;(->> (make-migrations* model-file migrations-files))
         ;     (flatten))
 
          ;(map #(spec-util/conform ::sql/->sql %)))
@@ -601,19 +608,19 @@
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :name "some-new-table"
-                :type :sql}
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
+                ;:name "some-new-table"
+                ;:type :sql}
                 ;:number 6}
         db (db-util/db-conn (:db-uri config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    (make-migrations config)))
+    ;(make-migrations config)
     ;(explain config)))
     ;(migrate config)))
-    ;(list-migrations config)))
+    (list-migrations config)))
 
 
 ; TODO: remove!

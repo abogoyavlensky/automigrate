@@ -483,7 +483,7 @@
                                                        :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
                                                                                                    :unique true}]]}})]]
       (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migrations* [] "")
+            actions (#'migrations/make-migrations* "" [])
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
         (testing "test make-migrations for model changes"
           (is (= '({:action :create-table
@@ -529,7 +529,7 @@
                                                        :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
                                                                                                    :unique true}]]}})]]
       (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migrations* [] "")
+            actions (#'migrations/make-migrations* "" [])
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
         (testing "test make-migrations for model changes"
           (is (= '({:action :create-index
@@ -571,7 +571,7 @@
                                                       [[:id :serial {:null false}]
                                                        [:name :text]]})]]
       (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migrations* [] "")
+            actions (#'migrations/make-migrations* "" [])
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
         (testing "test make-migrations for model changes"
           (is (= '({:action :drop-index
@@ -610,7 +610,7 @@
                                                                 [:name :text]]
                                                        :indexes [[:feed_name_id_idx :btree {:fields [:name]}]]}})]]
       (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migrations* [] "")
+            actions (#'migrations/make-migrations* "" [])
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
         (testing "test make-migrations for model changes"
           (is (= '({:action :alter-index
@@ -641,7 +641,7 @@
                     (constantly existing-actions)]
                    [file-util/read-edn (constantly changed-models)]]
     (let [db config/DATABASE-CONN
-          actions (#'migrations/make-migrations* [] "")
+          actions (#'migrations/make-migrations* "" [])
           queries (map #(spec-util/conform ::sql/->sql %) actions)]
       (testing "test make-migrations for model changes"
         (is (= expected-actions actions)))
