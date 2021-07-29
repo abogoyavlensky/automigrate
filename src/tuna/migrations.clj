@@ -64,13 +64,19 @@
     (vector)))
 
 
+(defn- get-backward-sql-migration
+  [migration]
+  (-> (str/split migration (re-pattern BACKWARD-MIGRATION-DELIMITER))
+    (last)
+    (vector)))
+
+
 (defmethod read-migration SQL-MIGRATION-EXT
   ;"Return models' definitions.
   [{:keys [file-name migrations-dir]}]
   (-> (str migrations-dir "/" file-name)
     (slurp)
-      ; TODO: add ability to explain backward migration!
-    (get-forward-sql-migration)))
+    (vector)))
 
 
 (defn- create-migrations-dir
@@ -481,6 +487,7 @@
 (defmethod explain* SQL-MIGRATION-EXT
   ; Generate raw sql from migration.
   [{:keys [file-name migrations-dir] :as _args}]
+  ; TODO: print sql for migrations by directions!
   (->> (read-migration {:file-name file-name
                         :migrations-dir migrations-dir})
     (file-util/safe-println)))
@@ -515,10 +522,10 @@
     (map :name)))
 
 
-(defmulti exec-action! :direction)
+(defmulti exec-action! (juxt :migration-type :direction))
 
 
-(defmethod exec-action! FORWARD-DIRECTION
+(defmethod exec-action! [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
   [{:keys [db action]}]
   (let [formatted-action (spec-util/conform ::sql/->sql action)]
     (if (sequential? formatted-action)
@@ -527,18 +534,34 @@
       (db-util/exec! db formatted-action))))
 
 
-(defmethod exec-action! BACKWARD-DIRECTION
-  [_])
+(defmethod exec-action! [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
+  [_]
   ; TODO: implement backward migration!
+  (println "WARNING: backward migration isn't fully implemented yet. Database schema hasn't been changed!"))
+
+
+(defmethod exec-action! [SQL-MIGRATION-EXT FORWARD-DIRECTION]
+  [{:keys [db action]}]
+  (->> action
+    (get-forward-sql-migration)
+    (db-util/exec-raw! db)))
+
+
+(defmethod exec-action! [SQL-MIGRATION-EXT BACKWARD-DIRECTION]
+  [{:keys [db action]}]
+  (->> action
+    (get-backward-sql-migration)
+    (db-util/exec-raw! db)))
 
 
 (defn- exec-actions!
   "Perform list of actions on a database."
-  [db actions direction]
+  [{:keys [db actions direction migration-type]}]
   (doseq [action actions]
     (exec-action! {:db db
                    :action action
-                   :direction direction})))
+                   :direction direction
+                   :migration-type migration-type})))
 
 
 (defn- current-migration-number
@@ -560,7 +583,7 @@
    :migration-type (get-migration-type file-name)})
 
 
-(defn- get-migrations-to-migrate
+(defn- get-detailed-migrations-to-migrate
   "Return migrations to migrate and migration direction."
   [all-migrations migrated target-number]
   (let [all-migrations-detailed (map detailed-migration all-migrations)
@@ -598,23 +621,22 @@
         migrated (already-migrated db)
         all-migrations (migrations-list migrations-dir)
         {:keys [to-migrate direction]}
-        (get-migrations-to-migrate all-migrations migrated number)]
+        (get-detailed-migrations-to-migrate all-migrations migrated number)]
     (if (seq to-migrate)
-      (do
-        (doseq [{:keys [migration-name file-name]} to-migrate]
+      (doseq [{:keys [migration-name file-name migration-type]} to-migrate]
+        (if (= direction FORWARD-DIRECTION)
+          (println (str "Migrating: " migration-name "..."))
+          (println (str "Unapplying: " migration-name "...")))
+        (jdbc/with-transaction [tx db]
+          (let [actions (read-migration {:file-name file-name
+                                         :migrations-dir migrations-dir})]
+            (exec-actions! {:db tx
+                            :actions actions
+                            :direction direction
+                            :migration-type migration-type}))
           (if (= direction FORWARD-DIRECTION)
-            (println (str "Migrating: " migration-name "..."))
-            (println (str "Unapplying: " migration-name "...")))
-          (jdbc/with-transaction [tx db]
-            (let [actions (read-migration {:file-name file-name
-                                           :migrations-dir migrations-dir})]
-              (exec-actions! tx actions direction))
-            (if (= direction FORWARD-DIRECTION)
-              (save-migration! db migration-name)
-              (delete-migration! db migration-name))))
-        (when (= BACKWARD-DIRECTION direction)
-          (println (str "\nWARNING: backward migration isn't fully implemented yet."
-                     "\nDatabase schema hasn't been changed for auto migrations!"))))
+            (save-migration! db migration-name)
+            (delete-migration! db migration-name))))
       (println "Noting to migrate."))))
 
 
@@ -658,18 +680,18 @@
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
                 ;:name "some-new-table"
                 ;:type :sql}
-                :number 8}
+                ;:number 9}
         db (db-util/db-conn (:db-uri config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)
-    (explain config)))
-    ;(migrate config)))
+    ;(make-migrations config)))
+    ;(explain config)))
+    (migrate config)))
     ;(list-migrations config)))
 
 
