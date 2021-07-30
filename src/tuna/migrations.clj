@@ -402,7 +402,7 @@
         migration-number (next-migration-number migration-names)
         migration-file-name (str migration-number "_" next-migration-name)]
     ; TODO: build file file path properly!
-    (str migrations-dir migration-file-name "." (name migration-type))))
+    (str migrations-dir "/" migration-file-name "." (name migration-type))))
 
 
 (defn- auto-migration?
@@ -698,9 +698,9 @@
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 ;:name "some-new-table"
                 ;:type :sql}
-                :number 8
+                :number 10}
                 ;:direction FORWARD-DIRECTION}
-                :direction BACKWARD-DIRECTION}
+                ;:direction BACKWARD-DIRECTION}
         db (db-util/db-conn (:db-uri config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
