@@ -315,7 +315,7 @@
 (defn- compare-actions
   "Secondary comparator for sorting actions in migration the same way."
   [a b]
-  (> (hash a) (hash b)))
+  (< (hash a) (hash b)))
 
 
 (defn- sort-actions
