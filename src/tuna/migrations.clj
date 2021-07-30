@@ -28,13 +28,55 @@
 (def ^:private AUTO-MIGRATION-PREFIX "auto")
 (def ^:private FORWARD-DIRECTION :forward)
 (def ^:private BACKWARD-DIRECTION :backward)
+(def ^:private AUTO-MIGRATION-EXT :edn)
+(def ^:private SQL-MIGRATION-EXT :sql)
+(def ^:private FORWARD-MIGRATION-DELIMITER "-- FORWARD")
+(def ^:private BACKWARD-MIGRATION-DELIMITER "-- BACKWARD")
 
 
-(defn- read-migration
-  "Return models' definitions."
-  [file-name migrations-dir]
+(def ^:private SQL-MIGRATION-TEMPLATE
+  (format "%s\n\n\n%s\n" FORWARD-MIGRATION-DELIMITER BACKWARD-MIGRATION-DELIMITER))
+
+
+(defn- get-migration-type
+  "Return migration type by migration file extension."
+  [migration-name]
+  (-> (str/split migration-name #"\.")
+    (last)
+    (keyword)))
+
+
+(defmulti read-migration #(get-migration-type (:file-name %)))
+
+
+(defmethod read-migration :default
+  ;"Return models' definitions."
+  [{:keys [file-name migrations-dir]}]
   (-> (str migrations-dir "/" file-name)
     (file-util/read-edn)))
+
+
+(defn- get-forward-sql-migration
+  [migration]
+  (-> (str/split migration (re-pattern BACKWARD-MIGRATION-DELIMITER))
+    (first)
+    (str/replace (re-pattern FORWARD-MIGRATION-DELIMITER) "")
+    (vector)))
+
+
+(defn- get-backward-sql-migration
+  [migration]
+  (-> (str/split migration (re-pattern BACKWARD-MIGRATION-DELIMITER))
+    (last)
+    (vector)))
+
+
+(defmethod read-migration SQL-MIGRATION-EXT
+  ;"Return models' definitions.
+  [{:keys [file-name migrations-dir]}]
+  (-> (str migrations-dir "/" file-name)
+    (slurp)
+    (vector)))
 
 
 (defn- create-migrations-dir
@@ -73,14 +115,6 @@
   (-> (str/split migration-name #"_")
     (first)
     (Integer/parseInt)))
-
-
-(defn- get-migration-type
-  "Return migration type by migration file extension."
-  [migration-name]
-  (-> (str/split migration-name #"\.")
-    (last)
-    (keyword)))
 
 
 (defn- validate-migration-numbers
@@ -128,7 +162,7 @@
       actions/ALTER-INDEX-ACTION} (:index-name action)))
 
 
-(defn- next-migration-name
+(defn- get-next-migration-name
   [actions]
   (let [action (-> actions first)
         action-name (-> action :action name)
@@ -329,7 +363,7 @@
 
 
 (defn- make-migrations*
-  [migrations-files model-file]
+  [model-file migrations-files]
   (let [old-schema (schema/current-db-schema migrations-files)
         new-schema (read-models model-file)
         [alterations removals] (differ/diff old-schema new-schema)
@@ -361,27 +395,67 @@
       (map #(spec-util/conform ::actions/->migration %)))))
 
 
-(defn make-migrations
-  "Make new migrations based on models' definitions automatically."
+(defn- get-next-migration-file-name
+  "Return next migration file name based on existing migrations."
+  [{:keys [migration-type migrations-dir next-migration-name]}]
+  (let [migration-names (migrations-list migrations-dir)
+        migration-number (next-migration-number migration-names)
+        migration-file-name (str migration-number "_" next-migration-name)]
+    ; TODO: build file file path properly!
+    (str migrations-dir "/" migration-file-name "." (name migration-type))))
+
+
+(defn- auto-migration?
+  "Return true if migration has been created automatically false otherwise."
+  [f]
+  (str/ends-with? (.getName f) (str "." (name AUTO-MIGRATION-EXT))))
+
+
+(defn- make-next-migration
+  "Return actions for next migration."
+  [{:keys [model-file migrations-dir]}]
+  (->> (file-util/list-files migrations-dir)
+    (filter auto-migration?)
+    (make-migrations* model-file)
+    (flatten)
+    (seq)))
+
+
+(defmulti make-migrations :type)
+
+
+(defmethod make-migrations :default
+  ; Make new migrations based on models' definitions automatically.
   [{:keys [model-file migrations-dir] :as _args}]
-  ; TODO: remove second level of let!
-  (let [migrations-files (file-util/list-files migrations-dir)
-        migrations (-> (make-migrations* migrations-files model-file)
-                     (flatten))]
-    (if (seq migrations)
-      (let [_ (create-migrations-dir migrations-dir)
-            migration-names (migrations-list migrations-dir)
-            migration-number (next-migration-number migration-names)
-            migration-name (next-migration-name migrations)
-            migration-file-name (str migration-number "_" migration-name)
-            migration-file-name-full-path (str migrations-dir "/" migration-file-name ".edn")]
-        (spit migration-file-name-full-path
-          (with-out-str
-            (pprint/pprint migrations)))
-        (println (str "Created migration: " migration-file-name)))
-        ; TODO: print all changes from migration
-      ; TODO: use some special tool for printing to console
-      (println "There are no changes in models."))))
+  (if-let [next-migration (make-next-migration {:model-file model-file
+                                                :migrations-dir migrations-dir})]
+    (let [_ (create-migrations-dir migrations-dir)
+          next-migration-name (get-next-migration-name next-migration)
+          migration-file-name-full-path (get-next-migration-file-name
+                                          {:migration-type AUTO-MIGRATION-EXT
+                                           :migrations-dir migrations-dir
+                                           :next-migration-name next-migration-name})]
+      (spit migration-file-name-full-path
+        (with-out-str
+          (pprint/pprint next-migration)))
+      ; TODO: print all changes from migration in verbose mode
+      (println (str "Created migration: " migration-file-name-full-path)))
+    (println "There are no changes in models.")))
+
+
+(defmethod make-migrations SQL-MIGRATION-EXT
+  ; Make new migrations based on models' definitions automatically.
+  [{next-migration-name :name
+    migrations-dir :migrations-dir
+    migration-type :type}]
+  (let [_ (create-migrations-dir migrations-dir)
+        next-migration-name* (str/replace next-migration-name #"-" "_")
+        migration-file-name-full-path (get-next-migration-file-name
+                                        {:migration-type migration-type
+                                         :migrations-dir migrations-dir
+                                         :next-migration-name next-migration-name*})]
+    (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
+    (println (str "Created migration: " migration-file-name-full-path))))
 
 
 (defn- get-migration-by-number
@@ -396,9 +470,51 @@
     (first)))
 
 
+(defmulti explain*
+  (juxt #(get-migration-type (:file-name %)) :direction))
+
+
+(defmethod explain* [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
+  ; Generate raw sql from migration.
+  [{:keys [file-name migrations-dir] :as _args}]
+  (->> (read-migration {:file-name file-name
+                        :migrations-dir migrations-dir})
+    (mapv sql/->sql)
+    ; TODO: maybe remove!?
+    (flatten)
+    (file-util/safe-println)))
+
+
+(defmethod explain* [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
+  [_]
+  (println "WARNING: backward migration isn't fully implemented yet."))
+
+
+(defmethod explain* [SQL-MIGRATION-EXT FORWARD-DIRECTION]
+  ; Generate raw sql from migration.
+  [{:keys [file-name migrations-dir] :as _args}]
+  ; TODO: print sql for migrations by directions!
+  (->> (read-migration {:file-name file-name
+                        :migrations-dir migrations-dir})
+    (first)
+    (get-forward-sql-migration)
+    (file-util/safe-println)))
+
+
+(defmethod explain* [SQL-MIGRATION-EXT BACKWARD-DIRECTION]
+  ; Generate raw sql from migration.
+  [{:keys [file-name migrations-dir] :as _args}]
+  ; TODO: print sql for migrations by directions!
+  (->> (read-migration {:file-name file-name
+                        :migrations-dir migrations-dir})
+    (first)
+    (get-backward-sql-migration)
+    (file-util/safe-println)))
+
+
 (defn explain
-  "Generate raw sql from migration."
-  [{:keys [migrations-dir number] :as _args}]
+  ; Generate raw sql from migration.
+  [{:keys [migrations-dir number direction] :or {direction FORWARD-DIRECTION} :as _args}]
   (let [migration-names (migrations-list migrations-dir)
         file-name (get-migration-by-number migration-names number)]
     (when-not (some? file-name)
@@ -406,11 +522,9 @@
                :number number}))
     (file-util/safe-println
       [(format "SQL for migration %s:\n" file-name)])
-    (->> (read-migration file-name migrations-dir)
-      (mapv sql/->sql)
-      ; TODO: maybe remove!?
-      (flatten)
-      (file-util/safe-println))))
+    (explain* {:file-name file-name
+               :migrations-dir migrations-dir
+               :direction direction})))
 
 
 (defn- already-migrated
@@ -423,10 +537,10 @@
     (map :name)))
 
 
-(defmulti exec-action! :direction)
+(defmulti exec-action! (juxt :migration-type :direction))
 
 
-(defmethod exec-action! FORWARD-DIRECTION
+(defmethod exec-action! [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
   [{:keys [db action]}]
   (let [formatted-action (spec-util/conform ::sql/->sql action)]
     (if (sequential? formatted-action)
@@ -435,18 +549,34 @@
       (db-util/exec! db formatted-action))))
 
 
-(defmethod exec-action! BACKWARD-DIRECTION
-  [_])
+(defmethod exec-action! [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
+  [_]
   ; TODO: implement backward migration!
+  (println "WARNING: backward migration isn't fully implemented yet. Database schema hasn't been changed!"))
+
+
+(defmethod exec-action! [SQL-MIGRATION-EXT FORWARD-DIRECTION]
+  [{:keys [db action]}]
+  (->> action
+    (get-forward-sql-migration)
+    (db-util/exec-raw! db)))
+
+
+(defmethod exec-action! [SQL-MIGRATION-EXT BACKWARD-DIRECTION]
+  [{:keys [db action]}]
+  (->> action
+    (get-backward-sql-migration)
+    (db-util/exec-raw! db)))
 
 
 (defn- exec-actions!
   "Perform list of actions on a database."
-  [db actions direction]
+  [{:keys [db actions direction migration-type]}]
   (doseq [action actions]
     (exec-action! {:db db
                    :action action
-                   :direction direction})))
+                   :direction direction
+                   :migration-type migration-type})))
 
 
 (defn- current-migration-number
@@ -468,7 +598,7 @@
    :migration-type (get-migration-type file-name)})
 
 
-(defn- get-migrations-to-migrate
+(defn- get-detailed-migrations-to-migrate
   "Return migrations to migrate and migration direction."
   [all-migrations migrated target-number]
   (let [all-migrations-detailed (map detailed-migration all-migrations)
@@ -506,22 +636,22 @@
         migrated (already-migrated db)
         all-migrations (migrations-list migrations-dir)
         {:keys [to-migrate direction]}
-        (get-migrations-to-migrate all-migrations migrated number)]
+        (get-detailed-migrations-to-migrate all-migrations migrated number)]
     (if (seq to-migrate)
-      (do
-        (doseq [{:keys [migration-name file-name]} to-migrate]
+      (doseq [{:keys [migration-name file-name migration-type]} to-migrate]
+        (if (= direction FORWARD-DIRECTION)
+          (println (str "Migrating: " migration-name "..."))
+          (println (str "Unapplying: " migration-name "...")))
+        (jdbc/with-transaction [tx db]
+          (let [actions (read-migration {:file-name file-name
+                                         :migrations-dir migrations-dir})]
+            (exec-actions! {:db tx
+                            :actions actions
+                            :direction direction
+                            :migration-type migration-type}))
           (if (= direction FORWARD-DIRECTION)
-            (println (str "Migrating: " migration-name "..."))
-            (println (str "Unapplying: " migration-name "...")))
-          (jdbc/with-transaction [tx db]
-            (let [actions (read-migration file-name migrations-dir)]
-              (exec-actions! tx actions direction))
-            (if (= direction FORWARD-DIRECTION)
-              (save-migration! db migration-name)
-              (delete-migration! db migration-name))))
-        (when (= BACKWARD-DIRECTION direction)
-          (println (str "\nWARNING: backward migration isn't fully implemented yet."
-                     "\nDatabase schema hasn't been changed!"))))
+            (save-migration! db migration-name)
+            (delete-migration! db migration-name))))
       (println "Noting to migrate."))))
 
 
@@ -551,7 +681,7 @@
         model-file (:model-file config)]
       (try+
         (->> (read-models model-file))
-        ;(->> (make-migrations* migrations-files model-file))
+        ;(->> (make-migrations* model-file migrations-files))
         ;     (flatten))
 
          ;(map #(spec-util/conform ::sql/->sql %)))
@@ -566,15 +696,19 @@
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
-                :number 6}
+                ;:name "some-new-table"
+                ;:type :sql}
+                :number 10}
+                ;:direction FORWARD-DIRECTION}
+                ;:direction BACKWARD-DIRECTION}
         db (db-util/db-conn (:db-uri config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)))
-    ;(explain config)))
-    (migrate config)))
+    (explain config)))
+    ;(migrate config)))
     ;(list-migrations config)))
 
 

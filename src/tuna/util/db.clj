@@ -73,9 +73,14 @@
 (defn exec!
   "Send query to db."
   [db query]
-  (as-> query q
-        (fmt q)
-        (jdbc/execute! db q {:builder-fn jdbc-rs/as-unqualified-lower-maps})))
+  (let [fmt-query (fmt query)]
+    (jdbc/execute! db fmt-query {:builder-fn jdbc-rs/as-unqualified-lower-maps})))
+
+
+(defn exec-raw!
+  "Send raw sql query to db."
+  [db query]
+  (jdbc/execute! db query {:builder-fn jdbc-rs/as-unqualified-lower-maps}))
 
 
 (defn create-migrations-table

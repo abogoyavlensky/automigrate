@@ -49,7 +49,7 @@
   (is (= '({:model-name :feed
             :fields {:id {:type :serial :null false}}
             :action :create-table})
-        (-> (str config/MIGRATIONS-DIR "0001_auto_create_table_feed.edn")
+        (-> (str config/MIGRATIONS-DIR "/0001_auto_create_table_feed.edn")
           (file-util/read-edn)))))
 
 
@@ -83,7 +83,7 @@
             :field-name :name
             :model-name :feed
             :options {:type [:varchar 100] :null true}})
-        (-> (str config/MIGRATIONS-DIR "0002_auto_add_column_created_at.edn")
+        (-> (str config/MIGRATIONS-DIR "/0002_auto_add_column_created_at.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -213,7 +213,7 @@
             :options {:type :text}
             :field-name :name
             :model-name :feed})
-        (-> (str config/MIGRATIONS-DIR "0002_auto_alter_column_id.edn")
+        (-> (str config/MIGRATIONS-DIR "/0002_auto_alter_column_id.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -238,7 +238,7 @@
   (is (= '({:action :drop-column
             :field-name :name
             :model-name :feed})
-        (-> (str config/MIGRATIONS-DIR "0002_auto_drop_column_name.edn")
+        (-> (str config/MIGRATIONS-DIR "/0002_auto_drop_column_name.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -262,7 +262,7 @@
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-table
             :model-name :feed})
-        (-> (str config/MIGRATIONS-DIR "0002_auto_drop_table_feed.edn")
+        (-> (str config/MIGRATIONS-DIR "/0002_auto_drop_table_feed.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -279,7 +279,7 @@
 
 (deftest test-explain-basic-migration-ok
   #_{:clj-kondo/ignore [:private-call]}
-  (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed"])]
+  (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed.edn"])]
                    [file-util/safe-println (constantly nil)]
                    [migrations/read-migration (constantly
                                                 '({:model-name :feed
@@ -483,7 +483,7 @@
                                                        :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
                                                                                                    :unique true}]]}})]]
       (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migrations* [] "")
+            actions (#'migrations/make-migrations* "" [])
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
         (testing "test make-migrations for model changes"
           (is (= '({:action :create-table
@@ -511,7 +511,11 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions! db (concat existing-actions actions) :forward))))))))
+                (#'migrations/exec-actions!
+                 {:db db
+                  :actions (concat existing-actions actions)
+                  :direction :forward
+                  :migration-type :edn}))))))))
 
 
 (deftest test-make-and-migrate-create-index-on-existing-model-ok
@@ -529,7 +533,7 @@
                                                        :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
                                                                                                    :unique true}]]}})]]
       (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migrations* [] "")
+            actions (#'migrations/make-migrations* "" [])
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
         (testing "test make-migrations for model changes"
           (is (= '({:action :create-index
@@ -549,7 +553,11 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions! db (concat existing-actions actions) :forward))))))))
+                (#'migrations/exec-actions!
+                 {:db db
+                  :actions (concat existing-actions actions)
+                  :direction :forward
+                  :migration-type :edn}))))))))
 
 
 (deftest test-make-and-migrate-drop-index-ok
@@ -571,7 +579,7 @@
                                                       [[:id :serial {:null false}]
                                                        [:name :text]]})]]
       (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migrations* [] "")
+            actions (#'migrations/make-migrations* "" [])
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
         (testing "test make-migrations for model changes"
           (is (= '({:action :drop-index
@@ -587,7 +595,11 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions! db (concat existing-actions actions) :forward))))))))
+                (#'migrations/exec-actions!
+                 {:db db
+                  :actions (concat existing-actions actions)
+                  :direction :forward
+                  :migration-type :edn}))))))))
 
 
 (deftest test-make-and-migrate-alter-index-ok
@@ -610,7 +622,7 @@
                                                                 [:name :text]]
                                                        :indexes [[:feed_name_id_idx :btree {:fields [:name]}]]}})]]
       (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migrations* [] "")
+            actions (#'migrations/make-migrations* "" [])
             queries (map #(spec-util/conform ::sql/->sql %) actions)]
         (testing "test make-migrations for model changes"
           (is (= '({:action :alter-index
@@ -631,7 +643,11 @@
         (testing "test running migrations on db"
           (is (every?
                 #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions! db (concat existing-actions actions) :forward))))))))
+                (#'migrations/exec-actions!
+                 {:db db
+                  :actions (concat existing-actions actions)
+                  :direction :forward
+                  :migration-type :edn}))))))))
 
 
 (defn- test-make-and-migrate-ok!
@@ -641,7 +657,7 @@
                     (constantly existing-actions)]
                    [file-util/read-edn (constantly changed-models)]]
     (let [db config/DATABASE-CONN
-          actions (#'migrations/make-migrations* [] "")
+          actions (#'migrations/make-migrations* "" [])
           queries (map #(spec-util/conform ::sql/->sql %) actions)]
       (testing "test make-migrations for model changes"
         (is (= expected-actions actions)))
@@ -652,7 +668,11 @@
       (testing "test running migrations on db"
         (is (every?
               #(= [#:next.jdbc{:update-count 0}] %)
-              (#'migrations/exec-actions! db (concat existing-actions actions) :forward)))))))
+              (#'migrations/exec-actions!
+               {:db db
+                :actions (concat existing-actions actions)
+                :direction :forward
+                :migration-type :edn})))))))
 
 
 (deftest test-make-and-migrate-add-fk-field-on-delete-ok

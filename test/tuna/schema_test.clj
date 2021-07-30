@@ -24,7 +24,7 @@
               :field-name :name,
               :model-name :feed,
               :options {:type [:varchar 100], :null true}})
-          (#'migrations/make-migrations* [] "")))))
+          (#'migrations/make-migrations* "" [])))))
 
 
 (deftest test-make-migrations*-add-column-restore-ok
@@ -45,7 +45,7 @@
                                                     [[:id :serial {:null false}]
                                                      [:name [:varchar 100] {:null true}]
                                                      [:created_at :timestamp {:default [:now]}]]})]]
-    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+    (is (not (seq (#'migrations/make-migrations* "" []))))))
 
 
 (deftest test-make-migrations*-alter-column-restore-ok
@@ -76,7 +76,7 @@
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]
                                                               [:created_at :date]]}})]]
-    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+    (is (not (seq (#'migrations/make-migrations* "" []))))))
 
 
 (deftest test-make-migrations*-drop-column-restore-ok
@@ -103,7 +103,7 @@
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name [:varchar 100] {:null true}]]}})]]
-    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+    (is (not (seq (#'migrations/make-migrations* "" []))))))
 
 
 (deftest test-make-migrations*-drop-table-restore-ok
@@ -124,7 +124,7 @@
                    [file-util/read-edn (constantly {:account
                                                     [[:id :serial {:null false}]
                                                      [:name [:varchar 256]]]})]]
-    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+    (is (not (seq (#'migrations/make-migrations* "" []))))))
 
 
 (deftest test-make-migrations*-foreign-key-restore-ok
@@ -148,7 +148,7 @@
                                                     :account
                                                     {:fields [[:id :serial {:unique true}]
                                                               [:name [:varchar 256]]]}})]]
-    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+    (is (not (seq (#'migrations/make-migrations* "" []))))))
 
 
 (deftest test-make-migrations*-create-index-restore-ok
@@ -171,7 +171,7 @@
                                                               [:name :text]]
                                                      :indexes [[:feed_name_id_unique_idx :btree {:fields [:name :id]
                                                                                                  :unique true}]]}})]]
-    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+    (is (not (seq (#'migrations/make-migrations* "" []))))))
 
 
 (deftest test-make-migrations*-drop-index-restore-ok
@@ -195,7 +195,7 @@
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]]}})]]
-    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+    (is (not (seq (#'migrations/make-migrations* "" []))))))
 
 
 (deftest test-make-migrations*-alter-index-restore-ok
@@ -222,7 +222,7 @@
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]]
                                                      :indexes [[:feed_name_id_idx :btree {:fields [:name :id]}]]}})]]
-    (is (not (seq (#'migrations/make-migrations* [] ""))))))
+    (is (not (seq (#'migrations/make-migrations* "" []))))))
 
 
 (deftest test-make-migrations*-create-table-with-fk-on-delete-restore-ok
@@ -249,7 +249,7 @@
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly existing-models)]]
-      (is (not (seq (#'migrations/make-migrations* [] "")))))))
+      (is (not (seq (#'migrations/make-migrations* "" [])))))))
 
 
 (deftest test-make-migrations*-alter-column-with-fk-on-delete-restore-ok
@@ -283,4 +283,4 @@
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly existing-models)]]
-      (is (not (seq (#'migrations/make-migrations* [] "")))))))
+      (is (not (seq (#'migrations/make-migrations* "" [])))))))

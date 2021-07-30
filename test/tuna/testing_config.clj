@@ -2,7 +2,7 @@
   (:require [tuna.util.db :as db-util]))
 
 
-(def MIGRATIONS-DIR "test/tuna/migrations/")
+(def MIGRATIONS-DIR "test/tuna/migrations")
 
 
 (def MODELS-DIR "test/tuna/models/")
