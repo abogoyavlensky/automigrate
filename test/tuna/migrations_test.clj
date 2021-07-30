@@ -76,14 +76,14 @@
              :model-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
-            :field-name :created-at
-            :model-name :feed
-            :options {:type :timestamp, :default [:now]}}
-           {:action :add-column
             :field-name :name
             :model-name :feed
-            :options {:type [:varchar 100] :null true}})
-        (-> (str config/MIGRATIONS-DIR "/0002_auto_add_column_created_at.edn")
+            :options {:type [:varchar 100] :null true}}
+           {:action :add-column
+            :field-name :created-at
+            :model-name :feed
+            :options {:type :timestamp, :default [:now]}})
+        (-> (str config/MIGRATIONS-DIR "/0002_auto_add_column_name.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -91,7 +91,7 @@
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0002_auto_add_column_created_at"})
+            :name "0002_auto_add_column_name"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
@@ -114,7 +114,7 @@
                :db-uri config/DATABASE-URL
                :number 2})
     (is (= #{"0001_auto_create_table_feed"
-             "0002_auto_add_column_created_at"}
+             "0002_auto_add_column_name"}
           (->> {:select [:*]
                 :from [db-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
@@ -126,7 +126,7 @@
                :db-uri config/DATABASE-URL
                :number 2})
     (is (= #{"0001_auto_create_table_feed"
-             "0002_auto_add_column_created_at"}
+             "0002_auto_add_column_name"}
           (->> {:select [:*]
                 :from [db-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
@@ -137,8 +137,8 @@
                :migrations-dir config/MIGRATIONS-DIR
                :db-uri config/DATABASE-URL})
     (is (= #{"0001_auto_create_table_feed"
-             "0002_auto_add_column_created_at"
-             "0003_auto_alter_column_id"}
+             "0002_auto_add_column_name"
+             "0003_auto_alter_column_name"}
           (->> {:select [:*]
                 :from [db-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
@@ -160,8 +160,8 @@
              :migrations-dir config/MIGRATIONS-DIR
              :db-uri config/DATABASE-URL})
   (is (= #{"0001_auto_create_table_feed"
-           "0002_auto_add_column_created_at"
-           "0003_auto_alter_column_id"}
+           "0002_auto_add_column_name"
+           "0003_auto_alter_column_name"}
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
@@ -173,7 +173,7 @@
                :db-uri config/DATABASE-URL
                :number 2})
     (is (= #{"0001_auto_create_table_feed"
-             "0002_auto_add_column_created_at"}
+             "0002_auto_add_column_name"}
           (->> {:select [:*]
                 :from [db-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
@@ -200,20 +200,20 @@
              :model-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :alter-column
+            :changes {:type {:from [:varchar 100] :to :text}
+                      :null {:from true :to :EMPTY}}
+            :options {:type :text}
+            :field-name :name
+            :model-name :feed}
+           {:action :alter-column
             :changes {:primary-key {:from :EMPTY
                                     :to true}}
             :options {:null false
                       :primary-key true
                       :type :serial}
             :field-name :id
-            :model-name :feed}
-           {:action :alter-column
-            :changes {:type {:from [:varchar 100] :to :text}
-                      :null {:from true :to :EMPTY}}
-            :options {:type :text}
-            :field-name :name
             :model-name :feed})
-        (-> (str config/MIGRATIONS-DIR "/0002_auto_alter_column_id.edn")
+        (-> (str config/MIGRATIONS-DIR "/0002_auto_alter_column_name.edn")
           (file-util/read-edn))))
   (core/run {:action :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -221,7 +221,7 @@
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0002_auto_alter_column_id"})
+            :name "0002_auto_alter_column_name"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
@@ -404,12 +404,12 @@
              {:action :create-table,
               :model-name :foo,
               :fields {:id {:type :serial, :unique true}, :account {:type :integer, :foreign-key :account/id}}}
+             {:action :drop-column, :field-name :created_at, :model-name :account}
              {:action :add-column,
               :field-name :account,
               :model-name :foo,
               :options {:type :integer,
                         :foreign-key :account/id}}
-             {:action :drop-column, :field-name :created_at, :model-name :account}
              {:action :create-table,
               :model-name :bar,
               :fields {:id {:type :serial, :unique true},
