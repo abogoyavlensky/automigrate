@@ -404,17 +404,17 @@
              {:action :create-table,
               :model-name :foo,
               :fields {:id {:type :serial, :unique true}, :account {:type :integer, :foreign-key :account/id}}}
+             {:action :create-table,
+              :model-name :bar,
+              :fields {:id {:type :serial, :unique true},
+                       :foo1 {:type :integer, :foreign-key :foo/id},
+                       :account {:type :integer, :foreign-key :account/id}}}
              {:action :add-column,
               :field-name :account,
               :model-name :foo,
               :options {:type :integer,
                         :foreign-key :account/id}}
-             {:action :drop-column, :field-name :created_at, :model-name :account}
-             {:action :create-table,
-              :model-name :bar,
-              :fields {:id {:type :serial, :unique true},
-                       :foo1 {:type :integer, :foreign-key :foo/id},
-                       :account {:type :integer, :foreign-key :account/id}}})
+             {:action :drop-column, :field-name :created_at, :model-name :account})
           (#'migrations/sort-actions actions)))))
 
 

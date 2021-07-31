@@ -312,12 +312,18 @@
           (reduce #(dep/depend %1 next-action %2) g parent-actions))))
 
 
+(defn- compare-actions
+  "Secondary comparator for sorting actions in migration the same way."
+  [a b]
+  (< (hash a) (hash b)))
+
+
 (defn- sort-actions
   "Apply order for migration's actions by foreign key between models."
   [actions]
   (->> actions
     (reduce (partial assoc-action-deps actions) (dep/graph))
-    (dep/topo-sort)
+    (dep/topo-sort compare-actions)
     ; drop first default root node `:root`
     (drop 1)))
 
