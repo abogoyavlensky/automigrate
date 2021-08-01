@@ -72,7 +72,7 @@
 
 
 (defmethod read-migration SQL-MIGRATION-EXT
-  ;"Return models' definitions.
+  ; Return model definitions.
   [{:keys [file-name migrations-dir]}]
   (-> (str migrations-dir "/" file-name)
     (slurp)
@@ -145,7 +145,7 @@
 
 (defn- next-migration-number
   [file-names]
-  ; migrations' numbers starting from 1
+  ; migration numbers starting from 1
   (file-util/zfill (inc (count file-names))))
 
 
@@ -431,26 +431,29 @@
 
 
 (defmethod make-migrations :default
-  ; Make new migrations based on models' definitions automatically.
+  ; Make new migration based on models definitions automatically.
   [{:keys [model-file migrations-dir] :as _args}]
-  (if-let [next-migration (make-next-migration {:model-file model-file
-                                                :migrations-dir migrations-dir})]
-    (let [_ (create-migrations-dir migrations-dir)
-          next-migration-name (get-next-migration-name next-migration)
-          migration-file-name-full-path (get-next-migration-file-name
-                                          {:migration-type AUTO-MIGRATION-EXT
-                                           :migrations-dir migrations-dir
-                                           :next-migration-name next-migration-name})]
-      (spit migration-file-name-full-path
-        (with-out-str
-          (pprint/pprint next-migration)))
-      ; TODO: print all changes from migration in verbose mode
-      (println (str "Created migration: " migration-file-name-full-path)))
-    (println "There are no changes in models.")))
+  (try+
+    (if-let [next-migration (make-next-migration {:model-file model-file
+                                                  :migrations-dir migrations-dir})]
+      (let [_ (create-migrations-dir migrations-dir)
+            next-migration-name (get-next-migration-name next-migration)
+            migration-file-name-full-path (get-next-migration-file-name
+                                            {:migration-type AUTO-MIGRATION-EXT
+                                             :migrations-dir migrations-dir
+                                             :next-migration-name next-migration-name})]
+        (spit migration-file-name-full-path
+          (with-out-str
+            (pprint/pprint next-migration)))
+        ; TODO: print all changes from migration in verbose mode
+        (println (str "Created migration: " migration-file-name-full-path)))
+      (println "There are no changes in models."))
+    (catch [:type ::s/invalid] e
+      (print (:message e)))))
 
 
 (defmethod make-migrations SQL-MIGRATION-EXT
-  ; Make new migrations based on models' definitions automatically.
+  ; Make new migrations based on models definitions automatically.
   [{next-migration-name :name
     migrations-dir :migrations-dir
     migration-type :type}]
@@ -686,8 +689,9 @@
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
       (try+
-        (->> (read-models model-file))
+        ;(->> (read-models model-file))
         ;(->> (make-migrations* model-file migrations-files))
+        (make-next-migration config)
         ;     (flatten))
 
          ;(map #(spec-util/conform ::sql/->sql %)))
@@ -695,7 +699,7 @@
          ;(map db-util/fmt))
          ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
-          (:data e)))))
+          (print (:message e))))))
 
 
 (comment
@@ -712,8 +716,8 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)))
-    (explain config)))
+    (make-migrations config)))
+    ;(explain config)))
     ;(migrate config)))
     ;(list-migrations config)))
 

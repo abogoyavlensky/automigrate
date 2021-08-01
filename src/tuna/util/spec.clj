@@ -1,7 +1,8 @@
 (ns tuna.util.spec
   "Tools for simplifying spec usage."
   (:require [clojure.spec.alpha :as s]
-            [slingshot.slingshot :refer [throw+]]))
+            [slingshot.slingshot :refer [throw+]]
+            [expound.alpha :as expound]))
 
 
 (defn tagged->value
@@ -19,10 +20,13 @@
   "Conform data to spec or throw explained data."
   [spec data]
   (let [conformed (s/conform spec data)]
+    conformed
     (case conformed
       ::s/invalid (throw+ {:type ::s/invalid
-                           ; TODO: update with more sophisticated error messages' handling
-                           :data (s/explain spec data)})
+                           :message (expound/expound-str spec data
+                                      {:show-valid-values? true
+                                       :print-specs? false
+                                       :theme :figwheel-theme})})
       conformed)))
 
 
