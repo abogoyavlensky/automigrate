@@ -43,10 +43,8 @@
             :point
             :json
             :jsonb}
-      :fn (s/cat :name #{:char
-                         :varchar
-                         :float}
-            :val pos-int?))
+      :char (s/tuple #{:char :varchar} pos-int?)
+      :float (s/tuple #{:float} float?))
     (s/conformer spec-util/tagged->value)))
 
 
@@ -101,7 +99,7 @@
       :nil nil?
       :fn (s/cat
             :name keyword?
-            :val (s/? #((some-fn int? string?) %))))
+            :val (s/? (some-fn int? float? string?))))
     (s/conformer
       spec-util/tagged->value)))
 

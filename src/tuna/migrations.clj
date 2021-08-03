@@ -449,7 +449,7 @@
         (println (str "Created migration: " migration-file-name-full-path)))
       (println "There are no changes in models."))
     (catch [:type ::s/invalid] e
-      (print (:message e)))))
+      (file-util/prn-err e))))
 
 
 (defmethod make-migrations SQL-MIGRATION-EXT
@@ -559,9 +559,8 @@
 
 
 (defmethod exec-action! [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
-  [_]
+  [_])
   ; TODO: implement backward migration!
-  (println "WARNING: backward migration isn't fully implemented yet. Database schema hasn't been changed!"))
 
 
 (defmethod exec-action! [SQL-MIGRATION-EXT FORWARD-DIRECTION]
@@ -581,6 +580,10 @@
 (defn- exec-actions!
   "Perform list of actions on a database."
   [{:keys [db actions direction migration-type]}]
+  (when (and (= AUTO-MIGRATION-EXT migration-type)
+          (= BACKWARD-DIRECTION direction))
+    (println (str "WARNING: backward migration isn't fully implemented yet."
+               "Database schema hasn't been changed!")))
   (doseq [action actions]
     (exec-action! {:db db
                    :action action
@@ -708,7 +711,7 @@
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 ;:name "some-new-table"
                 ;:type :sql}
-                :number 10}
+                :number 0}
                 ;:direction FORWARD-DIRECTION}
                 ;:direction BACKWARD-DIRECTION}
         db (db-util/db-conn (:db-uri config))]
@@ -716,9 +719,9 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    (make-migrations config)))
+    ;(make-migrations config)
     ;(explain config)))
-    ;(migrate config)))
+    (migrate config)))
     ;(list-migrations config)))
 
 
