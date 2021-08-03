@@ -20,7 +20,8 @@
             [tuna.util.file :as file-util]
             [tuna.util.db :as db-util]
             [tuna.util.spec :as spec-util]
-            [tuna.util.model :as model-util]))
+            [tuna.util.model :as model-util])
+  (:import [org.postgresql.util PSQLException]))
 
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
@@ -539,11 +540,18 @@
 (defn- already-migrated
   "Get names of previously migrated migrations from db."
   [db]
-  (->> {:select [:name]
-        :from [db-util/MIGRATIONS-TABLE]
-        :order-by [:created-at]}
-    (db-util/exec! db)
-    (map :name)))
+  (try
+    (->> {:select [:name]
+          :from [db-util/MIGRATIONS-TABLE]
+          :order-by [:created-at]}
+      (db-util/exec! db)
+      (map :name))
+    (catch PSQLException e
+      (let [msg (ex-message e)
+            table-exists-err-pattern #"relation [0-9a-zA-Z_\"]+ does not exist"]
+       ; Migration table doesn't exist
+        (when (re-find table-exists-err-pattern msg)
+          [])))))
 
 
 (defmulti exec-action! (juxt :migration-type :direction))
@@ -673,7 +681,6 @@
   ; TODO: reduce duplication with `migrate` fn!
   (let [migration-names (migrations-list migrations-dir)
         db (db-util/db-conn db-uri)
-        _ (db-util/create-migrations-table db)
         migrated (set (already-migrated db))]
     (doseq [file-name migration-names
             :let [migration-name (get-migration-name file-name)
@@ -708,10 +715,10 @@
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
                 ;:name "some-new-table"
                 ;:type :sql}
-                :number 0}
+                ;:number 0}
                 ;:direction FORWARD-DIRECTION}
                 ;:direction BACKWARD-DIRECTION}
         db (db-util/db-conn (:db-uri config))]
@@ -721,8 +728,8 @@
     ;MIGRATIONS-TABLE))
     ;(make-migrations config)
     ;(explain config)))
-    (migrate config)))
-    ;(list-migrations config)))
+    ;(migrate config)))
+    (list-migrations config)))
 
 
 ; TODO: remove!

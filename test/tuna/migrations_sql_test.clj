@@ -4,7 +4,8 @@
             [tuna.util.db :as db-util]
             [tuna.util.file :as file-util]
             [tuna.util.test :as test-util]
-            [tuna.testing-config :as config]))
+            [tuna.testing-config :as config])
+  (:import [org.postgresql.util PSQLException]))
 
 
 (use-fixtures :each
@@ -122,9 +123,18 @@
              :migrations-dir config/MIGRATIONS-DIR
              :type "sql"
              :name "add-description-field"})
-  (is (= (str "[ ] 0001_auto_create_table_feed.edn\n"
-           "[ ] 0002_add_description_field.sql\n")
-        (with-out-str
-          (core/run {:action :list-migrations
-                     :migrations-dir config/MIGRATIONS-DIR
-                     :db-uri config/DATABASE-URL})))))
+  (testing "check list-migrations output"
+    (is (= (str "[ ] 0001_auto_create_table_feed.edn\n"
+             "[ ] 0002_add_description_field.sql\n")
+          (with-out-str
+            (core/run {:action :list-migrations
+                       :migrations-dir config/MIGRATIONS-DIR
+                       :db-uri config/DATABASE-URL})))))
+  (testing "check that migrations table does not exist"
+    (is (thrown? PSQLException
+          (->> {:select [:name]
+                ; TODO: make migrations table configurable!
+                :from [db-util/MIGRATIONS-TABLE]
+                :order-by [:created-at]}
+            (db-util/exec! config/DATABASE-CONN))))))
+
