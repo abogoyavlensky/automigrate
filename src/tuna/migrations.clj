@@ -548,7 +548,7 @@
       (map :name))
     (catch PSQLException e
       (let [msg (ex-message e)
-            table-exists-err-pattern #"relation [0-9a-zA-Z_\"]+ does not exist"]
+            table-exists-err-pattern #"relation .+ does not exist"]
        ; Migration table doesn't exist
         (when (re-find table-exists-err-pattern msg)
           [])))))
@@ -718,7 +718,7 @@
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
                 ;:name "some-new-table"
                 ;:type :sql}
-                ;:number 0}
+                ;:number 3}
                 ;:direction FORWARD-DIRECTION}
                 ;:direction BACKWARD-DIRECTION}
         db (db-util/db-conn (:db-uri config))]
@@ -726,10 +726,10 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)
+    (make-migrations config)))
     ;(explain config)))
     ;(migrate config)))
-    (list-migrations config)))
+    ;(list-migrations config)))
 
 
 ; TODO: remove!

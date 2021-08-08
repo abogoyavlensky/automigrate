@@ -2,7 +2,8 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.set :as set]
             [spec-dict :as d]
-            [tuna.util.spec :as spec-util]))
+            [tuna.util.spec :as spec-util]
+            [expound.alpha :as expound]))
 
 
 (def FOREIGN-KEY-OPTION :foreign-key)
@@ -24,28 +25,43 @@
     FK-NO-ACTION})
 
 
+(s/def ::char-type (s/tuple #{:char :varchar} pos-int?))
+(expound/defmsg ::char-type "char type should be vector of `[:char|:varchar int?]`")
+
+(s/def ::float-type (s/tuple #{:float} float?))
+(expound/defmsg ::float-type "float type should be vector of `[:float float?]`")
+
+
+(def ^:private field-types
+  #{:integer
+    :smallint
+    :bigint
+    :float
+    :real
+    :serial
+    :uuid
+    :boolean
+    :text
+    :timestamp
+    :date
+    :time
+    :point
+    :json
+    :jsonb})
+
+
 (s/def ::type
   (s/and
     ; TODO: switch available fields according to db dialect!
     (s/or
-      :kw #{:integer
-            :smallint
-            :bigint
-            :float
-            :real
-            :serial
-            :uuid
-            :boolean
-            :text
-            :timestamp
-            :date
-            :time
-            :point
-            :json
-            :jsonb}
-      :char (s/tuple #{:char :varchar} pos-int?)
-      :float (s/tuple #{:float} float?))
+      :kw field-types
+      :char ::char-type
+      :float ::float-type)
     (s/conformer spec-util/tagged->value)))
+
+
+(expound/defmsg ::type
+  (spec-util/should-be-one-of-err-msg "field type" field-types))
 
 
 (def ^:private type-hierarchy
@@ -99,13 +115,28 @@
       :nil nil?
       :fn (s/cat
             :name keyword?
-            :val (s/? (some-fn int? float? string?))))
+            :val (s/? (some-fn integer? float? string?))))
     (s/conformer
       spec-util/tagged->value)))
 
 
+(expound/defmsg ::default
+  (spec-util/should-be-one-of-err-msg "`:default` option"
+    ["integer?" "boolean?" "string?" "nil?" "[keyword? integer?|float?|string?]"]))
+
+
 (s/def ::on-delete FK-ACTIONS)
+
+
+(expound/defmsg ::on-delete
+  (spec-util/should-be-one-of-err-msg "::on-delete option" FK-ACTIONS))
+
+
 (s/def ::on-update FK-ACTIONS)
+
+
+(expound/defmsg ::on-update
+  (spec-util/should-be-one-of-err-msg "`::on-update` option" FK-ACTIONS))
 
 
 (s/def ::options
@@ -136,11 +167,11 @@
     validate-fk-options))
 
 
-(defn- validate-default-and-null
-  [{:keys [null default] :as options}]
-  (not (and (false? null)
-         (nil? default)
-         (contains? options :default))))
+(s/def ::validate-default-and-null
+  (fn [{:keys [null default] :as options}]
+    (not (and (false? null)
+           (nil? default)
+           (contains? options :default)))))
 
 
 (defn- validate-fk-options-and-null
@@ -188,14 +219,22 @@
   true)
 
 
+(s/def ::validate-default-and-type
+  validate-default-and-type)
+
+
+(expound/defmsg ::validate-default-and-type
+  "`:default` option does not match the field type")
+
+
 (s/def ::field
   (s/and
     (d/dict*
       {:type ::type}
       ::options)
-    validate-default-and-null
+    ::validate-default-and-null
     validate-fk-options-and-null
-    validate-default-and-type))
+    ::validate-default-and-type))
 
 
 (s/def ::field-vec

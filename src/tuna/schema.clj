@@ -74,12 +74,20 @@
     (:options action)))
 
 
+(defn- validate-actions
+  "Validate actions one by one against spec."
+  [actions]
+  (doseq [action actions]
+    (spec-util/valid? ::actions/->migration action)))
+
+
 (defn current-db-schema
   "Return map of models derived from existing migrations."
   [migrations-files]
   ; TODO: add validation of migrations with spec!
   (let [actions (-> (load-migrations-from-files migrations-files)
                   (flatten))]
+    (validate-actions actions)
     (->> actions
       (reduce apply-action-to-schema {})
       (spec-util/conform ::models/internal-models))))
