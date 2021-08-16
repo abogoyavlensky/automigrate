@@ -120,9 +120,12 @@
       spec-util/tagged->value)))
 
 
-(expound/defmsg ::default
+(def ^:private default-err-msg
   (spec-util/should-be-one-of-err-msg "`:default` option"
     ["integer?" "boolean?" "string?" "nil?" "[keyword? integer?|float?|string?]"]))
+
+
+(expound/defmsg ::default default-err-msg)
 
 
 (s/def ::on-delete FK-ACTIONS)
@@ -174,11 +177,19 @@
            (contains? options :default)))))
 
 
-(defn- validate-fk-options-and-null
-  [{:keys [null on-delete on-update]}]
-  (not (and (false? null)
-         (or (= :set-null on-delete)
-           (= :set-null on-update)))))
+(expound/defmsg ::validate-default-and-null
+  "`:default` option could not be `nil` for not nullable field")
+
+
+(s/def ::validate-fk-options-and-null
+  (fn [{:keys [null on-delete on-update]}]
+    (not (and (false? null)
+           (or (= :set-null on-delete)
+             (= :set-null on-update))))))
+
+
+(expound/defmsg ::validate-fk-options-and-null
+  "`:on-delete` or `:on-update` options could not be `:set-null` for not nullable field")
 
 
 (defmulti validate-default-and-type
@@ -224,7 +235,7 @@
 
 
 (expound/defmsg ::validate-default-and-type
-  "`:default` option does not match the field type")
+  (str default-err-msg "\n- according to field type."))
 
 
 (s/def ::field
@@ -233,19 +244,22 @@
       {:type ::type}
       ::options)
     ::validate-default-and-null
-    validate-fk-options-and-null
+    ::validate-fk-options-and-null
     ::validate-default-and-type))
+
+
+(s/def ::field-name keyword?)
 
 
 (s/def ::field-vec
   (s/cat
-    :name keyword?
+    :name ::field-name
     :type ::type
     :options (s/? ::options-strict)))
 
 
 (s/def ::fields
-  (s/map-of keyword? ::field))
+  (s/map-of ::field-name ::field))
 
 
 ;;;;;;;;;;;;;;;

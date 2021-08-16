@@ -72,20 +72,20 @@
 (deftest test-validate-fk-options-and-null
   (testing "check on-delete is cascade and null is true ok"
     (is (true?
-          (#'fields/validate-fk-options-and-null {:null true
-                                                  :on-delete :cascade}))))
+          (s/valid? ::fields/validate-fk-options-and-null {:null true
+                                                           :on-delete :cascade}))))
   (testing "check on-delete is cascade and null is false ok"
     (is (true?
-          (#'fields/validate-fk-options-and-null {:null false
-                                                  :on-delete :cascade}))))
+          (s/valid? ::fields/validate-fk-options-and-null {:null false
+                                                           :on-delete :cascade}))))
   (testing "check on-delete not exists and null is false ok"
     (is (true?
-          (#'fields/validate-fk-options-and-null {:null false}))))
+          (s/valid? ::fields/validate-fk-options-and-null {:null false}))))
   (testing "check on-delete is set-null and null is false err"
     (is (false?
-          (#'fields/validate-fk-options-and-null {:null false
-                                                  :on-delete :set-null}))))
+          (s/valid? ::fields/validate-fk-options-and-null {:null false
+                                                           :on-delete :set-null}))))
   (testing "check on-upate is set-null and null is false err"
     (is (false?
-          (#'fields/validate-fk-options-and-null {:null false
-                                                  :on-update :set-null})))))
+          (s/valid? ::fields/validate-fk-options-and-null {:null false
+                                                           :on-update :set-null})))))

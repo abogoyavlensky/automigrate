@@ -1,5 +1,6 @@
 (ns tuna.models-test
   (:require [clojure.test :refer :all]
+            [clojure.spec.alpha :as s]
             [tuna.models :as models])
   (:import (clojure.lang ExceptionInfo)))
 
@@ -116,11 +117,11 @@
   (testing "check valid model fields ok"
     (let [fields [{:name :id}
                   {:name :text}]]
-      (is (true? (#'models/validate-fields-duplication fields)))))
+      (is (true? (s/valid? ::models/validate-fields-duplication fields)))))
   (testing "check duplicated model fields err"
     (let [fields [{:name :id}
                   {:name :id}]]
-      (is (false? (#'models/validate-fields-duplication fields))))))
+      (is (false? (s/valid? ::models/validate-fields-duplication fields))))))
 
 
 (deftest test-validate-validate-indexes-duplication

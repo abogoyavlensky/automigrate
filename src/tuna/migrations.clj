@@ -262,7 +262,7 @@
   [model-file]
   (->> model-file
     (file-util/read-edn)
-    (spec-util/conform ::models/->internal-models)))
+    (models/->internal-models)))
 
 
 (defn- action-dependencies
@@ -450,6 +450,8 @@
         (println (str "Created migration: " migration-file-name-full-path)))
       (println "There are no changes in models."))
     (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::models/duplicated-fields-in-model} (:type %)) e
       (file-util/prn-err e))))
 
 
@@ -699,9 +701,9 @@
         migrations-files (file-util/list-files (:migrations-dir config))
         model-file (:model-file config)]
       (try+
-        ;(->> (read-models model-file))
+        (->> (read-models model-file))
         ;(->> (make-migrations* model-file migrations-files))
-        (make-next-migration config)
+        ;(make-next-migration config)
         ;     (flatten))
 
          ;(map #(spec-util/conform ::sql/->sql %)))
@@ -709,7 +711,9 @@
          ;(map db-util/fmt))
          ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
-          (print (:message e))))))
+          (print (:message e))
+          (:data e)))))
+          ;(-> e :data :clojure.spec.alpha/problems first :pred type)))))
 
 
 (comment

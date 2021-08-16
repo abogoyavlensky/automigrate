@@ -3,7 +3,7 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [slingshot.slingshot :refer [throw+]]
-            [expound.alpha :as expound]))
+            [tuna.errors :as spec-errors]))
 
 
 (def ^:private ERR-ITEMS-COLS 8)
@@ -22,18 +22,23 @@
 
 (defn- throw-exception-for-spec!
   [spec data]
-  (throw+ {:type ::s/invalid
-           :message (expound/expound-str spec data
-                      {:show-valid-values? true
-                       :print-specs? false
-                       :theme :figwheel-theme})}))
+  (let [explain-data (s/explain-data spec data)]
+    (throw+ {:type ::s/invalid
+             :data explain-data
+             :message (spec-errors/explain-data->error-report explain-data)})))
+           ; TODO: remove expound!
+           ;:message (expound/expound-str spec data
+           ;           {:show-valid-values? true
+           ;            :print-specs? false
+           ;            :theme :figwheel-theme})}))
 
 
 (defn valid?
-  "Check if data valid for spec or throw explained data."
+  "Check if data valid for spec and return the data or throw explained exception."
   [spec data]
   ; TODO: call validation once!
-  (when-not (s/valid? spec data)
+  (if (s/valid? spec data)
+    data
     (throw-exception-for-spec! spec data)))
 
 

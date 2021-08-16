@@ -5,7 +5,10 @@
             [slingshot.slingshot :refer [throw+]]
             [clojure.set :as set]
             [tuna.util.model :as model-util]
-            [tuna.fields :as fields]))
+            [tuna.util.spec :as spec-util]
+            [tuna.fields :as fields]
+            [spec-dict :as d]
+            [expound.alpha :as expound]))
 
 
 (s/def :tuna.models.index/type
@@ -14,6 +17,10 @@
 
 (s/def :tuna.models.index/fields
   (s/coll-of keyword? :min-count 1 :kind vector? :distinct true))
+
+
+(expound/defmsg :tuna.models.index/fields
+  "index should contain at lest one model field")
 
 
 (s/def :tuna.models.index/unique true?)
@@ -26,13 +33,21 @@
     :opt-un [:tuna.models.index/unique]))
 
 
+(s/def ::index-vec-options
+  (d/dict*
+    {:fields :tuna.models.index/fields}
+    ^:opt {:unique :tuna.models.index/unique}))
+
+
+(expound/defmsg ::index-vec-options
+  "invalid index options")
+
+
 (s/def ::index-vec
   (s/cat
     :name keyword?
     :type :tuna.models.index/type
-    :options (s/keys
-               :req-un [:tuna.models.index/fields]
-               :opt-un [:tuna.models.index/unique])))
+    :options ::index-vec-options))
 
 
 (s/def ::indexes
@@ -60,35 +75,27 @@
   (s/conformer model-util/map-kw-keys->kebab-case))
 
 
-(defn- validate-fields-duplication
-  "Check if model's fields are duplicated."
-  [fields]
-  (->> (map :name fields)
-    (model-util/has-duplicates?)))
+(s/def ::validate-fields-duplication
+  (fn [fields]
+    (->> (map :name fields)
+      (model-util/has-duplicates?))))
 
 
 (s/def :tuna.models.fields->internal/fields
   (s/and
-    (s/coll-of ::fields/field-vec)
-    validate-fields-duplication
+    ::validate-fields-duplication
     ::item-vec->map
     ::map-kw->kebab-case))
 
 
 (s/def :tuna.models.indexes->internal/indexes
   (s/and
-    (s/coll-of ::index-vec)
     ::item-vec->map
     ::map-kw->kebab-case))
 
 
 (s/def ::model->internal
   (s/and
-    (s/conformer
-      (fn [value]
-        (if (vector? value)
-          {:fields value}
-          value)))
     (s/keys
       :req-un [:tuna.models.fields->internal/fields]
       :opt-un [:tuna.models.indexes->internal/indexes])))
@@ -195,7 +202,35 @@
     validate-indexes))
 
 
+(s/def ::public-models
+  (s/or
+    :vec (s/coll-of ::fields/field-vec)
+    :map (d/dict*
+           {:fields (s/coll-of ::fields/field-vec)}
+           ^:opt {:indexes (s/coll-of ::index-vec)})))
+
+
+(s/def ::simplified-model->named-parts
+  (s/conformer
+    (fn [models]
+      (reduce-kv
+        (fn [m k [v-type v]]
+          (if (= :vec v-type)
+            (assoc m k {:fields v})
+            (assoc m k v)))
+        {}
+        models))))
+
+
 (s/def ::->internal-models
   (s/and
+    (s/map-of keyword? ::public-models)
+    ::simplified-model->named-parts
     (s/map-of keyword? ::model->internal)
     ::internal-models))
+
+
+(defn ->internal-models
+  "Transform public models from file to internal representation."
+  [models]
+  (spec-util/conform ::->internal-models models))
