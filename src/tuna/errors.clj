@@ -17,6 +17,16 @@
   (-> data :in first))
 
 
+(defn- get-option-name
+  [data]
+  (-> data :in peek))
+
+
+(defn- get-pred-name
+  [data]
+  (-> data :pred name))
+
+
 (defn- get-field-path
   [data]
   (let [model-name (get-model-name data)
@@ -24,6 +34,12 @@
     (if (vector? model)
       [model-name (nth (:in data) 2)]
       [model-name :fields (nth (:in data) 3)])))
+
+
+(defn- get-field
+  [data]
+  (let [field-path (get-field-path data)]
+    (get-in (:origin-value data) field-path)))
 
 
 (defn- get-field-name
@@ -72,12 +88,19 @@
   "MODEL ERROR")
 
 
-(defmulti ->error-message :last-spec)
+(def ^:private spec-hierarchy
+  (-> (make-hierarchy)
+    (derive :tuna.fields/unique :tuna.fields/options)
+    (derive :tuna.fields/null :tuna.fields/options)))
+
+
+(defmulti ->error-message :last-spec
+  :hierarchy #'spec-hierarchy)
 
 
 (defmethod ->error-message :default
-  [_]
-  "Spec failed")
+  [data]
+  (add-error-value "Spec failed." (:val data)))
 
 
 (defmethod ->error-message :tuna.models/->internal-models
@@ -114,6 +137,21 @@
     (add-error-value
       (format "Invalid field name in model %s." model-name)
       (:val data))))
+
+
+(defmethod ->error-message :tuna.fields/options
+  [data]
+  (let [fq-field-name (get-fq-field-name data)]
+    (if (= "extra keys" (:reason data))
+      (add-error-value
+        (format "Extra keys in option of field %s." fq-field-name)
+        (:val data))
+      (add-error-value
+        (format "Option %s of field %s should satisfy: `%s`."
+          (get-option-name data)
+          fq-field-name
+          (get-pred-name data))
+        (get-field data)))))
 
 
 (defn explain-data->error-report
