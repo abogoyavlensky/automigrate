@@ -24,7 +24,10 @@
 
 (defn- get-pred-name
   [data]
-  (-> data :pred name))
+  (let [pred (-> data :pred)]
+    (if (symbol? pred)
+      (name pred)
+      pred)))
 
 
 (defn- get-field-path
@@ -36,9 +39,10 @@
       [model-name :fields (nth (:in data) 3)])))
 
 
-(defn- get-field
+(defn- get-options
   [data]
-  (let [field-path (get-field-path data)]
+  (let [field-path (-> (get-field-path data)
+                     (conj 2))]
     (get-in (:origin-value data) field-path)))
 
 
@@ -91,7 +95,11 @@
 (def ^:private spec-hierarchy
   (-> (make-hierarchy)
     (derive :tuna.fields/unique :tuna.fields/options)
-    (derive :tuna.fields/null :tuna.fields/options)))
+    (derive :tuna.fields/null :tuna.fields/options)
+    (derive :tuna.fields/primary-key :tuna.fields/options)
+    (derive :tuna.fields/foreign-key :tuna.fields/options)
+    (derive :tuna.fields/on-delete :tuna.fields/options)
+    (derive :tuna.fields/on-update :tuna.fields/options)))
 
 
 (defmulti ->error-message :last-spec
@@ -151,7 +159,7 @@
           (get-option-name data)
           fq-field-name
           (get-pred-name data))
-        (get-field data)))))
+        (get-options data)))))
 
 
 (defn explain-data->error-report

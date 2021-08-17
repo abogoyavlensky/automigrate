@@ -10,26 +10,18 @@
 (def ON-DELETE-OPTION :on-delete)
 (def ON-UPDATE-OPTION :on-update)
 
-(def FK-CASCADE :cascade)
-(def FK-SET-NULL :set-null)
-(def FK-SET-DEFAULT :set-default)
-(def FK-RESTRICT :restrict)
-(def FK-NO-ACTION :no-action)
 
-
-(def FK-ACTIONS
-  #{FK-CASCADE
-    FK-SET-NULL
-    FK-SET-DEFAULT
-    FK-RESTRICT
-    FK-NO-ACTION})
+(s/def ::fk-actions
+  #{:cascade
+    :set-null
+    :set-default
+    :restrict
+    :no-action})
 
 
 (s/def ::char-type (s/tuple #{:char :varchar} pos-int?))
-(expound/defmsg ::char-type "char type should be vector of `[:char|:varchar int?]`")
 
 (s/def ::float-type (s/tuple #{:float} float?))
-(expound/defmsg ::float-type "float type should be vector of `[:float float?]`")
 
 
 (def ^:private field-types
@@ -58,10 +50,6 @@
       :char ::char-type
       :float ::float-type)
     (s/conformer spec-util/tagged->value)))
-
-
-(expound/defmsg ::type
-  (spec-util/should-be-one-of-err-msg "field type" field-types))
 
 
 (def ^:private type-hierarchy
@@ -128,18 +116,10 @@
 (expound/defmsg ::default default-err-msg)
 
 
-(s/def ::on-delete FK-ACTIONS)
+(s/def ::on-delete ::fk-actions)
 
 
-(expound/defmsg ::on-delete
-  (spec-util/should-be-one-of-err-msg "::on-delete option" FK-ACTIONS))
-
-
-(s/def ::on-update FK-ACTIONS)
-
-
-(expound/defmsg ::on-update
-  (spec-util/should-be-one-of-err-msg "`::on-update` option" FK-ACTIONS))
+(s/def ::on-update ::fk-actions)
 
 
 (s/def ::options
