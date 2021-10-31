@@ -22,15 +22,12 @@
 
 (defn- throw-exception-for-spec!
   [spec data]
-  (let [explain-data (s/explain-data spec data)]
+  (let [explain-data (s/explain-data spec data)
+        {:keys [formatted reports]} (spec-errors/explain-data->error-report explain-data)]
     (throw+ {:type ::s/invalid
              :data explain-data
-             :message (spec-errors/explain-data->error-report explain-data)})))
-           ; TODO: remove expound!
-           ;:message (expound/expound-str spec data
-           ;           {:show-valid-values? true
-           ;            :print-specs? false
-           ;            :theme :figwheel-theme})}))
+             :message formatted
+             :reports reports})))
 
 
 (defn valid?
@@ -62,3 +59,26 @@
   (str title " should be one of:\n"
     (str/join "\n"
       (map #(str/join ", " %) (partition-all ERR-ITEMS-COLS items)))))
+
+
+(defn- check-keys
+  [map-keys value]
+  (every? map-keys (keys value)))
+
+
+(defn- get-map-spec-keys
+  [spec]
+  (->> spec
+    (s/form)
+    (filter vector?)
+    (apply concat)
+    (map (comp keyword name))
+    (set)))
+
+
+(defn validate-strict-keys
+  "Return fn to validate strict keys for given spec."
+  [spec]
+  (fn [value]
+    (let [map-keys (get-map-spec-keys spec)]
+      (check-keys map-keys value))))

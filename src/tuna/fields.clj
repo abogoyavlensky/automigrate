@@ -123,31 +123,31 @@
 
 
 (s/def ::options
-  (d/dict
-    (d/->opt (spec-util/specs->dict
-               [::null
-                ::primary-key
-                ::unique
-                ::default
-                ::foreign-key
-                ::on-delete
-                ::on-update]))))
+  (s/keys
+    :opt-un [::null
+             ::primary-key
+             ::unique
+             ::default
+             ::foreign-key
+             ::on-delete
+             ::on-update]))
 
 
-(defn- validate-fk-options
-  "Validate that basic fields mustn't contain foreign-key specific options."
-  [value]
-  (let [option-names (-> (keys value) set)]
-    (if (not (contains? option-names FOREIGN-KEY-OPTION))
-      (empty? (set/intersection option-names
-                #{ON-DELETE-OPTION ON-UPDATE-OPTION}))
-      true)))
+(s/def ::validate-fk-options
+  ; Validate that basic fields mustn't contain foreign-key specific options.
+  (fn [value]
+    (let [option-names (-> (keys value) set)]
+      (if (not (contains? option-names FOREIGN-KEY-OPTION))
+        (empty? (set/intersection option-names
+                  #{ON-DELETE-OPTION ON-UPDATE-OPTION}))
+        true))))
 
 
 (s/def ::options-strict
   (s/and
-    (d/dict* ::options)
-    validate-fk-options))
+    ::options
+    (spec-util/validate-strict-keys ::options)
+    ::validate-fk-options))
 
 
 (s/def ::validate-default-and-null
@@ -246,9 +246,12 @@
 
 (comment
   (let [data {:null true
-              :foreign-key :account/id
-              :on-delete FK-CASCADE}
-              ;:type :integer}
-        data2 {:null false, :type :serial}]))
+              :foreign-key :account/id}
+              ;:test 1}
+              ;:on-delete FK-CASCADE}
+        ;:type :integer}
+        data2 {:null false, :type :serial}]
+    (s/explain-data ::options-strict data)))
+;(get-map-spec-keys ::options)))
 ;(s/explain ::opts data)
 ;(s/explain ::options-strict data)))

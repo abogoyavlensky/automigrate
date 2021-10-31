@@ -202,12 +202,38 @@
     validate-indexes))
 
 
+(s/def :tuna.models.fields-vec/fields
+  (s/coll-of ::fields/field-vec :min-count 1 :kind vector? :distinct true))
+
+
+(s/def :tuna.models.indexes-vec/indexes
+  (s/coll-of ::index-vec :min-count 1 :kind vector? :distinct true))
+
+
+(s/def ::public-models-as-map
+  (s/keys
+    :req-un [:tuna.models.fields-vec/fields]
+    :opt-un [:tuna.models.indexes-vec/indexes]))
+
+
+(s/def ::public-models-as-map-strict
+  (s/and
+    ::public-models-as-map
+    (spec-util/validate-strict-keys ::public-models-as-map)))
+
+
+(s/def ::public-models-vec vector?)
+(s/def ::public-models-map map?)
+
+
 (s/def ::public-models
   (s/or
-    :vec (s/coll-of ::fields/field-vec)
-    :map (d/dict*
-           {:fields (s/coll-of ::fields/field-vec)}
-           ^:opt {:indexes (s/coll-of ::index-vec)})))
+    :vec (s/and
+           ::public-models-vec
+           :tuna.models.fields-vec/fields)
+    :map (s/and
+           ::public-models-map
+           ::public-models-as-map-strict)))
 
 
 (s/def ::simplified-model->named-parts
