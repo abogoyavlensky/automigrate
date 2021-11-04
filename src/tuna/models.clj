@@ -210,28 +210,28 @@
   (s/coll-of ::index-vec :min-count 1 :kind vector? :distinct true))
 
 
-(s/def ::public-models-as-vec
+(s/def ::public-model-as-vec
   vector?)
 
 
-(s/def ::public-models-as-map
+(s/def ::public-model-as-map
   (s/keys
     :req-un [:tuna.models.fields-vec/fields]
     :opt-un [:tuna.models.indexes-vec/indexes]))
 
 
-(s/def ::public-models-as-map-strict
-  (spec-util/validate-strict-keys ::public-models-as-map))
+(s/def ::public-model-as-map-strict
+  (spec-util/validate-strict-keys ::public-model-as-map))
 
 
-(s/def ::public-models
+(s/def ::public-model
   (s/or
     :vec (s/and
-           ::public-models-as-vec
+           ::public-model-as-vec
            :tuna.models.fields-vec/fields)
     :map (s/and
-           ::public-models-as-map
-           ::public-models-as-map-strict)))
+           ::public-model-as-map
+           ::public-model-as-map-strict)))
 
 
 (s/def ::simplified-model->named-parts
@@ -248,7 +248,7 @@
 
 (s/def ::->internal-models
   (s/and
-    (s/map-of keyword? ::public-models)
+    (s/map-of keyword? ::public-model)
     ::simplified-model->named-parts
     (s/map-of keyword? ::model->internal)
     ::internal-models))

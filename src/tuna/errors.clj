@@ -8,7 +8,7 @@
 
 (def ^:private EXTRA-PROBLEMS
   "Set of problems produced by `s/or` spec with format [spec pred]."
-  #{[:tuna.models/public-models `map?]
+  #{[:tuna.models/public-model `map?]
     [:tuna.fields/char-type `vector?]
     [:tuna.fields/float-type `vector?]})
 
@@ -113,8 +113,8 @@
     (derive :tuna.fields/foreign-key :tuna.fields/options)
     (derive :tuna.fields/on-delete :tuna.fields/options)
     (derive :tuna.fields/on-update :tuna.fields/options)
-    (derive :tuna.models/public-models-as-vec :tuna.models/public-models)
-    (derive :tuna.models/public-models-as-map :tuna.models/public-models)))
+    (derive :tuna.models/public-model-as-vec :tuna.models/public-model)
+    (derive :tuna.models/public-model-as-map :tuna.models/public-model)))
 
 
 (defmulti ->error-message :last-spec
@@ -135,7 +135,7 @@
       "Models' definition error.")))
 
 
-(defmethod ->error-message :tuna.models/public-models
+(defmethod ->error-message :tuna.models/public-model
   [data]
   (let [model-name (get-model-name data)
         value (:val data)]

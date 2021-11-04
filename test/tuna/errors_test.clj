@@ -5,7 +5,7 @@
             [tuna.util.test :as test-util]))
 
 
-(deftest test-spec-error-public-models-filter-and-sort-multiple-errors
+(deftest test-spec-error-public-model-filter-and-sort-multiple-errors
   (let [data {:foo {:fields [[:id :integer {:null2 false}]
                              [:name]]}
               :bar 10
