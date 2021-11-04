@@ -84,7 +84,8 @@
     (contains? EXTRA-PROBLEMS spec-pred)))
 
 
-(defn add-error-value
+(defn- add-error-value
+  "Add error value after the error message."
   [message value]
   (if (= '() value)
     message
@@ -112,8 +113,8 @@
     (derive :tuna.fields/foreign-key :tuna.fields/options)
     (derive :tuna.fields/on-delete :tuna.fields/options)
     (derive :tuna.fields/on-update :tuna.fields/options)
-    (derive :tuna.models/public-models-vec :tuna.models/public-models)
-    (derive :tuna.models/public-models-map :tuna.models/public-models)))
+    (derive :tuna.models/public-models-as-vec :tuna.models/public-models)
+    (derive :tuna.models/public-models-as-map :tuna.models/public-models)))
 
 
 (defmulti ->error-message :last-spec
@@ -128,16 +129,17 @@
 (defmethod ->error-message :tuna.models/->internal-models
   [data]
   (let [value (:val data)]
-    (case (:pred data)
+    (condp = (:pred data)
       `keyword? (add-error-value "Model name should be a keyword." value)
-      "Models definition error.")))
+      '(clojure.core/<= 1 (clojure.core/count %) Integer/MAX_VALUE) "Models' definition should not be empty."
+      "Models' definition error.")))
 
 
 (defmethod ->error-message :tuna.models/public-models
   [data]
   (let [model-name (get-model-name data)
         value (:val data)]
-    (format "Invalid definition of model %s. Model could be map or vector.\n\n  %s" model-name value)))
+    (format "Invalid definition of the model %s. Model could be a map or a vector.\n\n  %s" model-name value)))
 
 
 (defmethod ->error-message :tuna.fields/type
@@ -258,62 +260,11 @@
                                        :main-spec main-spec
                                        :origin-value origin-value)]]
                   {:title (->error-title problem*)
-                   :message (->error-message problem*)})
+                   :message (->error-message problem*)
+                   :problem problem*})
         messages (map #(format ERROR-TEMPLATE (:title %) (:message %))
                    reports)]
         ; TODO: uncomment!
         ;reports* (distinct reports)]
     {:reports reports
      :formatted (str/join "\n" messages)}))
-
-
-(comment
-  (let [data {:path [1 :fields 1],
-              :pred 'tuna.fields/validate-default-and-type,
-              :val {:default "1", :type :integer},
-              :via [:tuna.models/->internal-models
-                    :tuna.models/internal-models
-                    :tuna.models/model
-                    :tuna.fields/fields
-                    :tuna.fields/field
-                    :tuna.fields/validate-default-and-type],
-              :in [:test 1 :fields :id 1]
-              :main-spec :tuna.models/->internal-models,
-              :origin-value {:feed {:fields [[:id :serial {:null false, :unique true}]
-                                             [:name [:varchar 100]]
-                                             [:account :integer {:foreign-key :account/id, :on-delete :cascade}]
-                                             [:task :integer {:foreign-key :account/id, :on-delete :set-null}]
-                                             [:bar1 :integer {:foreign-key :account/id}]
-                                             [:created_at :timestamp {:default [:now]}]
-                                             [:updated-at :timestamp {:default [:now]}]],
-                                    :indexes [[:feed_name-id_unique_idx :btree {:fields [:name :id]}]]},
-                             :test [[:id :integer {:default "1"}]],
-                             :account [[:id :serial {:unique true}]
-                                       [:name [:varchar 256]]
-                                       [:foo1 :integer {:foreign-key :foo1/id, :null true}]
-                                       [:slug :text {:null false, :unique true}]],
-                             :articles [[:id :serial {:unique true}] [:bar1 :integer {:foreign-key :bar1/id}]],
-                             :foo1 [[:id :serial {:unique true}] [:account :integer {:foreign-key :account/id}]],
-                             :bar1 {:fields [[:id :serial {:unique true}]
-                                             [:foo1 :integer {:foreign-key :foo1/id}]
-                                             [:account :integer {:foreign-key :account/id}]]},
-                             :demo {:fields [[:id :serial {:unique true}]
-                                             [:name :text {:null false}]
-                                             [:first-name :text]],
-                                    :indexes [[:demo_id_idx :btree {:fields [:name :id]}]
-                                              [:demo_name_idx :btree {:fields [:name], :unique true}]]}}}
-        problems '({:path [1 :vec],
-                    :pred clojure.core/coll?,
-                    :val 1,
-                    :via [:tuna.models/->internal-models :tuna.models/public-models],
-                    :in [:test 1]}
-                   {:reason "not a map",
-                    :path [1 :map],
-                    :pred clojure.core/map?,
-                    :val 1,
-                    :via [:tuna.models/->internal-models :tuna.models/public-models],
-                    :in [:test 1]})]
-    ;(get-model-name data)))
-    (get-field-name data)))
-;(get-field-path data)))
-;(get-fq-field-name data)))
