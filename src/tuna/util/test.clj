@@ -54,7 +54,7 @@
   "Catch exception by calling function and return slingshot error data or nil.
 
   `exception-check`: could be a vector of keywords or a function;
-  `f`: must be callable function with 0 arity."
+  `f`: function that should be tested."
   [exception-check f]
   `(try+
      ~f

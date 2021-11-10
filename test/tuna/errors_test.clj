@@ -5,7 +5,15 @@
             [tuna.util.test :as test-util]))
 
 
-(deftest test-spec-error-public-model-filter-and-sort-multiple-errors
+(defn- get-spec-error-data
+  [f]
+  ; TODO: remove debug print!
+  (->> #p (test-util/thrown-with-slingshot-data? [:type ::s/invalid] (f))
+    :reports
+    (map #(dissoc % :problems))))
+
+
+(deftest test-spec-public-model-filter-and-sort-multiple-errors
   (let [data {:foo {:fields [[:id :integer {:null2 false}]
                              [:name]]}
               :bar 10
@@ -17,7 +25,36 @@
              :title "MODEL ERROR"}
             {:message "Option :unique of field :zen/title should satisfy: `true?`.\n\n  {:unique :WRONG}"
              :title "MODEL ERROR"}]
-          (->> (test-util/thrown-with-slingshot-data? [:type ::s/invalid]
-                 (models/->internal-models data))
-            :reports
-            (map #(dissoc % :problem)))))))
+          (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-public-model-no-models-ok
+  (let [data {}]
+    (is (= []
+          (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec->internal-models-invalid-structure-error
+  (let [data []]
+    (is (= [{:message "Models' definition error."
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-public-model-invalid-definition-error
+  (let [data {:foo :wrong}]
+    (is (= [{:message "Invalid definition of the model :foo. Model could be a map or a vector.\n\n  :wrong"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-public-model-empty-model-error
+  ;(let [data {:foo []}]
+  ;  (is (= []
+  ;         (get-spec-error-data #(models/->internal-models data))))))
+
+ ;(let [data {:foo {:fields [[:id :integer {:null 1}]]}}])
+ ;(let [data {:foo [[:id]]}])
+  (let [data {:foo []}]
+    (is (= []
+          (get-spec-error-data #(models/->internal-models data))))))

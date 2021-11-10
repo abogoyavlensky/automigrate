@@ -1,5 +1,6 @@
 (ns tuna.errors
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.spec.alpha :as s]))
 
 
 (def ^:private ERROR-TEMPLATE
@@ -112,12 +113,10 @@
     (derive :tuna.fields/primary-key :tuna.fields/options)
     (derive :tuna.fields/foreign-key :tuna.fields/options)
     (derive :tuna.fields/on-delete :tuna.fields/options)
-    (derive :tuna.fields/on-update :tuna.fields/options)
-    (derive :tuna.models/public-model-as-vec :tuna.models/public-model)
-    (derive :tuna.models/public-model-as-map :tuna.models/public-model)))
+    (derive :tuna.fields/on-update :tuna.fields/options)))
 
 
-(defmulti ->error-message :last-spec
+(defmulti ->error-message last-spec
   :hierarchy #'spec-hierarchy)
 
 
@@ -128,18 +127,42 @@
 
 (defmethod ->error-message :tuna.models/->internal-models
   [data]
-  (let [value (:val data)]
-    (condp = (:pred data)
-      `keyword? (add-error-value "Model name should be a keyword." value)
-      '(clojure.core/<= 1 (clojure.core/count %) Integer/MAX_VALUE) "Models' definition should not be empty."
-      "Models' definition error.")))
+  (condp = (:pred data)
+    `keyword? (add-error-value "Model name should be a keyword." (:val data))
+    "Models' definition error."))
 
 
 (defmethod ->error-message :tuna.models/public-model
   [data]
-  (let [model-name (get-model-name data)
-        value (:val data)]
-    (format "Invalid definition of the model %s. Model could be a map or a vector.\n\n  %s" model-name value)))
+  (let [model-name (get-model-name data)]
+    (condp = (:pred data)
+      '(clojure.core/fn [%] (clojure.core/contains? % :fields))
+      (format "Model %s should contain the key :fields." model-name)
+
+      ;(format "Invalid definition of the model %s. Model could be a map or a vector.\n\n  %s" model-name value)
+      (format "Invalid definition of the model %s." model-name))))
+      ;(format "Model could be a map or a vector.\n\n  %s" model-name value))))
+
+(defmethod ->error-message :tuna.models/public-model-as-map
+  [data]
+  (let [model-name (get-model-name data)]
+    (format "Model %s could be a map." model-name)))
+
+
+(defmethod ->error-message :tuna.models/public-model-as-vec
+  [data]
+  (let [model-name (get-model-name data)]
+    (format "Model %s could be a vector." model-name)))
+
+
+(defmethod ->error-message :tuna.models.fields-vec/fields
+  [data]
+  (let [model-name (get-model-name data)]
+    (condp = (:pred data)
+      '(clojure.core/<= 1 (clojure.core/count %) Integer/MAX_VALUE)
+      (format "Model %s should contain at least 1 field." model-name)
+
+      "Model's definition error.")))
 
 
 (defmethod ->error-message :tuna.fields/type
@@ -211,17 +234,17 @@
 
 
 (defn- starts-with-vec?
+  "Filter only if first part is less than `in` data."
   [first-part data]
-  (let [total (count first-part)]
-    (if (<= total (count data))
-      (= first-part (subvec data 0 total))
+  (let [first-part-count (count first-part)]
+    (if (< first-part-count (count data))
+      (= first-part (subvec data 0 first-part-count))
       false)))
 
 
 (defn- contains-by-in?
   [data in-vec]
-  (let [in-items (->> data
-                   (map :in))]
+  (let [in-items (map :in data)]
     (some #(starts-with-vec? in-vec %) in-items)))
 
 
@@ -234,7 +257,8 @@
     problems))
 
 
-(defn- remove-problems-by-in
+(defn- squash-problems-by-in
+  "Analyze and remove problems for `s/or` spec which are parts of another problem."
   [problems]
   (reduce (fn [res item]
             (if (contains-by-in? res (:in item))
@@ -244,27 +268,48 @@
     problems))
 
 
+(defn- remove-problems-by-in
+  "Remove unused problems for `s/or` spec with sorting."
+  [problems]
+  (-> problems
+    (sort-problems-by-in)
+    (squash-problems-by-in)
+    (reverse)))
+
+
+(defn- group-problems-by-in
+  [problems]
+  (->> problems
+    (group-by :in)
+    (vals)))
+
+
+(defn join-or-spec-problem-messages
+  [messages]
+  (str/join "\n\nor\n\n" messages))
+
+
 (defn explain-data->error-report
   "Convert spec explain-data output to errors' report."
   [explain-data]
-  (let [problems (->> (:clojure.spec.alpha/problems explain-data)
+  (let [problems (->> (::s/problems explain-data)
                    (remove extra-problem?)
-                   (sort-problems-by-in)
                    (remove-problems-by-in)
-                   (reverse))
-        main-spec (:clojure.spec.alpha/spec explain-data)
-        origin-value (:clojure.spec.alpha/value explain-data)
-        reports (for [problem problems
-                      :let [problem* (assoc problem
-                                       :last-spec (last-spec problem)
-                                       :main-spec main-spec
-                                       :origin-value origin-value)]]
-                  {:title (->error-title problem*)
-                   :message (->error-message problem*)
-                   :problem problem*})
-        messages (map #(format ERROR-TEMPLATE (:title %) (:message %))
-                   reports)]
-        ; TODO: uncomment!
-        ;reports* (distinct reports)]
+                   (group-problems-by-in))
+        main-spec (::s/spec explain-data)
+        origin-value (::s/value explain-data)
+        reports (for [problem-vec problems
+                      :let [main-spec {:main-spec main-spec}
+                            problem-vec* (map #(assoc %
+                                                 :origin-value origin-value)
+                                           problem-vec)]]
+                  {:title (->error-title main-spec)
+                   :message (->> problem-vec*
+                              (map ->error-message)
+                              (join-or-spec-problem-messages))
+                   :problems problem-vec*})
+        messages (->> reports
+                   (map #(format ERROR-TEMPLATE (:title %) (:message %)))
+                   (str/join "\n"))]
     {:reports reports
-     :formatted (str/join "\n" messages)}))
+     :formatted messages}))
