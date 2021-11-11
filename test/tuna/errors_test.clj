@@ -18,7 +18,7 @@
                              [:name]]}
               :bar 10
               :zen [[:title :integer {:unique :WRONG}]]}]
-    (is (= [{:message "Invalid definition of the model :bar. Model could be a map or a vector.\n\n  10"
+    (is (= [{:message "Model :bar should be a map.\n\nor\n\nModel :bar should be a vector.\n\n  10"
              :title "MODEL ERROR"}
             {:message "Missing type of field :foo/name." :title "MODEL ERROR"}
             {:message "Extra options of field :foo/id.\n\n  {:null2 false}"
@@ -43,18 +43,37 @@
 
 (deftest test-spec-public-model-invalid-definition-error
   (let [data {:foo :wrong}]
-    (is (= [{:message "Invalid definition of the model :foo. Model could be a map or a vector.\n\n  :wrong"
+    (is (= [{:message "Model :foo should be a map.\n\nor\n\nModel :foo should be a vector.\n\n  :wrong"
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))
 
 
 (deftest test-spec-public-model-empty-model-error
-  ;(let [data {:foo []}]
-  ;  (is (= []
-  ;         (get-spec-error-data #(models/->internal-models data))))))
-
- ;(let [data {:foo {:fields [[:id :integer {:null 1}]]}}])
- ;(let [data {:foo [[:id]]}])
   (let [data {:foo []}]
-    (is (= []
+    (is (= [{:message "Model :foo should contain at least one field.\n\n  []"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data)))))
+
+  (let [data {:foo {}}]
+    (is (= [{:message "Model :foo should contain :fields key.\n\n  {}"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data)))))
+
+  (let [data {:foo {:fields []}}]
+    (is (= [{:message "Model :foo should contain at least one field.\n\n  []"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-public-model-duplicate-field-error
+  (let [data {:foo [[:id :integer]
+                    [:id :integer]]}]
+    (is (= [{:message "Model :foo has duplicated field.\n\n  [[:id :integer] [:id :integer]]"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data)))))
+
+  (let [data {:foo {:fields [[:id :integer]
+                             [:id :integer]]}}]
+    (is (= [{:message "Model :foo has duplicated field.\n\n  [[:id :integer] [:id :integer]]"
+             :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))

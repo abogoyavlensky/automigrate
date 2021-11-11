@@ -88,7 +88,7 @@
 (defn- add-error-value
   "Add error value after the error message."
   [message value]
-  (if (= '() value)
+  (if (and (list? value) (empty? value))
     message
     (str message "\n\n  " value)))
 
@@ -139,30 +139,47 @@
       '(clojure.core/fn [%] (clojure.core/contains? % :fields))
       (format "Model %s should contain the key :fields." model-name)
 
-      ;(format "Invalid definition of the model %s. Model could be a map or a vector.\n\n  %s" model-name value)
       (format "Invalid definition of the model %s." model-name))))
-      ;(format "Model could be a map or a vector.\n\n  %s" model-name value))))
+
 
 (defmethod ->error-message :tuna.models/public-model-as-map
   [data]
   (let [model-name (get-model-name data)]
-    (format "Model %s could be a map." model-name)))
+    (when-not (vector? (:val data))
+      (condp = (:pred data)
+        '(clojure.core/fn [%] (clojure.core/contains? % :fields))
+        (add-error-value
+          (format "Model %s should contain :fields key." model-name)
+          (:val data))
+
+        (format "Model %s should be a map." model-name)))))
 
 
 (defmethod ->error-message :tuna.models/public-model-as-vec
   [data]
   (let [model-name (get-model-name data)]
-    (format "Model %s could be a vector." model-name)))
+    (format "Model %s should be a vector." model-name)))
 
 
 (defmethod ->error-message :tuna.models.fields-vec/fields
   [data]
   (let [model-name (get-model-name data)]
-    (condp = (:pred data)
-      '(clojure.core/<= 1 (clojure.core/count %) Integer/MAX_VALUE)
-      (format "Model %s should contain at least 1 field." model-name)
+    (when-not (map? (:val data))
+      (condp = (:pred data)
+        '(clojure.core/<= 1 (clojure.core/count %) Integer/MAX_VALUE)
+        (add-error-value
+          (format "Model %s should contain at least one field." model-name)
+          (:val data))
 
-      "Model's definition error.")))
+        'distinct? (add-error-value
+                     (format "Model %s has duplicated field." model-name)
+                     (:val data))
+
+        `vector? (add-error-value
+                   (format "Model %s should be a vector." model-name)
+                   (:val data))
+
+        (format "Model %s definition error." model-name)))))
 
 
 (defmethod ->error-message :tuna.fields/type
@@ -300,13 +317,14 @@
         origin-value (::s/value explain-data)
         reports (for [problem-vec problems
                       :let [main-spec {:main-spec main-spec}
-                            problem-vec* (map #(assoc %
-                                                 :origin-value origin-value)
-                                           problem-vec)]]
+                            problem-vec* (map #(assoc % :origin-value origin-value)
+                                           problem-vec)
+                            error-message (->> problem-vec*
+                                            (map ->error-message)
+                                            (remove nil?)
+                                            (join-or-spec-problem-messages))]]
                   {:title (->error-title main-spec)
-                   :message (->> problem-vec*
-                              (map ->error-message)
-                              (join-or-spec-problem-messages))
+                   :message error-message
                    :problems problem-vec*})
         messages (->> reports
                    (map #(format ERROR-TEMPLATE (:title %) (:message %)))

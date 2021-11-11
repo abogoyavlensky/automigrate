@@ -211,7 +211,7 @@
 
 
 (s/def ::public-model-as-vec
-  vector?)
+  :tuna.models.fields-vec/fields)
 
 
 (s/def ::public-model-as-map
@@ -226,9 +226,7 @@
 
 (s/def ::public-model
   (s/or
-    :vec (s/and
-           ::public-model-as-vec
-           :tuna.models.fields-vec/fields)
+    :vec ::public-model-as-vec
     :map (s/and
            ::public-model-as-map
            ::public-model-as-map-strict)))
