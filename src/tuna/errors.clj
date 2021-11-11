@@ -171,15 +171,23 @@
           (format "Model %s should contain at least one field." model-name)
           (:val data))
 
-        'distinct? (add-error-value
-                     (format "Model %s has duplicated field." model-name)
-                     (:val data))
-
         `vector? (add-error-value
                    (format "Model %s should be a vector." model-name)
                    (:val data))
 
+        'distinct? (add-error-value
+                     (format "Model %s has duplicated fields." model-name)
+                     (:val data))
+
         (format "Model %s definition error." model-name)))))
+
+
+(defmethod ->error-message :tuna.models/validate-fields-duplication
+  [data]
+  (let [model-name (get-model-name data)]
+    (add-error-value
+      (format "Model %s has duplicated fields." model-name)
+      (:val data))))
 
 
 (defmethod ->error-message :tuna.fields/type

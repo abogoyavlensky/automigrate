@@ -68,12 +68,24 @@
 (deftest test-spec-public-model-duplicate-field-error
   (let [data {:foo [[:id :integer]
                     [:id :integer]]}]
-    (is (= [{:message "Model :foo has duplicated field.\n\n  [[:id :integer] [:id :integer]]"
+    (is (= [{:message "Model :foo has duplicated fields.\n\n  [[:id :integer] [:id :integer]]"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data)))))
+
+  (let [data {:foo [[:id :integer]
+                    [:id :bigint]]}]
+    (is (= [{:message "Model :foo has duplicated fields.\n\n  [{:name :id, :type :integer} {:name :id, :type :bigint}]"
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data)))))
 
   (let [data {:foo {:fields [[:id :integer]
                              [:id :integer]]}}]
-    (is (= [{:message "Model :foo has duplicated field.\n\n  [[:id :integer] [:id :integer]]"
+    (is (= [{:message "Model :foo has duplicated fields.\n\n  [[:id :integer] [:id :integer]]"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data)))))
+
+  (let [data {:foo {:fields [[:id :integer]
+                             [:id :bigint]]}}]
+    (is (= [{:message "Model :foo has duplicated fields.\n\n  [{:name :id, :type :integer} {:name :id, :type :bigint}]"
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))
