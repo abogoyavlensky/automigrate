@@ -213,4 +213,10 @@
     (let [data {:foo [[:id [:float]]]}]
       (is (= [{:message "Invalid type of field :foo/id.\n\n  [:float]"
                :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid float type as vector with int"
+    (let [data {:foo [[:id [:float 1]]]}]
+      (is (= [{:message "Invalid type of field :foo/id.\n\n  [:float 1]"
+               :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))))
