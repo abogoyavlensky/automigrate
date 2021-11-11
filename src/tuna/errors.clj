@@ -190,6 +190,12 @@
       (:val data))))
 
 
+(defmethod ->error-message :tuna.models/public-model-as-map-strict
+  [data]
+  (let [model-name (get-model-name data)]
+    (format "Model %s definition has extra key." model-name)))
+
+
 (defmethod ->error-message :tuna.fields/type
   [data]
   (let [fq-field-name (get-fq-field-name data)]

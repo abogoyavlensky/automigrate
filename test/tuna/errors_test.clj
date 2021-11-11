@@ -89,3 +89,18 @@
     (is (= [{:message "Model :foo has duplicated fields.\n\n  [{:name :id, :type :integer} {:name :id, :type :bigint}]"
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-public-model-invalid-model-name-error
+  (let [data {"foo" [[:id :integer]]}]
+    (is (= [{:message "Model name should be a keyword.\n\n  foo"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-public-model-extra-keys-error
+  (let [data {:foo {:fields [[:id :integer]]
+                    :extra-key []}}]
+    (is (= [{:message "Model :foo definition has extra key."
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data))))))
