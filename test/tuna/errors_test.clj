@@ -189,12 +189,12 @@
 
 (deftest test-spec-field-vec-invalid-char-field-type-error
   (let [data {:foo [[:id :char]]}]
-    (is (= [{:message "Char type of field :foo/id should be vector.\n\n  :char"
+    (is (= [{:message "Invalid type of field :foo/id.\n\n  :char"
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data)))))
 
-  (let [data {:foo {:fields [[:id :char]]}}]
-    (is (= [{:message "Char type of field :foo/id should be vector.\n\n  :char"
+  (let [data {:foo {:fields [[:id [:varchar "test"]]]}}]
+    (is (= [{:message "Invalid type of field :foo/id.\n\n  [:varchar \"test\"]"
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))
 
@@ -214,4 +214,3 @@
       (is (= [{:message "Invalid type of field :foo/id.\n\n  [:float]"
                :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))))
-

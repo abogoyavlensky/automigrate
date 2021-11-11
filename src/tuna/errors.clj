@@ -10,6 +10,12 @@
 (def ^:private INDEX-FIELD-NAME-IN-SPEC 2)
 
 
+(def ^:private EXTRA-PROBLEMS
+  "Set of problems produced by `s/or` spec."
+  #{:tuna.fields/char-type
+    :tuna.fields/float-type})
+
+
 (defn- get-model-name
   [data]
   (-> data :in first))
@@ -70,6 +76,11 @@
 (defn- last-spec
   [problem]
   (-> problem :via peek))
+
+
+(defn- extra-problem?
+  [problem]
+  (contains? EXTRA-PROBLEMS (last-spec problem)))
 
 
 (defn- add-error-value
@@ -208,18 +219,6 @@
         value))))
 
 
-(defmethod ->error-message :tuna.fields/float-type
-  [_]
-  ; Disable specific error message for `s/or` spec.
-  nil)
-
-
-(defmethod ->error-message :tuna.fields/char-type
-  [_]
-  ; Disable specific error message for `s/or` spec.
-  nil)
-
-
 (defmethod ->error-message :tuna.fields/field-name
   [data]
   (let [model-name (get-model-name data)]
@@ -340,6 +339,7 @@
   "Convert spec explain-data output to errors' report."
   [explain-data]
   (let [problems (->> (::s/problems explain-data)
+                   (remove extra-problem?)
                    (remove-problems-by-in)
                    (group-problems-by-in))
         main-spec (::s/spec explain-data)
