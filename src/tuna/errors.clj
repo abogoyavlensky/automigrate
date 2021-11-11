@@ -7,13 +7,6 @@
   (str "-- %s -------------------------------------\n\n%s\n"))
 
 
-(def ^:private EXTRA-PROBLEMS
-  "Set of problems produced by `s/or` spec with format [spec pred]."
-  #{[:tuna.models/public-model `map?]
-    [:tuna.fields/char-type `vector?]
-    [:tuna.fields/float-type `vector?]})
-
-
 (def ^:private INDEX-FIELD-NAME-IN-SPEC 2)
 
 
@@ -79,18 +72,12 @@
   (-> problem :via peek))
 
 
-(defn- extra-problem?
-  [problem]
-  (let [spec-pred ((juxt last-spec :pred) problem)]
-    (contains? EXTRA-PROBLEMS spec-pred)))
-
-
 (defn- add-error-value
   "Add error value after the error message."
   [message value]
   (if (and (list? value) (empty? value))
     message
-    (str message "\n\n  " value)))
+    (str message "\n\n  " (pr-str value))))
 
 
 (defmulti ->error-title :main-spec)
@@ -129,6 +116,7 @@
   [data]
   (condp = (:pred data)
     `keyword? (add-error-value "Model name should be a keyword." (:val data))
+    `map? (add-error-value "Models should be defined as a map." (:val data))
     "Models' definition error."))
 
 
@@ -196,22 +184,50 @@
     (format "Model %s definition has extra key." model-name)))
 
 
+(defmethod ->error-message :tuna.fields/field-vec
+  [data]
+  (let [model-name (get-model-name data)
+        cat-pred '(clojure.core/fn [%]
+                    (clojure.core/or
+                      (clojure.core/nil? %)
+                      (clojure.core/sequential? %)))]
+    (condp = (:pred data)
+      cat-pred (add-error-value
+                 (format "Invalid field definition in model %s." model-name)
+                 (:val data)))))
+
+
 (defmethod ->error-message :tuna.fields/type
   [data]
-  (let [fq-field-name (get-fq-field-name data)]
+  (let [fq-field-name (get-fq-field-name data)
+        value (:val data)]
     (if (= "Insufficient input" (:reason data))
       (format "Missing type of field %s." fq-field-name)
       (add-error-value
         (format "Invalid type of field %s." fq-field-name)
-        (:val data)))))
+        value))))
+
+
+(defmethod ->error-message :tuna.fields/float-type
+  [_]
+  ; Disable specific error message for `s/or` spec.
+  nil)
+
+
+(defmethod ->error-message :tuna.fields/char-type
+  [_]
+  ; Disable specific error message for `s/or` spec.
+  nil)
 
 
 (defmethod ->error-message :tuna.fields/field-name
   [data]
   (let [model-name (get-model-name data)]
-    (add-error-value
-      (format "Invalid field name in model %s." model-name)
-      (:val data))))
+    (if (= "Insufficient input" (:reason data))
+      (format "Missing field name in model %s." model-name)
+      (add-error-value
+        (format "Invalid field name in model %s." model-name)
+        (:val data)))))
 
 
 (defmethod ->error-message :tuna.fields/options
@@ -324,7 +340,6 @@
   "Convert spec explain-data output to errors' report."
   [explain-data]
   (let [problems (->> (::s/problems explain-data)
-                   (remove extra-problem?)
                    (remove-problems-by-in)
                    (group-problems-by-in))
         main-spec (::s/spec explain-data)

@@ -36,7 +36,7 @@
 
 (deftest test-spec->internal-models-invalid-structure-error
   (let [data []]
-    (is (= [{:message "Models' definition error."
+    (is (= [{:message "Models should be defined as a map.\n\n  []"
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))
 
@@ -93,7 +93,12 @@
 
 (deftest test-spec-public-model-invalid-model-name-error
   (let [data {"foo" [[:id :integer]]}]
-    (is (= [{:message "Model name should be a keyword.\n\n  foo"
+    (is (= [{:message "Model name should be a keyword.\n\n  \"foo\""
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data)))))
+
+  (let [data {"foo" {:fields [[:id :integer]]}}]
+    (is (= [{:message "Model name should be a keyword.\n\n  \"foo\""
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))
 
@@ -104,3 +109,109 @@
     (is (= [{:message "Model :foo definition has extra key."
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-field-vec-invalid-field-name-error
+  (testing "check field without nested vec"
+    (let [data {:foo [:wrong]}]
+      (is (= [{:message "Invalid field definition in model :foo.\n\n  :wrong"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))
+
+    (let [data {:foo {:fields [:wrong]}}]
+      (is (= [{:message "Invalid field definition in model :foo.\n\n  :wrong"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check field defined as map"
+    (let [data {:foo [{:name :int}]}]
+      (is (= [{:message "Invalid field definition in model :foo.\n\n  {:name :int}"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))
+
+    (let [data {:foo {:fields [{:name :int}]}}]
+      (is (= [{:message "Invalid field definition in model :foo.\n\n  {:name :int}"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check field missing name"
+    (let [data {:foo [[]]}]
+      (is (= [{:message "Missing field name in model :foo."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))
+
+    (let [data {:foo {:fields [[]]}}]
+      (is (= [{:message "Missing field name in model :foo."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid field name as a string"
+    (let [data {:foo [["wrong"]]}]
+      (is (= [{:message "Invalid field name in model :foo.\n\n  \"wrong\""
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))
+
+    (let [data {:foo {:fields [["wrong"]]}}]
+      (is (= [{:message "Invalid field name in model :foo.\n\n  \"wrong\""
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-field-vec-invalid-keyword-field-type-error
+  (testing "check missing field type"
+    (let [data {:foo [[:id]]}]
+      (is (= [{:message "Missing type of field :foo/id."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))
+
+    (let [data {:foo {:fields [[:id]]}}]
+      (is (= [{:message "Missing type of field :foo/id."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid field type as string"
+    (let [data {:foo [[:id "wrong-type"]]}]
+      (is (= [{:message "Invalid type of field :foo/id.\n\n  \"wrong-type\""
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))
+
+    (let [data {:foo {:fields [[:id "wrong-type"]]}}]
+      (is (= [{:message "Invalid type of field :foo/id.\n\n  \"wrong-type\""
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid field type as keyword"
+    (let [data {:foo [[:id :wrong-type]]}]
+      (is (= [{:message "Invalid type of field :foo/id.\n\n  :wrong-type"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-field-vec-invalid-char-field-type-error
+  (let [data {:foo [[:id :char]]}]
+    (is (= [{:message "Char type of field :foo/id should be vector.\n\n  :char"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data)))))
+
+  (let [data {:foo {:fields [[:id :char]]}}]
+    (is (= [{:message "Char type of field :foo/id should be vector.\n\n  :char"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-field-vec-invalid-float-field-type-error
+  (testing "check valid float type"
+    (let [data {:foo [[:id :float]]}]
+      (is (= []
+            (get-spec-error-data #(models/->internal-models data)))))
+
+    (let [data {:foo {:fields [[:id [:float 0.1]]]}}]
+      (is (= []
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid float type as vector"
+    (let [data {:foo [[:id [:float]]]}]
+      (is (= [{:message "Invalid type of field :foo/id.\n\n  [:float]"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
