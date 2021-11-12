@@ -39,13 +39,12 @@
     ^:opt {:unique :tuna.models.index/unique}))
 
 
-(expound/defmsg ::index-vec-options
-  "invalid index options")
+(s/def ::index-name keyword?)
 
 
 (s/def ::index-vec
   (s/cat
-    :name keyword?
+    :name ::index-name
     :type :tuna.models.index/type
     :options ::index-vec-options))
 

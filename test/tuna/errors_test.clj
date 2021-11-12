@@ -147,12 +147,12 @@
 
   (testing "check invalid field name as a string"
     (let [data {:foo [["wrong"]]}]
-      (is (= [{:message "Invalid field name in model :foo.\n\n  \"wrong\""
+      (is (= [{:message "Invalid field name in model :foo. Field name should be a keyword.\n\n  \"wrong\""
                :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))
 
     (let [data {:foo {:fields [["wrong"]]}}]
-      (is (= [{:message "Invalid field name in model :foo.\n\n  \"wrong\""
+      (is (= [{:message "Invalid field name in model :foo. Field name should be a keyword.\n\n  \"wrong\""
                :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))))
 
@@ -309,9 +309,50 @@
             (get-spec-error-data #(models/->internal-models data))))))
 
   (testing "check on-update without foreign-key"
-    (let [data {:foo [[:id :float {:on-update :cascade}]]}]
+    (let [data {:foo {:fields [[:id :float {:on-update :cascade}]]}}]
       (is (= [{:message (str "Field :foo/id has :on-update option"
                           " without :foreign-key.\n\n  {:on-update :cascade}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-indexes-vec-errors
+  (testing "check empty indexes error"
+    (let [data {:foo {:fields [[:id :integer]]
+                      :indexes []}}]
+      (is (= [{:message "Model :foo should contain at least one index if :indexes key exists.\n\n  []"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check not vec indexes"
+    (let [data {:foo {:fields [[:id :integer]]
+                      :indexes {}}}]
+      (is (= [{:message "Indexes definition of model :foo should be a vector.\n\n  {}"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check duplicated indexes"
+    (let [data {:foo {:fields [[:id :integer]]
+                      :indexes [[:foo-idx :btree {:fields [:id]}]
+                                [:foo-idx :btree {:fields [:id]}]]}}]
+      (is (= [{:message (str "Indexes definition of model :foo has duplicated indexes.\n\n  "
+                          "[[:foo-idx :btree {:fields [:id]}] [:foo-idx :btree {:fields [:id]}]]")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-indexes-vec-index-name-error
+  (testing "check empty index name error"
+    (let [data {:foo {:fields [[:id :integer]]
+                      :indexes [[]]}}]
+      (is (= [{:message "Missing index name in model :foo."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid index name error"
+    (let [data {:foo {:fields [[:id :integer]]
+                      :indexes [["foo-idx"]]}}]
+      (is (= [{:message "Invalid index name in model :foo. Index name should be a keyword.\n\n  \"foo-idx\""
                :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))))
 

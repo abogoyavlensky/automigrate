@@ -164,7 +164,37 @@
                      (format "Model %s has duplicated fields." model-name)
                      (:val data))
 
-        (format "Model %s definition error." model-name)))))
+        (format "Fields definition error in model %s." model-name)))))
+
+
+(defmethod ->error-message :tuna.models.indexes-vec/indexes
+  [data]
+  (let [model-name (get-model-name data)]
+    (condp = (:pred data)
+      '(clojure.core/<= 1 (clojure.core/count %) Integer/MAX_VALUE)
+      (add-error-value
+        (format "Model %s should contain at least one index if :indexes key exists." model-name)
+        (:val data))
+
+      `vector? (add-error-value
+                 (format "Indexes definition of model %s should be a vector." model-name)
+                 (:val data))
+
+      'distinct? (add-error-value
+                   (format "Indexes definition of model %s has duplicated indexes." model-name)
+                   (:val data))
+
+      (format "Indexes definition error in model %s." model-name))))
+
+
+(defmethod ->error-message :tuna.models/index-name
+  [data]
+  (let [model-name (get-model-name data)]
+    (if (= "Insufficient input" (:reason data))
+      (format "Missing index name in model %s." model-name)
+      (add-error-value
+        (format "Invalid index name in model %s. Index name should be a keyword." model-name)
+        (:val data)))))
 
 
 (defmethod ->error-message :tuna.models/validate-fields-duplication
@@ -216,7 +246,7 @@
     (if (= "Insufficient input" (:reason data))
       (format "Missing field name in model %s." model-name)
       (add-error-value
-        (format "Invalid field name in model %s." model-name)
+        (format "Invalid field name in model %s. Field name should be a keyword." model-name)
         (:val data)))))
 
 
