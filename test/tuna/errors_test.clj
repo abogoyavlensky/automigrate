@@ -205,7 +205,7 @@
       (is (= []
             (get-spec-error-data #(models/->internal-models data)))))
 
-    (let [data {:foo {:fields [[:id [:float 0.1]]]}}]
+    (let [data {:foo {:fields [[:id [:float 1]]]}}]
       (is (= []
             (get-spec-error-data #(models/->internal-models data))))))
 
@@ -216,7 +216,7 @@
             (get-spec-error-data #(models/->internal-models data))))))
 
   (testing "check invalid float type as vector with int"
-    (let [data {:foo [[:id [:float 1]]]}]
-      (is (= [{:message "Invalid type of field :foo/id.\n\n  [:float 1]"
+    (let [data {:foo [[:id [:float 0.1]]]}]
+      (is (= [{:message "Invalid type of field :foo/id.\n\n  [:float 0.1]"
                :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))))

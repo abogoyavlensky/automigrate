@@ -21,7 +21,7 @@
 
 (s/def ::char-type (s/tuple #{:char :varchar} pos-int?))
 
-(s/def ::float-type (s/tuple #{:float} float?))
+(s/def ::float-type (s/tuple #{:float} pos-int?))
 
 
 (def ^:private field-types
