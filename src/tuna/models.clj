@@ -7,7 +7,6 @@
             [tuna.util.model :as model-util]
             [tuna.util.spec :as spec-util]
             [tuna.fields :as fields]
-            [spec-dict :as d]
             [expound.alpha :as expound]))
 
 
@@ -34,9 +33,9 @@
 
 
 (s/def ::index-vec-options
-  (d/dict*
-    {:fields :tuna.models.index/fields}
-    ^:opt {:unique :tuna.models.index/unique}))
+  (s/keys
+    :req-un [:tuna.models.index/fields]
+    :opt-un [:tuna.models.index/unique]))
 
 
 (s/def ::index-name keyword?)

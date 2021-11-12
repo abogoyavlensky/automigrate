@@ -4,21 +4,34 @@
             [tuna.fields :as fields]))
 
 
-(deftest test-validate-fk-options
+(deftest test-validate-fk-options-on-delete
   (testing "check no fk and no on-delete ok"
     (is (true?
-          (s/valid? ::fields/validate-fk-options {:null true}))))
+          (s/valid? ::fields/validate-fk-options-on-delete {:null true}))))
   (testing "check fk and on-delete ok"
     (is (true?
-          (s/valid? ::fields/validate-fk-options {:null true
-                                                  :foreign-key :account/id
-                                                  :on-delete :cascade
-                                                  :on-update :cascade}))))
+          (s/valid? ::fields/validate-fk-options-on-delete {:null true
+                                                            :foreign-key :account/id
+                                                            :on-delete :cascade}))))
   (testing "check no fk and on-delete err"
     (is (false?
-          (s/valid? ::fields/validate-fk-options {:null true
-                                                  :on-delete :cascade
-                                                  :on-update :cascade})))))
+          (s/valid? ::fields/validate-fk-options-on-delete {:null true
+                                                            :on-delete :cascade})))))
+
+
+(deftest test-validate-fk-options-on-update
+  (testing "check no fk and no on-update ok"
+    (is (true?
+          (s/valid? ::fields/validate-fk-options-on-update {:null true}))))
+  (testing "check fk and on-update ok"
+    (is (true?
+          (s/valid? ::fields/validate-fk-options-on-update {:null true
+                                                            :foreign-key :account/id
+                                                            :on-update :cascade}))))
+  (testing "check no fk and on-delete err"
+    (is (false?
+          (s/valid? ::fields/validate-fk-options-on-update {:null true
+                                                            :on-update :cascade})))))
 
 
 (deftest test-validate-default-with-null
