@@ -13,25 +13,16 @@
 (def ^:private EXTRA-PROBLEMS
   "Set of problems produced by `s/or` spec."
   #{:tuna.fields/char-type
-    :tuna.fields/float-type})
+    :tuna.fields/float-type
+    :tuna.fields/default-bool
+    :tuna.fields/default-str
+    :tuna.fields/default-nil
+    :tuna.fields/default-fn})
 
 
 (defn- get-model-name
   [data]
   (-> data :in first))
-
-
-(defn- get-option-name
-  [data]
-  (-> data :in peek))
-
-
-(defn- get-pred-name
-  [data]
-  (let [pred (-> data :pred)]
-    (if (symbol? pred)
-      (name pred)
-      pred)))
 
 
 (defn- get-field-path
@@ -104,14 +95,9 @@
   "MODEL ERROR")
 
 
+; TODO: remove if not need!
 (def ^:private spec-hierarchy
-  (-> (make-hierarchy)
-    (derive :tuna.fields/unique :tuna.fields/options)
-    (derive :tuna.fields/null :tuna.fields/options)
-    (derive :tuna.fields/primary-key :tuna.fields/options)
-    (derive :tuna.fields/foreign-key :tuna.fields/options)
-    (derive :tuna.fields/on-delete :tuna.fields/options)
-    (derive :tuna.fields/on-update :tuna.fields/options)))
+  (-> (make-hierarchy)))
 
 
 (defmulti ->error-message last-spec
@@ -189,7 +175,7 @@
       (:val data))))
 
 
-(defmethod ->error-message :tuna.models/public-model-as-map-strict
+(defmethod ->error-message :tuna.models/public-model-as-map-strict-keys
   [data]
   (let [model-name (get-model-name data)]
     (format "Model %s definition has extra key." model-name)))
@@ -236,39 +222,100 @@
 
 (defmethod ->error-message :tuna.fields/options
   [data]
-  (let [fq-field-name (get-fq-field-name data)]
-    (if (= "extra keys" (:reason data))
-      ; TODO: remove first branch of condition!
-      (add-error-value
-        (format "Extra keys in option of field %s." fq-field-name)
-        (:val data))
-      (add-error-value
-        (format "Option %s of field %s should satisfy: `%s`."
-          (get-option-name data)
-          fq-field-name
-          (get-pred-name data))
-        (get-options data)))))
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Invalid options of field %s." fq-field-name)
+      value)))
 
 
-(defmethod ->error-message :tuna.fields/options-strict
+(defmethod ->error-message :tuna.fields/null
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Option :null of field %s should be boolean." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :tuna.fields/primary-key
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Option :primary-key of field %s should be `true`." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :tuna.fields/unique
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Option :unique of field %s should be `true`." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :tuna.fields/options-strict-keys
   [data]
   (let [fq-field-name (get-fq-field-name data)]
     (add-error-value
-      (format "Extra options of field %s." fq-field-name)
+      (format "Field %s has extra options." fq-field-name)
       (:val data))))
 
 
 (defmethod ->error-message :tuna.fields/default
   [data]
   (let [fq-field-name (get-fq-field-name data)
-        pred (str/join ", " ["integer?" "boolean?" "string?" "nil?"
-                             "[keyword? integer?|float?|string?]"])]
+        value (get-options data)]
     (add-error-value
-      (format "Option %s of field %s should satisfy one of the predicates: \n`%s`."
-        (get-option-name data)
-        fq-field-name
-        pred)
-      (get-options data))))
+      (format "Option :default of field %s has invalid value." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :tuna.fields/foreign-key
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Option :foreign-key of field %s should be qualified keyword." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :tuna.fields/on-delete
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Option :on-delete of field %s should be one of available FK actions." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :tuna.fields/on-update
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Option :on-update of field %s should be one of available FK actions." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :tuna.fields/validate-fk-options-on-delete
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Field %s has :on-delete option without :foreign-key." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :tuna.fields/validate-fk-options-on-update
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Field %s has :on-update option without :foreign-key." fq-field-name)
+      value)))
 
 
 (defmethod ->error-message :tuna.fields/validate-default-and-type
@@ -349,7 +396,7 @@
                    (group-problems-by-in))
         main-spec (::s/spec explain-data)
         origin-value (::s/value explain-data)
-        reports (for [problem-vec #p problems
+        reports (for [problem-vec problems
                       :let [main-spec {:main-spec main-spec}
                             problem-vec* (map #(assoc % :origin-value origin-value)
                                            problem-vec)

@@ -1,6 +1,5 @@
 (ns tuna.fields
   (:require [clojure.spec.alpha :as s]
-            [clojure.set :as set]
             [spec-dict :as d]
             [tuna.util.spec :as spec-util]
             [expound.alpha :as expound]))
@@ -11,7 +10,7 @@
 (def ON-UPDATE-OPTION :on-update)
 
 
-(s/def ::fk-actions
+(def fk-actions
   #{:cascade
     :set-null
     :set-default
@@ -87,39 +86,37 @@
 (s/def ::null boolean?)
 (s/def ::primary-key true?)
 (s/def ::unique true?)
+(s/def ::foreign-key qualified-keyword?)
 
 
-(s/def ::foreign-key
-  qualified-keyword?)
+(s/def ::default-bool boolean?)
+(s/def ::default-str string?)
+(s/def ::default-nil nil?)
+
+
+(s/def ::default-fn (s/cat
+                      :name keyword?
+                      :val (s/? (some-fn integer? float? string?))))
 
 
 (s/def ::default
-  ; TODO: update with dynamic value related to field's type
+  ; TODO: try update with dynamic value related to field's type
   (s/and
     (s/or
+      ; To be able to produce common error message without `s/or` spec variants.
       :int integer?
-      :bool boolean?
-      :str string?
-      :nil nil?
-      :fn (s/cat
-            :name keyword?
-            :val (s/? (some-fn integer? float? string?))))
+      :bool ::default-bool
+      :str ::default-str
+      :nil ::default-nil
+      :fn ::default-fn)
     (s/conformer
       spec-util/tagged->value)))
 
 
-(def ^:private default-err-msg
-  (spec-util/should-be-one-of-err-msg "`:default` option"
-    ["integer?" "boolean?" "string?" "nil?" "[keyword? integer?|float?|string?]"]))
+(s/def ::on-delete fk-actions)
 
 
-(expound/defmsg ::default default-err-msg)
-
-
-(s/def ::on-delete ::fk-actions)
-
-
-(s/def ::on-update ::fk-actions)
+(s/def ::on-update fk-actions)
 
 
 (s/def ::options
@@ -133,21 +130,34 @@
              ::on-update]))
 
 
-(s/def ::validate-fk-options
+(s/def ::options-strict-keys
+  (spec-util/validate-strict-keys ::options))
+
+
+(s/def ::validate-fk-options-on-delete
   ; Validate that basic fields mustn't contain foreign-key specific options.
   (fn [value]
     (let [option-names (-> (keys value) set)]
       (if (not (contains? option-names FOREIGN-KEY-OPTION))
-        (empty? (set/intersection option-names
-                  #{ON-DELETE-OPTION ON-UPDATE-OPTION}))
+        (not (contains? option-names ON-DELETE-OPTION))
+        true))))
+
+
+(s/def ::validate-fk-options-on-update
+  ; Validate that basic fields mustn't contain foreign-key specific options.
+  (fn [value]
+    (let [option-names (-> (keys value) set)]
+      (if (not (contains? option-names FOREIGN-KEY-OPTION))
+        (not (contains? option-names ON-UPDATE-OPTION))
         true))))
 
 
 (s/def ::options-strict
   (s/and
     ::options
-    (spec-util/validate-strict-keys ::options)
-    ::validate-fk-options))
+    ::options-strict-keys
+    ::validate-fk-options-on-delete
+    ::validate-fk-options-on-update))
 
 
 (s/def ::validate-default-and-null
@@ -214,10 +224,6 @@
   validate-default-and-type)
 
 
-(expound/defmsg ::validate-default-and-type
-  (str default-err-msg "\n- according to field type."))
-
-
 (s/def ::field
   (s/and
     (d/dict*
@@ -242,16 +248,11 @@
   (s/map-of ::field-name ::field))
 
 
+; TODO: remove!
 ;;;;;;;;;;;;;;;
 
 (comment
   (let [data {:null true
               :foreign-key :account/id}
-              ;:test 1}
-              ;:on-delete FK-CASCADE}
-        ;:type :integer}
         data2 {:null false, :type :serial}]
     (s/explain-data ::options-strict data)))
-;(get-map-spec-keys ::options)))
-;(s/explain ::opts data)
-;(s/explain ::options-strict data)))

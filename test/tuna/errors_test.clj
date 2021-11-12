@@ -21,9 +21,9 @@
     (is (= [{:message "Model :bar should be a map.\n\nor\n\nModel :bar should be a vector.\n\n  10"
              :title "MODEL ERROR"}
             {:message "Missing type of field :foo/name." :title "MODEL ERROR"}
-            {:message "Extra options of field :foo/id.\n\n  {:null2 false}"
+            {:message "Field :foo/id has extra options.\n\n  {:null2 false}"
              :title "MODEL ERROR"}
-            {:message "Option :unique of field :zen/title should satisfy: `true?`.\n\n  {:unique :WRONG}"
+            {:message "Option :unique of field :zen/title should be `true`.\n\n  {:unique :WRONG}"
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))
 
@@ -227,3 +227,134 @@
     (is (= [{:message "Field :foo/id has extra value in definition.\n\n  (:extra-item)"
              :title "MODEL ERROR"}]
           (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-field-vec-invalid-options-value-error
+  (testing "check empty options ok"
+    (let [data {:foo [[:id :float {}]]}]
+      (is (= []
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid value options error"
+    (let [data {:foo [[:id :float []]]}]
+      (is (= [{:message "Invalid options of field :foo/id.\n\n  []"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))
+
+    (let [data {:foo {:fields [[:id :float []]]}}]
+      (is (= [{:message "Invalid options of field :foo/id.\n\n  []"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check extra key in options"
+    (let [data {:foo [[:id :float {:extra-key nil}]]}]
+      (is (= [{:message "Field :foo/id has extra options.\n\n  {:extra-key nil}"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-field-vec-invalid-option-null-primary-key-unique-error
+  (testing "check option :null error"
+    (let [data {:foo [[:id :float {:null []}]]}]
+      (is (= [{:message "Option :null of field :foo/id should be boolean.\n\n  {:null []}"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check option :primary-key error"
+    (let [data {:foo [[:id :float {:primary-key false}]]}]
+      (is (= [{:message "Option :primary-key of field :foo/id should be `true`.\n\n  {:primary-key false}"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check option :unique error"
+    (let [data {:foo {:fields [[:id :float {:unique false}]]}}]
+      (is (= [{:message "Option :unique of field :foo/id should be `true`.\n\n  {:unique false}"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check option :default error"
+    (let [data {:foo [[:id :float {:default {}}]]}]
+      (is (= [{:message "Option :default of field :foo/id has invalid value.\n\n  {:default {}}"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check option :foreign-key error"
+    (let [data {:foo [[:id :float {:foreign-key :id}]]}]
+      (is (= [{:message (str "Option :foreign-key of field :foo/id should be"
+                          " qualified keyword.\n\n  {:foreign-key :id}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check option :on-delete error"
+    (let [data {:foo [[:id :float {:on-delete :wrong}]]}]
+      (is (= [{:message (str "Option :on-delete of field :foo/id should be"
+                          " one of available FK actions.\n\n  {:on-delete :wrong}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check option :on-update error"
+    (let [data {:foo [[:id :float {:on-update :wrong}]]}]
+      (is (= [{:message (str "Option :on-update of field :foo/id should be"
+                          " one of available FK actions.\n\n  {:on-update :wrong}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-field-vec-validate-fk-options-error
+  (testing "check on-delete without foreign-key"
+    (let [data {:foo [[:id :float {:on-delete :cascade}]]}]
+      (is (= [{:message (str "Field :foo/id has :on-delete option"
+                          " without :foreign-key.\n\n  {:on-delete :cascade}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check on-update without foreign-key"
+    (let [data {:foo [[:id :float {:on-update :cascade}]]}]
+      (is (= [{:message (str "Field :foo/id has :on-update option"
+                          " without :foreign-key.\n\n  {:on-update :cascade}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+; TODO: uncomment for testing internal-models
+
+;(deftest test-spec-field-vec-invalid-validate-default-and-type-error
+;  (testing "check option :default and field type integer ok"
+;    (let [data {:foo [[:id :integer {:default 1}]]}]
+;      (is (= []
+;             (get-spec-error-data #(models/->internal-models data))))))
+;
+;  (testing "check invalid :default value for type integer"
+;    (let [data {:foo [[:id :integer {:default "1"}]]}]
+;      (is (= [{:message (str "Option :default of field :foo/id does not match "
+;                             "the field type: `:integer`.\n\n  {:default \"1\", :type :integer}")
+;               :title "MODEL ERROR"}]
+;             (get-spec-error-data #(models/->internal-models data))))))
+;
+;  (testing "check invalid :default value for type smallint"
+;    (let [data {:foo [[:id :smallint {:default true}]]}]
+;      (is (= [{:message (str "Option :default of field :foo/id does not match "
+;                             "the field type: `:smallint`.\n\n  {:default true, :type :smallint}")
+;               :title "MODEL ERROR"}]
+;             (get-spec-error-data #(models/->internal-models data))))))
+;
+;  (testing "check invalid :default value for type bigint"
+;    (let [data {:foo [[:id :bigint {:default "1"}]]}]
+;      (is (= [{:message (str "Option :default of field :foo/id does not match "
+;                             "the field type: `:bigint`.\n\n  {:default \"1\", :type :bigint}")
+;               :title "MODEL ERROR"}]
+;             (get-spec-error-data #(models/->internal-models data))))))
+;
+;  (testing "check invalid :default value for type serial"
+;    (let [data {:foo [[:id :serial {:default "1"}]]}]
+;      (is (= [{:message (str "Option :default of field :foo/id does not match "
+;                             "the field type: `:serial`.\n\n  {:default \"1\", :type :serial}")
+;               :title "MODEL ERROR"}]
+;             (get-spec-error-data #(models/->internal-models data))))))
+;
+;  (testing "check invalid :default value for type text"
+;    (let [data {:foo [[:id :text {:default 1}]]}]
+;      (is (= [{:message (str "Option :default of field :foo/id does not match "
+;                             "the field type: `:text`.\n\n  {:default 1, :type :text}")
+;               :title "MODEL ERROR"}]
+;             (get-spec-error-data #(models/->internal-models data)))))))

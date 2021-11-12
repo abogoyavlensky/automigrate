@@ -220,7 +220,7 @@
     :opt-un [:tuna.models.indexes-vec/indexes]))
 
 
-(s/def ::public-model-as-map-strict
+(s/def ::public-model-as-map-strict-keys
   (spec-util/validate-strict-keys ::public-model-as-map))
 
 
@@ -229,7 +229,7 @@
     :vec ::public-model-as-vec
     :map (s/and
            ::public-model-as-map
-           ::public-model-as-map-strict)))
+           ::public-model-as-map-strict-keys)))
 
 
 (s/def ::simplified-model->named-parts
