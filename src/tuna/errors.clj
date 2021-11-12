@@ -197,15 +197,20 @@
 
 (defmethod ->error-message :tuna.fields/field-vec
   [data]
-  (let [model-name (get-model-name data)
-        cat-pred '(clojure.core/fn [%]
-                    (clojure.core/or
-                      (clojure.core/nil? %)
-                      (clojure.core/sequential? %)))]
-    (condp = (:pred data)
-      cat-pred (add-error-value
-                 (format "Invalid field definition in model %s." model-name)
-                 (:val data)))))
+  (let [model-name (get-model-name data)]
+    (if (:reason data)
+      (let [fq-field-name (get-fq-field-name data)]
+        (case (:reason data)
+          "Extra input" (add-error-value
+                          (format "Field %s has extra value in definition." fq-field-name)
+                          (:val data))
+
+          (add-error-value
+            (format "Invalid field definition in model %s." model-name)
+            (:val data))))
+      (add-error-value
+        (format "Invalid field definition in model %s." model-name)
+        (:val data)))))
 
 
 (defmethod ->error-message :tuna.fields/type
@@ -344,7 +349,7 @@
                    (group-problems-by-in))
         main-spec (::s/spec explain-data)
         origin-value (::s/value explain-data)
-        reports (for [problem-vec problems
+        reports (for [problem-vec #p problems
                       :let [main-spec {:main-spec main-spec}
                             problem-vec* (map #(assoc % :origin-value origin-value)
                                            problem-vec)

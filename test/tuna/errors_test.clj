@@ -220,3 +220,10 @@
       (is (= [{:message "Invalid type of field :foo/id.\n\n  [:float 0.1]"
                :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-field-vec-extra-item-in-vec-error
+  (let [data {:foo [[:id :float {} :extra-item]]}]
+    (is (= [{:message "Field :foo/id has extra value in definition.\n\n  (:extra-item)"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data))))))
