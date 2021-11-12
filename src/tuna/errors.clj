@@ -25,31 +25,31 @@
   (-> data :in first))
 
 
-(defn- get-field-path
-  [data]
+(defn- get-model-items-path
+  [data items-key]
+  {:pre [(contains? #{:fields :indexes} items-key)]}
   (let [model-name (get-model-name data)
         model (get (:origin-value data) model-name)
         in-path (:in data)
-        index-fields-key (.indexOf in-path :fields)
+        index-fields-key (.indexOf in-path items-key)
         path-has-fields-key? (> index-fields-key 0)
         field-name (if path-has-fields-key?
                      (nth in-path (inc index-fields-key))
                      (nth in-path INDEX-FIELD-NAME-IN-SPEC))]
     (if (vector? model)
       [model-name field-name]
-      [model-name :fields field-name])))
+      [model-name items-key field-name])))
 
 
 (defn- get-options
   [data]
-  (let [field-path (-> (get-field-path data)
-                     (conj 2))]
+  (let [field-path (conj (get-model-items-path data :fields) 2)]
     (get-in (:origin-value data) field-path)))
 
 
 (defn- get-field-name
   [data]
-  (let [path (get-field-path data)
+  (let [path (get-model-items-path data :fields)
         last-item (peek path)]
     (if (keyword? last-item)
       last-item
@@ -57,10 +57,27 @@
 
 
 (defn- get-fq-field-name
-  "Return full qualified field name with modle namespace."
+  "Return full qualified field name with model namespace."
   [data]
   (let [model-name (name (get-model-name data))
         field-name (name (get-field-name data))]
+    (keyword model-name field-name)))
+
+
+(defn- get-index-name
+  [data]
+  (let [path (get-model-items-path data :indexes)
+        last-item (peek path)]
+    (if (keyword? last-item)
+      last-item
+      (get-in (:origin-value data) (conj path 0)))))
+
+
+(defn- get-fq-index-name
+  "Return full qualified field name with model namespace."
+  [data]
+  (let [model-name (str (name (get-model-name data)) ".indexes")
+        field-name (name (get-index-name data))]
     (keyword model-name field-name)))
 
 
@@ -195,6 +212,17 @@
       (add-error-value
         (format "Invalid index name in model %s. Index name should be a keyword." model-name)
         (:val data)))))
+
+
+(defmethod ->error-message :tuna.models.index/type
+  [data]
+  (let [fq-index-name (get-fq-index-name data)
+        value (:val data)]
+    (if (= "Insufficient input" (:reason data))
+      (format "Missing type of index %s." fq-index-name)
+      (add-error-value
+        (format "Invalid type of index %s." fq-index-name)
+        value))))
 
 
 (defmethod ->error-message :tuna.models/validate-fields-duplication

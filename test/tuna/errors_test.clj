@@ -357,6 +357,22 @@
             (get-spec-error-data #(models/->internal-models data)))))))
 
 
+(deftest test-spec-indexes-vec-index-type-error
+  (testing "check empty index type error"
+    (let [data {:foo {:fields [[:id :integer]]
+                      :indexes [[:foo-idx]]}}]
+      (is (= [{:message "Missing type of index :foo.indexes/foo-idx."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid index type error"
+    (let [data {:foo {:fields [[:id :integer]]
+                      :indexes [[:foo-idx :wrong]]}}]
+      (is (= [{:message "Invalid type of index :foo.indexes/foo-idx.\n\n  :wrong"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
 ; TODO: uncomment for testing internal-models
 
 ;(deftest test-spec-field-vec-invalid-validate-default-and-type-error
