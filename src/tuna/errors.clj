@@ -204,6 +204,52 @@
       (format "Indexes definition error in model %s." model-name))))
 
 
+(defmethod ->error-message :tuna.models/index-vec
+  [data]
+  (let [model-name (get-model-name data)]
+    (if (= "Extra input" (:reason data))
+      (let [fq-index-name (get-fq-index-name data)]
+        (add-error-value
+          (format "Index %s has extra value in definition." fq-index-name)
+          (:val data)))
+      (add-error-value
+        (format "Invalid index definition in model %s." model-name)
+        (:val data)))))
+
+
+(defmethod ->error-message :tuna.models.index/fields
+  [data]
+  (let [model-name (get-model-name data)
+        fq-index-name (get-fq-index-name data)]
+    (add-error-value
+      (format "Index %s should have :fields option as vector with distinct fields of the model %s."
+        fq-index-name
+        model-name)
+      (:val data))))
+
+
+(defmethod ->error-message :tuna.models/index-vec-options
+  [data]
+  (let [fq-index-name (get-fq-index-name data)]
+    (condp = (:pred data)
+      '(clojure.core/fn [%] (clojure.core/contains? % :fields))
+      (format "Index %s misses :fields options." fq-index-name)
+
+      (format "Invalid definition of the index %s." fq-index-name))))
+
+
+(defmethod ->error-message :tuna.models/index-vec-options-strict-keys
+  [data]
+  (let [fq-index-name (get-fq-index-name data)]
+    (format "Options of index %s have extra keys." fq-index-name)))
+
+
+(defmethod ->error-message :tuna.models.index/unique
+  [data]
+  (let [fq-index-name (get-fq-index-name data)]
+    (format "Option :unique of index %s should satisfy: `true?`." fq-index-name)))
+
+
 (defmethod ->error-message :tuna.models/index-name
   [data]
   (let [model-name (get-model-name data)]

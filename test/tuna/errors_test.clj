@@ -316,7 +316,7 @@
             (get-spec-error-data #(models/->internal-models data)))))))
 
 
-(deftest test-spec-indexes-vec-errors
+(deftest test-spec-index-vec-errors
   (testing "check empty indexes error"
     (let [data {:foo {:fields [[:id :integer]]
                       :indexes []}}]
@@ -341,7 +341,7 @@
             (get-spec-error-data #(models/->internal-models data)))))))
 
 
-(deftest test-spec-indexes-vec-index-name-error
+(deftest test-spec-index-vec-index-name-error
   (testing "check empty index name error"
     (let [data {:foo {:fields [[:id :integer]]
                       :indexes [[]]}}]
@@ -357,7 +357,7 @@
             (get-spec-error-data #(models/->internal-models data)))))))
 
 
-(deftest test-spec-indexes-vec-index-type-error
+(deftest test-spec-index-vec-index-type-error
   (testing "check empty index type error"
     (let [data {:foo {:fields [[:id :integer]]
                       :indexes [[:foo-idx]]}}]
@@ -369,6 +369,73 @@
     (let [data {:foo {:fields [[:id :integer]]
                       :indexes [[:foo-idx :wrong]]}}]
       (is (= [{:message "Invalid type of index :foo.indexes/foo-idx.\n\n  :wrong"
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-index-vec-extra-item-in-vec-error
+  (let [data {:foo {:fields [[:id :float]]
+                    :indexes [[:foo-idx :btree {:fields [:id]} :extra-key]]}}]
+    (is (= [{:message "Index :foo.indexes/foo-idx has extra value in definition.\n\n  (:extra-key)"
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data))))))
+
+
+(deftest test-spec-index-vec-fields-error
+  (testing "check invalid value in index fields"
+    (let [data {:foo {:fields [[:id [:char 50]]]
+                      :indexes [[:foo-idx :btree {:fields {}}]]}}]
+      (is (= [{:message (str "Index :foo.indexes/foo-idx should have :fields option"
+                          " as vector with distinct fields of the model :foo.\n\n  {}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check duplicate value in index fields"
+    (let [data {:foo {:fields [[:id [:char 50]]]
+                      :indexes [[:foo-idx :btree {:fields [:id :id]}]]}}]
+      (is (= [{:message (str "Index :foo.indexes/foo-idx should have :fields option"
+                          " as vector with distinct fields of the model :foo.\n\n  [:id :id]")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check duplicate value in index fields"
+    (let [data {:foo {:fields [[:id [:char 50]]]
+                      :indexes [[:foo-idx :btree {:fields []}]]}}]
+      (is (= [{:message (str "Index :foo.indexes/foo-idx should have :fields option"
+                          " as vector with distinct fields of the model :foo.\n\n  []")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check duplicate value in index fields"
+    (let [data {:foo {:fields [[:id [:char 50]]]
+                      :indexes [[:foo-idx :btree {:fields ["id"]}]]}}]
+      (is (= [{:message (str "Index :foo.indexes/foo-idx should have :fields option"
+                          " as vector with distinct fields of the model :foo.\n\n  \"id\"")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-index-vec-options-error
+  (testing "check index misses fields"
+    (let [data {:foo {:fields [[:id [:char 50]]]
+                      :indexes [[:foo-idx :btree {}]]}}]
+      (is (= [{:message "Index :foo.indexes/foo-idx misses :fields options."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check extra option in index"
+    (let [data {:foo {:fields [[:id [:char 50]]]
+                      :indexes [[:foo-idx :btree {:fields [:id]
+                                                  :extra-option nil}]]}}]
+      (is (= [{:message "Options of index :foo.indexes/foo-idx have extra keys."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid unique option for index"
+    (let [data {:foo {:fields [[:id [:char 50]]]
+                      :indexes [[:foo-idx :btree {:fields [:id]
+                                                  :unique nil}]]}}]
+      (is (= [{:message "Option :unique of index :foo.indexes/foo-idx should satisfy: `true?`."
                :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))))
 

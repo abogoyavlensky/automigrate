@@ -38,6 +38,10 @@
     :opt-un [:tuna.models.index/unique]))
 
 
+(s/def ::index-vec-options-strict-keys
+  (spec-util/validate-strict-keys ::index-vec-options))
+
+
 (s/def ::index-name keyword?)
 
 
@@ -45,7 +49,9 @@
   (s/cat
     :name ::index-name
     :type :tuna.models.index/type
-    :options ::index-vec-options))
+    :options (s/and
+               ::index-vec-options
+               ::index-vec-options-strict-keys)))
 
 
 (s/def ::indexes
