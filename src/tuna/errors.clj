@@ -279,6 +279,14 @@
       (:val data))))
 
 
+(defmethod ->error-message :tuna.models/validate-indexes-duplication
+  [data]
+  (let [model-name (get-model-name data)]
+    (add-error-value
+      (format "Model %s has duplicated indexes." model-name)
+      (:val data))))
+
+
 (defmethod ->error-message :tuna.models/public-model-as-map-strict-keys
   [data]
   (let [model-name (get-model-name data)]

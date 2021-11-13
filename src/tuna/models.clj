@@ -81,8 +81,7 @@
 
 (s/def ::validate-fields-duplication
   (fn [fields]
-    (->> (map :name fields)
-      (model-util/has-duplicates?))))
+    (model-util/has-duplicates? (map :name fields))))
 
 
 (s/def :tuna.models.fields->internal/fields
@@ -92,17 +91,23 @@
     ::map-kw->kebab-case))
 
 
+(s/def ::validate-indexes-duplication
+  (fn [indexes]
+    (->> (map :name indexes)
+      (model-util/has-duplicates?))))
+
+
 (s/def :tuna.models.indexes->internal/indexes
   (s/and
+    ::validate-indexes-duplication
     ::item-vec->map
     ::map-kw->kebab-case))
 
 
 (s/def ::model->internal
-  (s/and
-    (s/keys
-      :req-un [:tuna.models.fields->internal/fields]
-      :opt-un [:tuna.models.indexes->internal/indexes])))
+  (s/keys
+    :req-un [:tuna.models.fields->internal/fields]
+    :opt-un [:tuna.models.indexes->internal/indexes]))
 
 
 (defn- check-referenced-model-exists?

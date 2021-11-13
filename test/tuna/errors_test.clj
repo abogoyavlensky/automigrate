@@ -440,6 +440,17 @@
             (get-spec-error-data #(models/->internal-models data)))))))
 
 
+(deftest test-spec-model-internal-duplicated-index-name
+  (let [data {:foo {:fields [[:id :integer]]
+                    :indexes [[:foo-idx :btree {:fields [:id]}]
+                              [:foo-idx :gin {:fields [:name]}]]}}]
+    (is (= [{:message (str "Model :foo has duplicated indexes.\n\n  "
+                        "[{:name :foo-idx, :type :btree, :options {:fields [:id]}} "
+                        "{:name :foo-idx, :type :gin, :options {:fields [:name]}}]")
+             :title "MODEL ERROR"}]
+          (get-spec-error-data #(models/->internal-models data))))))
+
+
 ; TODO: uncomment for testing internal-models
 
 ;(deftest test-spec-field-vec-invalid-validate-default-and-type-error
