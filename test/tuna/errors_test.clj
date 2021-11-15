@@ -7,7 +7,7 @@
 
 (defn- get-spec-error-data
   [f]
-  (->> #p (test-util/thrown-with-slingshot-data? [:type ::s/invalid] (f))
+  (->> (test-util/thrown-with-slingshot-data? [:type ::s/invalid] (f))
     :reports
     (map #(dissoc % :problems))))
 
@@ -440,7 +440,8 @@
 
 
 (deftest test-spec-model-internal-duplicated-index-name
-  (let [data {:foo {:fields [[:id :integer]]
+  (let [data {:foo {:fields [[:id :integer]
+                             [:name :text]]
                     :indexes [[:foo-idx :btree {:fields [:id]}]
                               [:foo-idx :gin {:fields [:name]}]]}}]
     (is (= [{:message (str "Model :foo has duplicated indexes.\n\n  "
@@ -597,5 +598,14 @@
                 :account {:fields [[:id :integer]]
                           :indexes [[:another-duplicated-idx :btree {:fields [:id]}]]}}]
       (is (= [{:message "Models have duplicated indexes: [:duplicated-idx, :another-duplicated-idx]."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-validate-indexed-field-error
+  (testing "check if indexed field presented"
+    (let [data {:foo {:fields [[:id :integer]]
+                      :indexes [[:foo-name-idx :btree {:fields [:name]}]]}}]
+      (is (= [{:message "Missing indexed fields [:name] in model :foo."
                :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))))

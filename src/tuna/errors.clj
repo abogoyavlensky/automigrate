@@ -1,6 +1,7 @@
 (ns tuna.errors
   (:require [clojure.string :as str]
-            [clojure.spec.alpha :as s]))
+            [clojure.spec.alpha :as s]
+            [clojure.set :as set]))
 
 
 (def ^:private ERROR-TEMPLATE
@@ -121,13 +122,7 @@
   "MODEL ERROR")
 
 
-; TODO: remove if not need!
-(def ^:private spec-hierarchy
-  (-> (make-hierarchy)))
-
-
-(defmulti ->error-message last-spec
-  :hierarchy #'spec-hierarchy)
+(defmulti ->error-message last-spec)
 
 
 (defmethod ->error-message :default
@@ -313,6 +308,19 @@
                              (flatten)
                              (duplicates))]
     (format "Models have duplicated indexes: [%s]." (str/join ", " duplicated-indexes))))
+
+
+(defmethod ->error-message :tuna.models/validate-indexed-fields
+  [data]
+  (let [model-name (get-model-name data)
+        model (:val data)
+        model-fields (set (map :name (:fields model)))
+        index-fields (->> (:indexes model)
+                       (map #(get-in % [:options :fields]))
+                       (flatten)
+                       (set))
+        missing-fields (vec (set/difference index-fields model-fields))]
+    (format "Missing indexed fields %s in model %s." missing-fields model-name)))
 
 
 (defmethod ->error-message :tuna.fields/field-vec

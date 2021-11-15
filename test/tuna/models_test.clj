@@ -92,23 +92,21 @@
 
 
 (deftest test-validate-indexes-missing-indexed-fields-err
-  (let [models {:feed
-                {:fields {:id {:type :serial
-                               :null false
-                               :unique true}}
-                 :indexes {:feed_name_id_ids {:type :btree
-                                              :fields [:id :name]}}}}]
-
-    (is (thrown-with-msg? ExceptionInfo #"Missing indexed fields: :name"
-          (#'models/validate-indexes models)))))
+  (let [models {:fields [{:name :id
+                          :options {:type :serial
+                                    :null false
+                                    :unique true}}]
+                :indexes [{:name :feed_name_id_ids
+                           :options {:type :btree
+                                     :fields [:id :name]}}]}]
+    (is (false? (s/valid? ::models/validate-indexed-fields models)))))
 
 
 (deftest test-validate-indexes-empty-models-ok
   (let [models {:feed
                 {:indexes {:feed_name_id_ids {:type :btree
                                               :fields [:id :name]}}}}]
-    (is (thrown-with-msg? ExceptionInfo #"Missing indexed fields: :name, :id"
-          (#'models/validate-indexes models)))))
+    (is (true? (s/valid? ::models/validate-indexed-fields models)))))
 
 
 (deftest test-validate-validate-fields-duplication

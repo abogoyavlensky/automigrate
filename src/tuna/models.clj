@@ -1,7 +1,6 @@
 (ns tuna.models
   "Module for for transforming models to migrations."
   (:require [clojure.spec.alpha :as s]
-            [clojure.string :as str]
             [slingshot.slingshot :refer [throw+]]
             [clojure.set :as set]
             [tuna.util.model :as model-util]
@@ -184,28 +183,22 @@
       (model-util/has-duplicates?))))
 
 
-(defn- validate-indexes
-  [models]
-  (doseq [[model-name model-value] models]
-    (doseq [[_index-name index-options] (:indexes model-value)
-            :let [index-fields (set (:fields index-options))
-                  model-fields (set (keys (:fields model-value)))
-                  missing-fields (set/difference index-fields model-fields)]]
-      (when (seq missing-fields)
-        (throw+ {:type ::missing-indexed-fields
-                 :data {:model-name model-name
-                        :missing-fields missing-fields
-                        :message (format "Missing indexed fields: %s"
-                                   (str/join ", " missing-fields))}}))))
-  models)
+(s/def ::validate-indexed-fields
+  (fn [model]
+    (let [index-fields (->> (:indexes model)
+                         (map #(get-in % [:options :fields]))
+                         (flatten)
+                         (set))
+          model-fields (set (map :name (:fields model)))
+          missing-fields (set/difference index-fields model-fields)]
+      (empty? missing-fields))))
 
 
 (s/def ::internal-models
   (s/and
     (s/map-of keyword? ::model)
     validate-foreign-key
-    ::validate-indexes-duplication-across-models
-    validate-indexes))
+    ::validate-indexes-duplication-across-models))
 
 
 (s/def :tuna.models.fields-vec/fields
@@ -235,7 +228,8 @@
     :vec ::public-model-as-vec
     :map (s/and
            ::public-model-as-map
-           ::public-model-as-map-strict-keys)))
+           ::public-model-as-map-strict-keys
+           ::validate-indexed-fields)))
 
 
 (s/def ::simplified-model->named-parts
