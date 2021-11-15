@@ -3,7 +3,8 @@
             [spec-dict :as d]
             [tuna.models :as models]
             [tuna.fields :as fields]
-            [tuna.util.model :as model-util]))
+            [tuna.util.model :as model-util]
+            [tuna.util.spec :as spec-util]))
 
 
 (def CREATE-TABLE-ACTION :create-table)
@@ -125,3 +126,17 @@
 
 
 (s/def ::->migration (s/multi-spec action :action))
+
+
+(s/def ::->migrations
+  (s/coll-of ::->migration))
+
+
+(defn ->migrations
+  [actions]
+  (spec-util/conform ::->migrations actions))
+
+
+(defn validate-actions
+  [actions]
+  (spec-util/valid? ::->migrations actions))

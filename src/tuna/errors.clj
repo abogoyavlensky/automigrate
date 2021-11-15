@@ -122,13 +122,25 @@
   "MODEL ERROR")
 
 
+(defmethod ->error-title :tuna.actions/->migrations
+  [_]
+  "MIGRATION ERROR")
+
+
+(defmethod ->error-title :tuna.models/internal-models
+  [_]
+  "MIGRATION ERROR")
+
+
 (defmulti ->error-message last-spec)
 
 
 (defmethod ->error-message :default
   [data]
-  (add-error-value "Models' schema failed." (:val data)))
+  (add-error-value "Schema failed for model or migration." (:val data)))
 
+
+; Models
 
 (defmethod ->error-message :tuna.models/->internal-models
   [data]
@@ -498,6 +510,30 @@
       (format "Option :on-update of field %s couldn't be :set-null because of: `:null false`."
         fq-field-name)
       (:val data))))
+
+
+; Migrations
+
+(defmethod ->error-message :tuna.actions/->migrations
+  [data]
+  (let [reason (or (:reason data) (:pred data))]
+    (condp = reason
+      `coll? (add-error-value
+               (format "Migration actions should be vector.")
+               (:val data))
+
+      "Migrations' schema error.")))
+
+
+(defmethod ->error-message :tuna.actions/->migration
+  [data]
+  (let [reason (or (:reason data) (:pred data))]
+    (condp = reason
+      "no method" (add-error-value
+                    (format "Missing migration action type.")
+                    (:val data))
+
+      "Migrations' schema error.")))
 
 
 (defn- starts-with-vec?

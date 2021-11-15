@@ -400,7 +400,7 @@
     (->> actions
       (flatten)
       (sort-actions)
-      (map #(spec-util/conform ::actions/->migration %)))))
+      (actions/->migrations))))
 
 
 (defn- get-next-migration-file-name

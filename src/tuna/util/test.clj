@@ -1,6 +1,7 @@
 (ns tuna.util.test
   "Utils for simplifying tests."
   (:require [clojure.java.io :as io]
+            [clojure.spec.alpha :as s]
             [tuna.util.db :as db-util]
             [slingshot.slingshot :refer [try+]]))
 
@@ -60,3 +61,10 @@
      ~f
      (catch ~exception-check e#
        e#)))
+
+
+(defn get-spec-error-data
+  [f]
+  (->> #p (thrown-with-slingshot-data? [:type ::s/invalid] (f))
+    :reports
+    (map #(dissoc % :problems))))
