@@ -7,7 +7,7 @@
 
 (defn- get-spec-error-data
   [f]
-  (->> (test-util/thrown-with-slingshot-data? [:type ::s/invalid] (f))
+  (->> #p (test-util/thrown-with-slingshot-data? [:type ::s/invalid] (f))
     :reports
     (map #(dissoc % :problems))))
 
@@ -584,3 +584,18 @@
             (:message (test-util/thrown-with-slingshot-data?
                         [:type ::models/fk-and-referenced-fields-have-different-types]
                         (models/->internal-models data))))))))
+
+
+(deftest test-internal-models-spec-validate-indexes-duplication-accross-models
+  (testing "check indexes duplication across models"
+    (let [data {:bar {:fields [[:id :integer {:unique true}]]
+                      :indexes [[:duplicated-idx :btree {:fields [:id]}]
+                                [:another-duplicated-idx :btree {:fields [:id]}]]}
+                :no-indexes [[:name :text]]
+                :foo {:fields [[:id :integer]]
+                      :indexes [[:duplicated-idx :btree {:fields [:id]}]]}
+                :account {:fields [[:id :integer]]
+                          :indexes [[:another-duplicated-idx :btree {:fields [:id]}]]}}]
+      (is (= [{:message "Models have duplicated indexes: [:duplicated-idx, :another-duplicated-idx]."
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))

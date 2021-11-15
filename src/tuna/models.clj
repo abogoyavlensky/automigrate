@@ -88,8 +88,7 @@
 
 (s/def ::validate-indexes-duplication
   (fn [indexes]
-    (->> (map :name indexes)
-      (model-util/has-duplicates?))))
+    (model-util/has-duplicates? (map :name indexes))))
 
 
 (s/def :tuna.models.indexes->internal/indexes
@@ -175,14 +174,14 @@
           fk-field-options
           fk-model-name
           fk-field-name))))
-  models)
+  true)
 
 
-(defn- validate-indexes-duplication
-  [models]
-  (->> (vals models)
-    (mapcat (comp keys :indexes))
-    (model-util/has-duplicates?)))
+(s/def ::validate-indexes-duplication-across-models
+  (fn [models]
+    (->> (vals models)
+      (mapcat (comp keys :indexes))
+      (model-util/has-duplicates?))))
 
 
 (defn- validate-indexes
@@ -205,7 +204,7 @@
   (s/and
     (s/map-of keyword? ::model)
     validate-foreign-key
-    validate-indexes-duplication
+    ::validate-indexes-duplication-across-models
     validate-indexes))
 
 

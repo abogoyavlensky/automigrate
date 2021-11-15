@@ -16,7 +16,7 @@
                 {:fields {:id {:type :serial
                                :unique true}
                           :name {:type [:varchar 256]}}}}]
-    (is (= models (#'models/validate-foreign-key models)))))
+    (is (true? (#'models/validate-foreign-key models)))))
 
 
 (deftest test-validate-foreign-key-check-referenced-models-exist-err
@@ -73,7 +73,7 @@
                 :account
                 {:fields {:id {:type :serial
                                :unique true}}}}]
-    (is (= models (#'models/validate-foreign-key models)))))
+    (is (true? (#'models/validate-foreign-key models)))))
 
 
 (deftest test-validate-foreign-key-check-same-type-of-fields-err
@@ -130,7 +130,7 @@
                   :account
                   {:indexes {:account_name_id_ids {:type :btree
                                                    :fields [:id]}}}}]
-      (is (true? (#'models/validate-indexes-duplication fields)))))
+      (is (true? (s/valid? ::models/validate-indexes-duplication-across-models fields)))))
   (testing "check valid model indexes ok"
     (let [fields {:feed
                   {:indexes {:feed_name_id_ids {:type :btree
@@ -138,4 +138,4 @@
                   :account
                   {:indexes {:feed_name_id_ids {:type :btree
                                                 :fields [:id]}}}}]
-      (is (false? (#'models/validate-indexes-duplication fields))))))
+      (is (false? (s/valid? ::models/validate-indexes-duplication-across-models fields))))))

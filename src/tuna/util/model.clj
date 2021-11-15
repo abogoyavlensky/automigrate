@@ -108,12 +108,3 @@
     (frequencies)
     (vals)
     (every? #(= 1 %))))
-
-; TODO: use for validation!
-(defn duplicates
-  "Return duplicated items in collection."
-  [items]
-  (->> items
-    (frequencies)
-    (filter #(> (val %) 1))
-    (keys)))

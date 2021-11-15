@@ -20,6 +20,15 @@
     :tuna.fields/default-fn})
 
 
+(defn- duplicates
+  "Return duplicated items in collection."
+  [items]
+  (->> items
+    (frequencies)
+    (filter #(> (val %) 1))
+    (keys)))
+
+
 (defn- get-model-name
   [data]
   (-> data :in first))
@@ -291,6 +300,19 @@
   [data]
   (let [model-name (get-model-name data)]
     (format "Model %s definition has extra key." model-name)))
+
+
+(defmethod ->error-message :tuna.models/validate-indexes-duplication-across-models
+  [data]
+  (let [duplicated-indexes (->> (:origin-value data)
+                             (vals)
+                             (map (fn [model]
+                                    (when (map? model)
+                                      (map first (:indexes model)))))
+                             (remove nil?)
+                             (flatten)
+                             (duplicates))]
+    (format "Models have duplicated indexes: [%s]." (str/join ", " duplicated-indexes))))
 
 
 (defmethod ->error-message :tuna.fields/field-vec
