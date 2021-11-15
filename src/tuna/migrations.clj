@@ -452,7 +452,10 @@
       (println "There are no changes in models."))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
-    (catch #(contains? #{::models/missing-referenced-model} (:type %)) e
+    (catch #(contains? #{::models/missing-referenced-model
+                         ::models/missing-referenced-field
+                         ::models/referenced-field-is-not-unique
+                         ::models/fk-and-referenced-fields-have-different-types} (:type %)) e
       (-> e
         (errors/custom-error->error-report)
         (file-util/prn-err)))))

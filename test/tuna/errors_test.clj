@@ -547,9 +547,40 @@
             (get-spec-error-data #(models/->internal-models data)))))))
 
 
-(deftest test-fk-field-missing-referenced-model
-  (testing "check missing-referenced-model error"
-    (let [data {:foo [[:bar_id :integer {:foreign-key :bar/id}]]}]
+(deftest test-fk-field-missing-referenced-model-error
+  (testing "check missing referenced model error"
+    (let [data {:foo [[:bar-id :integer {:foreign-key :bar/id}]]}]
       (is (= "Foreign key :foo/bar-id has reference on the missing model :bar."
-            (:message (test-util/thrown-with-slingshot-data? [:type ::models/missing-referenced-model]
+            (:message (test-util/thrown-with-slingshot-data?
+                        [:type ::models/missing-referenced-model]
+                        (models/->internal-models data))))))))
+
+
+(deftest test-fk-field-missing-referenced-field-error
+  (testing "check missing referenced field error"
+    (let [data {:bar [[:name :text]]
+                :foo {:fields [[:bar-id :integer {:foreign-key :bar/id}]]}}]
+      (is (= "Foreign key :foo/bar-id has reference on the missing field :bar/id."
+            (:message (test-util/thrown-with-slingshot-data?
+                        [:type ::models/missing-referenced-field]
+                        (models/->internal-models data))))))))
+
+
+(deftest test-fk-field-referenced-field-is-not-unique
+  (testing "check referenced field is not unique error"
+    (let [data {:bar [[:id :integer]]
+                :foo {:fields [[:bar-id :integer {:foreign-key :bar/id}]]}}]
+      (is (= "Foreign key :foo/bar-id has reference on the not unique field :bar/id."
+            (:message (test-util/thrown-with-slingshot-data?
+                        [:type ::models/referenced-field-is-not-unique]
+                        (models/->internal-models data))))))))
+
+
+(deftest test-fk-and-referenced-fields-have-different-types
+  (testing "check fk and referenced fields have different types error"
+    (let [data {:bar [[:id :text {:unique true}]]
+                :foo {:fields [[:bar-id :integer {:foreign-key :bar/id}]]}}]
+      (is (= "Foreign key field :foo/bar-id and referenced field :bar/id have different types."
+            (:message (test-util/thrown-with-slingshot-data?
+                        [:type ::models/fk-and-referenced-fields-have-different-types]
                         (models/->internal-models data))))))))

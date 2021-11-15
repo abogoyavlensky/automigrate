@@ -44,7 +44,8 @@
                                     :foreign-key :account/missing-field}}}
                 :account
                 {:fields {:name {:type [:varchar 256]}}}}]
-    (is (thrown-with-msg? ExceptionInfo #"Referenced field :missing-field of model :account is missing"
+    (is (thrown-with-msg? ExceptionInfo
+                          #"Foreign key :feed/account has reference on the missing field :account/missing-field."
           (#'models/validate-foreign-key models)))))
 
 
@@ -57,7 +58,8 @@
                                     :foreign-key :account/id}}}
                 :account
                 {:fields {:id {:type :serial}}}}]
-    (is (thrown-with-msg? ExceptionInfo #"Referenced field :id of model :account is not unique"
+    (is (thrown-with-msg? ExceptionInfo
+                          #"Foreign key :feed/account has reference on the not unique field :account/id."
           (#'models/validate-foreign-key models)))))
 
 
@@ -84,7 +86,8 @@
                 :account
                 {:fields {:id {:type :uuid
                                :unique true}}}}]
-    (is (thrown-with-msg? ExceptionInfo #"Referenced field :id and origin field :account have different types"
+    (is (thrown-with-msg? ExceptionInfo
+                          #"Foreign key field :feed/account and referenced field :account/id have different types."
           (#'models/validate-foreign-key models)))))
 
 

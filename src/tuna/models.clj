@@ -119,13 +119,15 @@
 
 (defn- check-referenced-field-exists?
   "Check that referenced field exists in referenced model."
-  [fk-field-options fk-model-name fk-field-name]
+  [fk-field-options qualified-field-name fk-model-name fk-field-name]
   (when-not (some? fk-field-options)
-    (throw+ {:type ::missing-referenced-field
-             :data {:referenced-model fk-model-name
-                    :referenced-field fk-field-name}
-             :message (format "Referenced field %s of model %s is missing."
-                        fk-field-name fk-model-name)})))
+    (let [qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
+      (throw+ {:type ::missing-referenced-field
+               :data {:referenced-model fk-model-name
+                      :referenced-field fk-field-name}
+               :message (format "Foreign key %s has reference on the missing field %s."
+                          qualified-field-name
+                          qualified-fk-field-name)}))))
 
 
 (defn- check-fields-type-valid?
@@ -133,24 +135,27 @@
 
   Also check that field should has `:unique` option enabled and
   it has the same type as origin field."
-  [field-name field-options fk-field-options fk-model-name fk-field-name]
+  [qualified-field-name field-options fk-field-options fk-model-name fk-field-name]
   (when-not (true? (:unique fk-field-options))
-    (throw+ {:type ::referenced-field-is-not-unique
-             :data {:referenced-model fk-model-name
-                    :referenced-field fk-field-name}
-             :message (format "Referenced field %s of model %s is not unique."
-                        fk-field-name fk-model-name)}))
+    (let [qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
+      (throw+ {:type ::referenced-field-is-not-unique
+               :data {:referenced-model fk-model-name
+                      :referenced-field fk-field-name}
+               :message (format "Foreign key %s has reference on the not unique field %s."
+                          qualified-field-name
+                          qualified-fk-field-name)})))
   (let [field-type-group (fields/check-type-group (:type field-options))
-        fk-field-type-group (fields/check-type-group (:type fk-field-options))]
+        fk-field-type-group (fields/check-type-group (:type fk-field-options))
+        qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
     (when-not (and (some? field-type-group)
                 (some? fk-field-type-group)
                 (= field-type-group fk-field-type-group))
-      (throw+ {:type ::origin-and-referenced-fields-have-different-types
-               :data {:origin-field field-name
-                      :referenced-field fk-field-name}
-               :message (format "Referenced field %s and origin field %s have different types"
-                          fk-field-name
-                          field-name)}))))
+      (throw+ {:type ::fk-and-referenced-fields-have-different-types
+               :data {:origin-field qualified-field-name
+                      :referenced-field qualified-fk-field-name}
+               :message (format "Foreign key field %s and referenced field %s have different types."
+                          qualified-field-name
+                          qualified-fk-field-name)}))))
 
 
 (defn- validate-foreign-key
@@ -163,8 +168,13 @@
                   fk-field-options (get-in models [fk-model-name :fields fk-field-name])]]
       (when (and (some? fk-model-name) (some? fk-field-name))
         (check-referenced-model-exists? models qualified-field-name fk-model-name)
-        (check-referenced-field-exists? fk-field-options fk-model-name fk-field-name)
-        (check-fields-type-valid? field-name field-options fk-field-options fk-model-name fk-field-name))))
+        (check-referenced-field-exists? fk-field-options qualified-field-name fk-model-name fk-field-name)
+        (check-fields-type-valid?
+          qualified-field-name
+          field-options
+          fk-field-options
+          fk-model-name
+          fk-field-name))))
   models)
 
 
