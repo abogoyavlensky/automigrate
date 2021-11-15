@@ -1,8 +1,7 @@
 (ns user
   (:require [clojure.tools.namespace.repl :as repl]
             [clojure.test :as test]
-            [hashp.core]
-            [expound.alpha :as expound]))
+            [hashp.core]))
 
 
 (repl/set-refresh-dirs "dev" "src" "test")
@@ -11,7 +10,6 @@
 (defn reset
   "Reload changed namespaces."
   []
-  (reset! (deref #'expound/registry-ref) {})
   (repl/refresh))
 
 

@@ -6,8 +6,7 @@
             [clojure.set :as set]
             [tuna.util.model :as model-util]
             [tuna.util.spec :as spec-util]
-            [tuna.fields :as fields]
-            [expound.alpha :as expound]))
+            [tuna.fields :as fields]))
 
 
 (s/def :tuna.models.index/type
@@ -16,10 +15,6 @@
 
 (s/def :tuna.models.index/fields
   (s/coll-of keyword? :min-count 1 :kind vector? :distinct true))
-
-
-(expound/defmsg :tuna.models.index/fields
-  "index should contain at lest one model field")
 
 
 (s/def :tuna.models.index/unique true?)
