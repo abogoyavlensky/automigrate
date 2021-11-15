@@ -451,45 +451,98 @@
           (get-spec-error-data #(models/->internal-models data))))))
 
 
-; TODO: uncomment for testing internal-models
+(deftest test-spec-validate-default-and-null-error
+  (testing "check invalid :default and null"
+    (let [data {:foo [[:id :integer {:null false
+                                     :default nil}]]}]
+      (is (= [{:message (str "Option :default of field :foo/id couldn't be `nil` because of:"
+                          " `:null false`.\n\n  {:null false, :default nil, :type :integer}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
 
-;(deftest test-spec-field-vec-invalid-validate-default-and-type-error
-;  (testing "check option :default and field type integer ok"
-;    (let [data {:foo [[:id :integer {:default 1}]]}]
-;      (is (= []
-;             (get-spec-error-data #(models/->internal-models data))))))
-;
-;  (testing "check invalid :default value for type integer"
-;    (let [data {:foo [[:id :integer {:default "1"}]]}]
-;      (is (= [{:message (str "Option :default of field :foo/id does not match "
-;                             "the field type: `:integer`.\n\n  {:default \"1\", :type :integer}")
-;               :title "MODEL ERROR"}]
-;             (get-spec-error-data #(models/->internal-models data))))))
-;
-;  (testing "check invalid :default value for type smallint"
-;    (let [data {:foo [[:id :smallint {:default true}]]}]
-;      (is (= [{:message (str "Option :default of field :foo/id does not match "
-;                             "the field type: `:smallint`.\n\n  {:default true, :type :smallint}")
-;               :title "MODEL ERROR"}]
-;             (get-spec-error-data #(models/->internal-models data))))))
-;
-;  (testing "check invalid :default value for type bigint"
-;    (let [data {:foo [[:id :bigint {:default "1"}]]}]
-;      (is (= [{:message (str "Option :default of field :foo/id does not match "
-;                             "the field type: `:bigint`.\n\n  {:default \"1\", :type :bigint}")
-;               :title "MODEL ERROR"}]
-;             (get-spec-error-data #(models/->internal-models data))))))
-;
-;  (testing "check invalid :default value for type serial"
-;    (let [data {:foo [[:id :serial {:default "1"}]]}]
-;      (is (= [{:message (str "Option :default of field :foo/id does not match "
-;                             "the field type: `:serial`.\n\n  {:default \"1\", :type :serial}")
-;               :title "MODEL ERROR"}]
-;             (get-spec-error-data #(models/->internal-models data))))))
-;
-;  (testing "check invalid :default value for type text"
-;    (let [data {:foo [[:id :text {:default 1}]]}]
-;      (is (= [{:message (str "Option :default of field :foo/id does not match "
-;                             "the field type: `:text`.\n\n  {:default 1, :type :text}")
-;               :title "MODEL ERROR"}]
-;             (get-spec-error-data #(models/->internal-models data)))))))
+
+(deftest test-spec-validate-fk-options-and-null-error
+  (testing "check invalid fk action options and null, model as vec"
+    (let [data {:bar [[:id :integer]]
+                :foo [[:bar-id :integer {:null false
+                                         :foreign-key :bar/id
+                                         :on-delete :set-null}]]}]
+      (is (= [{:message (str "Option :on-delete of field :foo/bar-id couldn't be :set-null because of:"
+                          " `:null false`.\n\n  {:null false, :foreign-key :bar/id, "
+                          ":on-delete :set-null, :type :integer}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid fk action options and null, model as vec"
+    (let [data {:bar [[:id :integer]]
+                :foo {:fields [[:bar-id :integer {:null false
+                                                  :foreign-key :bar/id
+                                                  :on-update :set-null}]]}}]
+      (is (= [{:message (str "Option :on-update of field :foo/bar-id couldn't be :set-null because of:"
+                          " `:null false`.\n\n  {:null false, :foreign-key :bar/id, "
+                          ":on-update :set-null, :type :integer}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-spec-field-vec-invalid-validate-default-and-type-error
+  (testing "check option :default and field type integer ok"
+    (let [data {:foo [[:id :integer {:default 1}]]}]
+      (is (= []
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid :default value for type integer"
+    (let [data {:foo [[:id :integer {:default "1"}]]}]
+      (is (= [{:message (str "Option :default of field :foo/id does not match "
+                          "the field type: `:integer`.\n\n  {:default \"1\", :type :integer}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid :default value for type smallint"
+    (let [data {:foo [[:id :smallint {:default true}]]}]
+      (is (= [{:message (str "Option :default of field :foo/id does not match "
+                          "the field type: `:smallint`.\n\n  {:default true, :type :smallint}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid :default value for type bigint"
+    (let [data {:foo [[:id :bigint {:default "1"}]]}]
+      (is (= [{:message (str "Option :default of field :foo/id does not match "
+                          "the field type: `:bigint`.\n\n  {:default \"1\", :type :bigint}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid :default value for type serial"
+    (let [data {:foo [[:id :serial {:default "1"}]]}]
+      (is (= [{:message (str "Option :default of field :foo/id does not match "
+                          "the field type: `:serial`.\n\n  {:default \"1\", :type :serial}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid :default value for type text"
+    (let [data {:foo [[:id :text {:default 1}]]}]
+      (is (= [{:message (str "Option :default of field :foo/id does not match "
+                          "the field type: `:text`.\n\n  {:default 1, :type :text}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid :default value for type char"
+    (let [data {:foo [[:id [:char 50] {:default 1}]]}]
+      (is (= [{:message (str "Option :default of field :foo/id does not match "
+                          "the field type: `[:char 50]`.\n\n  {:default 1, :type [:char 50]}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid :default value for type timestamp"
+    (let [data {:foo [[:id :timestamp {:default 1}]]}]
+      (is (= [{:message (str "Option :default of field :foo/id does not match "
+                          "the field type: `:timestamp`.\n\n  {:default 1, :type :timestamp}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid :default value for type float"
+    (let [data {:foo [[:id :float {:default 1}]]}]
+      (is (= [{:message (str "Option :default of field :foo/id does not match "
+                          "the field type: `:float`.\n\n  {:default 1, :type :float}")
+               :title "MODEL ERROR"}]
+            (get-spec-error-data #(models/->internal-models data)))))))

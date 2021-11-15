@@ -1,8 +1,7 @@
 (ns tuna.fields
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
-            [tuna.util.spec :as spec-util]
-            [expound.alpha :as expound]))
+            [tuna.util.spec :as spec-util]))
 
 
 (def FOREIGN-KEY-OPTION :foreign-key)
@@ -167,19 +166,14 @@
            (contains? options :default)))))
 
 
-(expound/defmsg ::validate-default-and-null
-  "`:default` option could not be `nil` for not nullable field")
+(s/def ::validate-fk-options-and-null-on-delete
+  (fn [{:keys [null on-delete]}]
+    (not (and (false? null) (= :set-null on-delete)))))
 
 
-(s/def ::validate-fk-options-and-null
-  (fn [{:keys [null on-delete on-update]}]
-    (not (and (false? null)
-           (or (= :set-null on-delete)
-             (= :set-null on-update))))))
-
-
-(expound/defmsg ::validate-fk-options-and-null
-  "`:on-delete` or `:on-update` options could not be `:set-null` for not nullable field")
+(s/def ::validate-fk-options-and-null-on-update
+  (fn [{:keys [null on-update]}]
+    (not (and (false? null) (= :set-null on-update)))))
 
 
 (defmulti validate-default-and-type
@@ -230,7 +224,8 @@
       {:type ::type}
       ::options)
     ::validate-default-and-null
-    ::validate-fk-options-and-null
+    ::validate-fk-options-and-null-on-delete
+    ::validate-fk-options-and-null-on-update
     ::validate-default-and-type))
 
 

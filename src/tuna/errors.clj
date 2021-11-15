@@ -443,6 +443,33 @@
       value)))
 
 
+(defmethod ->error-message :tuna.fields/validate-default-and-null
+  [data]
+  (let [fq-field-name (get-fq-field-name data)]
+    (add-error-value
+      (format "Option :default of field %s couldn't be `nil` because of: `:null false`."
+        fq-field-name)
+      (:val data))))
+
+
+(defmethod ->error-message :tuna.fields/validate-fk-options-and-null-on-delete
+  [data]
+  (let [fq-field-name (get-fq-field-name data)]
+    (add-error-value
+      (format "Option :on-delete of field %s couldn't be :set-null because of: `:null false`."
+        fq-field-name)
+      (:val data))))
+
+
+(defmethod ->error-message :tuna.fields/validate-fk-options-and-null-on-update
+  [data]
+  (let [fq-field-name (get-fq-field-name data)]
+    (add-error-value
+      (format "Option :on-update of field %s couldn't be :set-null because of: `:null false`."
+        fq-field-name)
+      (:val data))))
+
+
 (defn- starts-with-vec?
   "Filter only if first part is less than `in` data."
   [first-part data]
