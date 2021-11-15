@@ -65,7 +65,14 @@
 
 (defmethod apply-action-to-schema actions/DROP-INDEX-ACTION
   [schema action]
-  (map-util/dissoc-in schema [(:model-name action) :indexes] (:index-name action)))
+  (let [action-name (:model-name action)
+        result (map-util/dissoc-in
+                 schema
+                 [action-name :indexes]
+                 (:index-name action))]
+    (if (seq (get-in result [action-name :indexes]))
+      result
+      (map-util/dissoc-in result [action-name] :indexes))))
 
 
 (defmethod apply-action-to-schema actions/ALTER-INDEX-ACTION

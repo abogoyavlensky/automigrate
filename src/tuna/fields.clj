@@ -245,7 +245,7 @@
 
 
 (s/def ::fields
-  (s/map-of ::field-name ::field))
+  (s/map-of ::field-name ::field :min-count 1 :distinct true))
 
 
 ; TODO: remove!

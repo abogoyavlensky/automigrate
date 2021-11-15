@@ -55,7 +55,7 @@
 
 
 (s/def ::indexes
-  (s/map-of keyword? ::index))
+  (s/map-of keyword? ::index :min-count 1 :distinct true))
 
 
 (s/def ::model
@@ -192,20 +192,9 @@
   models)
 
 
-(defn- validate-models
-  [models]
-  (doseq [[model-name {:keys [fields]}] models]
-    (when (empty? fields)
-      (throw+ {:type ::missing-fields-in-model
-               :data {:model-name model-name}
-               :message (format "Missing fields in model: %s" model-name)})))
-  models)
-
-
 (s/def ::internal-models
   (s/and
     (s/map-of keyword? ::model)
-    validate-models
     validate-foreign-key
     validate-indexes-duplication
     validate-indexes))

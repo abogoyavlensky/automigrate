@@ -107,12 +107,6 @@
           (#'models/validate-indexes models)))))
 
 
-(deftest test-validate-models-missing-fields-err
-  (let [models {:feed {:fields {}}}]
-    (is (thrown-with-msg? ExceptionInfo #"Missing fields in model: :feed"
-          (#'models/validate-models models)))))
-
-
 (deftest test-validate-validate-fields-duplication
   (testing "check valid model fields ok"
     (let [fields [{:name :id}
