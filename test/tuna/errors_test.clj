@@ -7,8 +7,7 @@
 
 (defn- get-spec-error-data
   [f]
-  ; TODO: remove debug print!
-  (->> #p (test-util/thrown-with-slingshot-data? [:type ::s/invalid] (f))
+  (->> (test-util/thrown-with-slingshot-data? [:type ::s/invalid] (f))
     :reports
     (map #(dissoc % :problems))))
 
@@ -546,3 +545,11 @@
                           "the field type: `:float`.\n\n  {:default 1, :type :float}")
                :title "MODEL ERROR"}]
             (get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-fk-field-missing-referenced-model
+  (testing "check missing-referenced-model error"
+    (let [data {:foo [[:bar_id :integer {:foreign-key :bar/id}]]}]
+      (is (= "Foreign key :foo/bar-id has reference on the missing model :bar."
+            (:message (test-util/thrown-with-slingshot-data? [:type ::models/missing-referenced-model]
+                        (models/->internal-models data))))))))

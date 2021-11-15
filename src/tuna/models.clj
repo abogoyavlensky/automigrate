@@ -107,11 +107,14 @@
 
 (defn- check-referenced-model-exists?
   "Check that referenced model exists."
-  [models fk-model-name]
+  [models qualified-field-name fk-model-name]
   (when-not (contains? models fk-model-name)
     (throw+ {:type ::missing-referenced-model
-             :data {:referenced-model fk-model-name}
-             :message (format "Referenced model %s is missing" fk-model-name)})))
+             :data {:referenced-model fk-model-name
+                    :fk-field qualified-field-name}
+             :message (format "Foreign key %s has reference on the missing model %s."
+                        qualified-field-name
+                        fk-model-name)})))
 
 
 (defn- check-referenced-field-exists?
@@ -121,7 +124,7 @@
     (throw+ {:type ::missing-referenced-field
              :data {:referenced-model fk-model-name
                     :referenced-field fk-field-name}
-             :message (format "Referenced field %s of model %s is missing"
+             :message (format "Referenced field %s of model %s is missing."
                         fk-field-name fk-model-name)})))
 
 
@@ -135,7 +138,7 @@
     (throw+ {:type ::referenced-field-is-not-unique
              :data {:referenced-model fk-model-name
                     :referenced-field fk-field-name}
-             :message (format "Referenced field %s of model %s is not unique"
+             :message (format "Referenced field %s of model %s is not unique."
                         fk-field-name fk-model-name)}))
   (let [field-type-group (fields/check-type-group (:type field-options))
         fk-field-type-group (fields/check-type-group (:type fk-field-options))]
@@ -152,13 +155,14 @@
 
 (defn- validate-foreign-key
   [models]
-  (doseq [[_model-name model-value] models]
+  (doseq [[model-name model-value] models]
     (doseq [[field-name field-options] (:fields model-value)
-            :let [[fk-model-name fk-field-name] (model-util/kw->vec
+            :let [qualified-field-name (keyword (name model-name) (name field-name))
+                  [fk-model-name fk-field-name] (model-util/kw->vec
                                                   (:foreign-key field-options))
                   fk-field-options (get-in models [fk-model-name :fields fk-field-name])]]
       (when (and (some? fk-model-name) (some? fk-field-name))
-        (check-referenced-model-exists? models fk-model-name)
+        (check-referenced-model-exists? models qualified-field-name fk-model-name)
         (check-referenced-field-exists? fk-field-options fk-model-name fk-field-name)
         (check-fields-type-valid? field-name field-options fk-field-options fk-model-name fk-field-name))))
   models)

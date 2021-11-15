@@ -15,6 +15,7 @@
             [weavejester.dependency :as dep]
             [tuna.actions :as actions]
             [tuna.models :as models]
+            [tuna.errors :as errors]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
             [tuna.util.file :as file-util]
@@ -451,8 +452,10 @@
       (println "There are no changes in models."))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
-    (catch #(contains? #{::models/duplicated-fields-in-model} (:type %)) e
-      (file-util/prn-err e))))
+    (catch #(contains? #{::models/missing-referenced-model} (:type %)) e
+      (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
 
 
 (defmethod make-migrations SQL-MIGRATION-EXT
@@ -592,7 +595,7 @@
   [{:keys [db actions direction migration-type]}]
   (when (and (= AUTO-MIGRATION-EXT migration-type)
           (= BACKWARD-DIRECTION direction))
-    (println (str "WARNING: backward migration isn't fully implemented yet."
+    (println (str "WARNING: backward migration isn't fully implemented yet. "
                "Database schema hasn't been changed!")))
   (doseq [action actions]
     (exec-action! {:db db

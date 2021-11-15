@@ -30,7 +30,8 @@
                 {:fields {:id {:type :serial
                                :unique true}
                           :name {:type [:varchar 256]}}}}]
-    (is (thrown-with-msg? ExceptionInfo #"Referenced model :missing-model is missing"
+    (is (thrown-with-msg? ExceptionInfo
+                          #"Foreign key :feed/account has reference on the missing model :missing-model."
           (#'models/validate-foreign-key models)))))
 
 

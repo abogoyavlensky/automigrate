@@ -45,5 +45,4 @@
 
 (defn prn-err
   [e]
-  (print (str (:message e) "\n"))
-  (:data e))
+  (print (str (:message e) "\n")))

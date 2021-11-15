@@ -1,12 +1,8 @@
 (ns tuna.util.spec
   "Tools for simplifying spec usage."
   (:require [clojure.spec.alpha :as s]
-            [clojure.string :as str]
             [slingshot.slingshot :refer [throw+]]
             [tuna.errors :as spec-errors]))
-
-
-(def ^:private ERR-ITEMS-COLS 8)
 
 
 (defn tagged->value
@@ -52,13 +48,6 @@
   [specs]
   {:pre [(s/assert (s/coll-of qualified-keyword?) specs)]}
   (reduce #(assoc %1 (-> %2 name keyword) %2) {} specs))
-
-
-(defn should-be-one-of-err-msg
-  [title items]
-  (str title " should be one of:\n"
-    (str/join "\n"
-      (map #(str/join ", " %) (partition-all ERR-ITEMS-COLS items)))))
 
 
 (defn- check-keys
