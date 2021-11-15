@@ -148,7 +148,7 @@
     (when-not (and (some? field-type-group)
                 (some? fk-field-type-group)
                 (= field-type-group fk-field-type-group))
-      (throw+ {:type ::fk-and-referenced-fields-have-different-types
+      (throw+ {:type ::fk-fields-have-different-types
                :data {:origin-field qualified-field-name
                       :referenced-field qualified-fk-field-name}
                :message (format "Foreign key field %s and referenced field %s have different types."

@@ -455,7 +455,7 @@
     (catch #(contains? #{::models/missing-referenced-model
                          ::models/missing-referenced-field
                          ::models/referenced-field-is-not-unique
-                         ::models/fk-and-referenced-fields-have-different-types} (:type %)) e
+                         ::models/fk-fields-have-different-types} (:type %)) e
       (-> e
         (errors/custom-error->error-report)
         (file-util/prn-err)))))

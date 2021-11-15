@@ -583,7 +583,7 @@
                 :foo {:fields [[:bar-id :integer {:foreign-key :bar/id}]]}}]
       (is (= "Foreign key field :foo/bar-id and referenced field :bar/id have different types."
             (:message (test-util/thrown-with-slingshot-data?
-                        [:type ::models/fk-and-referenced-fields-have-different-types]
+                        [:type ::models/fk-fields-have-different-types]
                         (models/->internal-models data))))))))
 
 
