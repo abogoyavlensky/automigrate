@@ -15,9 +15,25 @@
             (test-util/get-spec-error-data
               #(#'schema/actions->internal-models data))))))
 
-  (testing "check actions should have existing action"
+  (testing "check actions should have existing action type"
     (let [data [[]]]
-      (is (= [{:message "Missing migration action type.\n\n  []"
+      (is (= [{:message "Missing action type.\n\n  []"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have existing action type"
+    (let [data [{:action :MISSING-ACTION}]]
+      (is (= [{:message "Missing action type.\n\n  {:action :MISSING-ACTION}"
                :title migration-error-title}]
             (test-util/get-spec-error-data
               #(#'schema/actions->internal-models data)))))))
+
+;; TODO: uncomment!
+;;(deftest test-spec-action->migration-schema-error
+;;  (testing "check actions should have existing action type"
+;;    (let [data [{:action :create-table}]]
+;;      (is (= [{:message "Missing migration action type.\n\n  {:action :MISSING-ACTION}"
+;;               :title migration-error-title}]
+;;             (test-util/get-spec-error-data
+;;               #(#'schema/actions->internal-models data)))))))

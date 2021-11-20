@@ -9,7 +9,7 @@
                              [:name]]}
               :bar 10
               :zen [[:title :integer {:unique :WRONG}]]}]
-    (is (= [{:message "Model :bar should be a map.\n\nor\n\nModel :bar should be a vector.\n\n  10"
+    (is (= [{:message "Model :bar should be a map or a vector.\n\n  10"
              :title "MODEL ERROR"}
             {:message "Missing type of field :foo/name." :title "MODEL ERROR"}
             {:message "Field :foo/id has extra options.\n\n  {:null2 false}"
@@ -34,7 +34,7 @@
 
 (deftest test-spec-public-model-invalid-definition-error
   (let [data {:foo :wrong}]
-    (is (= [{:message "Model :foo should be a map.\n\nor\n\nModel :foo should be a vector.\n\n  :wrong"
+    (is (= [{:message "Model :foo should be a map or a vector.\n\n  :wrong"
              :title "MODEL ERROR"}]
           (test-util/get-spec-error-data #(models/->internal-models data))))))
 

@@ -21,6 +21,11 @@
     :tuna.fields/default-fn})
 
 
+(defn- problem-reason
+  [problem]
+  (or (:reason problem) (:pred problem)))
+
+
 (defn- duplicates
   "Return duplicated items in collection."
   [items]
@@ -153,9 +158,13 @@
 (defmethod ->error-message :tuna.models/public-model
   [data]
   (let [model-name (get-model-name data)]
-    (condp = (:pred data)
+    (condp = (problem-reason data)
       '(clojure.core/fn [%] (clojure.core/contains? % :fields))
       (format "Model %s should contain the key :fields." model-name)
+
+      "no method" (add-error-value
+                    (format "Model %s should be a map or a vector." model-name)
+                    (:val data))
 
       (format "Invalid definition of the model %s." model-name))))
 
@@ -530,8 +539,16 @@
   (let [reason (or (:reason data) (:pred data))]
     (condp = reason
       "no method" (add-error-value
-                    (format "Missing migration action type.")
+                    (format "Missing action type.")
                     (:val data))
+
+      '(clojure.core/fn [%]
+         (clojure.core/contains? % :fields))
+      (add-error-value (format "Missing :fields key in action") (:val data))
+
+      '(clojure.core/fn [%]
+         (clojure.core/contains? % :model-name))
+      (add-error-value (format "Missing :model-name key in action") (:val data))
 
       "Migrations' schema error.")))
 

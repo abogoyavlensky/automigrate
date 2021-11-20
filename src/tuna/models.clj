@@ -5,7 +5,8 @@
             [clojure.set :as set]
             [tuna.util.model :as model-util]
             [tuna.util.spec :as spec-util]
-            [tuna.fields :as fields]))
+            [tuna.fields :as fields])
+  (:import (clojure.lang PersistentVector PersistentArrayMap)))
 
 
 (s/def :tuna.models.index/type
@@ -223,21 +224,31 @@
   (spec-util/validate-strict-keys ::public-model-as-map))
 
 
-(s/def ::public-model
-  (s/or
-    :vec ::public-model-as-vec
-    :map (s/and
-           ::public-model-as-map
-           ::public-model-as-map-strict-keys
-           ::validate-indexed-fields)))
+(defmulti public-model type)
+
+
+(defmethod public-model PersistentVector
+  [_]
+  ::public-model-as-vec)
+
+
+(defmethod public-model PersistentArrayMap
+  [_]
+  (s/and
+    ::public-model-as-map
+    ::public-model-as-map-strict-keys
+    ::validate-indexed-fields))
+
+
+(s/def ::public-model (s/multi-spec public-model type))
 
 
 (s/def ::simplified-model->named-parts
   (s/conformer
     (fn [models]
       (reduce-kv
-        (fn [m k [v-type v]]
-          (if (= :vec v-type)
+        (fn [m k v]
+          (if (vector? v)
             (assoc m k {:fields v})
             (assoc m k v)))
         {}
@@ -256,3 +267,13 @@
   "Transform public models from file to internal representation."
   [models]
   (spec-util/conform ::->internal-models models))
+
+
+; TODO: remove!
+(comment
+  (let [data {:feed [[:id :serial {:null false}]]}]
+
+    ;(s/explain-data ::public-model2 {:fields [[:id :int]]})
+    ;(s/explain-data ::public-model2 [[:id :int]])
+    ;(s/explain-data ::public-model2 [])))
+    (s/conform ::->internal-models data)))

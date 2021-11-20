@@ -65,6 +65,6 @@
 
 (defn get-spec-error-data
   [f]
-  (->> #p (thrown-with-slingshot-data? [:type ::s/invalid] (f))
+  (->> (thrown-with-slingshot-data? [:type ::s/invalid] (f))
     :reports
     (map #(dissoc % :problems))))
