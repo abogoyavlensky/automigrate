@@ -240,7 +240,8 @@
     ::validate-indexed-fields))
 
 
-(s/def ::public-model (s/multi-spec public-model class))
+(s/def ::public-model
+  (s/multi-spec public-model class))
 
 
 (s/def ::simplified-model->named-parts

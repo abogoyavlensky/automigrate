@@ -1,7 +1,8 @@
 (ns tuna.fields
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
-            [tuna.util.spec :as spec-util]))
+            [tuna.util.spec :as spec-util])
+  (:import (clojure.lang PersistentVector)))
 
 
 (def FOREIGN-KEY-OPTION :foreign-key)
@@ -23,6 +24,7 @@
 
 
 (s/def ::keyword-type
+  ; TODO: switch available fields according to db dialect!
   (s/and
     keyword?
     #{:integer
@@ -111,6 +113,8 @@
 (s/def ::foreign-key qualified-keyword?)
 
 
+(s/def ::default-int integer?)
+(s/def ::default-float float?)
 (s/def ::default-bool boolean?)
 (s/def ::default-str string?)
 (s/def ::default-nil nil?)
@@ -121,18 +125,49 @@
                       :val (s/? (some-fn integer? float? string?))))
 
 
+(defmulti default-option class)
+
+
+(defmethod default-option Long
+  [_]
+  ::default-int)
+
+
+(defmethod default-option Double
+  [_]
+  ::default-float)
+
+
+(defmethod default-option Boolean
+  [_]
+  ::default-bool)
+
+
+(defmethod default-option String
+  [_]
+  ::default-str)
+
+
+(defmethod default-option nil
+  [_]
+  ::default-nil)
+
+
+(defmethod default-option PersistentVector
+  [_]
+  (s/and
+    ::default-fn
+    (s/conformer
+      (fn [value]
+        (let [fn-name (:name value)
+              fn-arg (:val value)]
+          (cond-> [fn-name]
+            (some? fn-arg) (conj fn-arg)))))))
+
+
 (s/def ::default
   ; TODO: try update with dynamic value related to field's type
-  (s/and
-    (s/or
-      ; To be able to produce common error message without `s/or` spec variants.
-      :int integer?
-      :bool ::default-bool
-      :str ::default-str
-      :nil ::default-nil
-      :fn ::default-fn)
-    (s/conformer
-      spec-util/tagged->value)))
+  (s/multi-spec default-option class))
 
 
 (s/def ::on-delete fk-actions)

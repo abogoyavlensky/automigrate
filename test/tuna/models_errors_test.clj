@@ -9,10 +9,10 @@
                              [:name]]}
               :bar 10
               :zen [[:title :integer {:unique :WRONG}]]}]
-    (is (= [{:message "Model :bar should be a map or a vector.\n\n  10"
+    (is (= [{:message "Field :foo/id has extra options.\n\n  {:null2 false}"
              :title "MODEL ERROR"}
             {:message "Missing type of field :foo/name." :title "MODEL ERROR"}
-            {:message "Field :foo/id has extra options.\n\n  {:null2 false}"
+            {:message "Model :bar should be a map or a vector.\n\n  10"
              :title "MODEL ERROR"}
             {:message "Option :unique of field :zen/title should be `true`.\n\n  {:unique :WRONG}"
              :title "MODEL ERROR"}]

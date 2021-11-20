@@ -11,14 +11,6 @@
 (def ^:private INDEX-FIELD-NAME-IN-SPEC 2)
 
 
-(def ^:private EXTRA-PROBLEMS
-  "Set of problems produced by `s/or` spec."
-  #{:tuna.fields/default-bool
-    :tuna.fields/default-str
-    :tuna.fields/default-nil
-    :tuna.fields/default-fn})
-
-
 (defn- problem-reason
   [problem]
   (or (:reason problem) (:pred problem)))
@@ -97,11 +89,6 @@
 (defn- last-spec
   [problem]
   (-> problem :via peek))
-
-
-(defn- extra-problem?
-  [problem]
-  (contains? EXTRA-PROBLEMS (last-spec problem)))
 
 
 (defn- add-error-value
@@ -598,82 +585,20 @@
       "Migrations' schema error.")))
 
 
-(defn- starts-with-vec?
-  "Filter only if first part is less than `in` data."
-  [first-part data]
-  (let [first-part-count (count first-part)]
-    (if (< first-part-count (count data))
-      (= first-part (subvec data 0 first-part-count))
-      false)))
-
-
-(defn- contains-by-in?
-  [data in-vec]
-  (let [in-items (map :in data)]
-    (some #(starts-with-vec? in-vec %) in-items)))
-
-
-(defn- sort-problems-by-in
-  [problems]
-  (sort-by
-    (juxt #(-> % :in first)
-      #(count (:in %)))
-    #(compare %2 %1)
-    problems))
-
-
-(defn- squash-problems-by-in
-  "Analyze and remove problems for `s/or` spec which are parts of another problem."
-  [problems]
-  (reduce (fn [res item]
-            (if (contains-by-in? res (:in item))
-              res
-              (conj res item)))
-    []
-    problems))
-
-
-(defn- remove-problems-by-in
-  "Remove unused problems for `s/or` spec with sorting."
-  [problems]
-  (-> problems
-    (sort-problems-by-in)
-    (squash-problems-by-in)
-    (reverse)))
-
-
-(defn- group-problems-by-in
-  [problems]
-  (->> problems
-    (group-by :in)
-    (vals)))
-
-
-(defn join-or-spec-problem-messages
-  [messages]
-  (str/join "\n\nor\n\n" messages))
-
+; Public
 
 (defn explain-data->error-report
   "Convert spec explain-data output to errors' report."
   [explain-data]
-  (let [problems (->> (::s/problems explain-data)
-                   (remove extra-problem?)
-                   (remove-problems-by-in)
-                   (group-problems-by-in))
+  (let [problems (::s/problems explain-data)
         main-spec (::s/spec explain-data)
         origin-value (::s/value explain-data)
-        reports (for [problem-vec problems
+        reports (for [problem problems
                       :let [main-spec {:main-spec main-spec}
-                            problem-vec* (map #(assoc % :origin-value origin-value)
-                                           problem-vec)
-                            error-message (->> problem-vec*
-                                            (map ->error-message)
-                                            (remove nil?)
-                                            (join-or-spec-problem-messages))]]
+                            problem* (assoc problem :origin-value origin-value)]]
                   {:title (->error-title main-spec)
-                   :message error-message
-                   :problems problem-vec*})
+                   :message (->error-message problem*)
+                   :problem problem*})
         messages (->> reports
                    (map #(format ERROR-TEMPLATE (:title %) (:message %)))
                    (str/join "\n"))]

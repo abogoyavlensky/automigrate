@@ -67,4 +67,4 @@
   [f]
   (->> (thrown-with-slingshot-data? [:type ::s/invalid] (f))
     :reports
-    (map #(dissoc % :problems))))
+    (map #(dissoc % :problem))))
