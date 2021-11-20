@@ -13,9 +13,7 @@
 
 (def ^:private EXTRA-PROBLEMS
   "Set of problems produced by `s/or` spec."
-  #{:tuna.fields/char-type
-    :tuna.fields/float-type
-    :tuna.fields/default-bool
+  #{:tuna.fields/default-bool
     :tuna.fields/default-str
     :tuna.fields/default-nil
     :tuna.fields/default-fn})
@@ -370,6 +368,53 @@
       (format "Missing type of field %s." fq-field-name)
       (add-error-value
         (format "Invalid type of field %s." fq-field-name)
+        value))))
+
+
+(defmethod ->error-message :tuna.fields/float-type
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (:val data)]
+    (condp = (problem-reason data)
+      `pos-int? (add-error-value
+                  (format "Parameter for float type of field %s should be positive integer." fq-field-name)
+                  value)
+
+      '(clojure.core/= (clojure.core/count %) 2)
+      (add-error-value
+        (format "Vector form of float type of field %s should have parameter." fq-field-name)
+        value)
+
+      (add-error-value
+        (format "Invalid float type of field %s." fq-field-name)
+        value))))
+
+
+(defmethod ->error-message :tuna.fields/keyword-type
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (:val data)]
+    (add-error-value
+      (format "Unknown type of field %s." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :tuna.fields/char-type
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (:val data)]
+    (condp = (problem-reason data)
+      `pos-int? (add-error-value
+                  (format "Parameter for char type of field %s should be positive integer." fq-field-name)
+                  value)
+
+      '(clojure.core/= (clojure.core/count %) 2)
+      (add-error-value
+        (format "Vector form of char type of field %s should have parameter." fq-field-name)
+        value)
+
+      (add-error-value
+        (format "Invalid float type of field %s." fq-field-name)
         value))))
 
 

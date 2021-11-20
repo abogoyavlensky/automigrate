@@ -224,7 +224,7 @@
   (spec-util/validate-strict-keys ::public-model-as-map))
 
 
-(defmulti public-model type)
+(defmulti public-model class)
 
 
 (defmethod public-model PersistentVector
@@ -240,7 +240,7 @@
     ::validate-indexed-fields))
 
 
-(s/def ::public-model (s/multi-spec public-model type))
+(s/def ::public-model (s/multi-spec public-model class))
 
 
 (s/def ::simplified-model->named-parts

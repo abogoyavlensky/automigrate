@@ -173,19 +173,19 @@
 
   (testing "check invalid field type as keyword"
     (let [data {:foo [[:id :wrong-type]]}]
-      (is (= [{:message "Invalid type of field :foo/id.\n\n  :wrong-type"
+      (is (= [{:message "Unknown type of field :foo/id.\n\n  :wrong-type"
                :title "MODEL ERROR"}]
             (test-util/get-spec-error-data #(models/->internal-models data)))))))
 
 
 (deftest test-spec-field-vec-invalid-char-field-type-error
   (let [data {:foo [[:id :char]]}]
-    (is (= [{:message "Invalid type of field :foo/id.\n\n  :char"
+    (is (= [{:message "Unknown type of field :foo/id.\n\n  :char"
              :title "MODEL ERROR"}]
           (test-util/get-spec-error-data #(models/->internal-models data)))))
 
   (let [data {:foo {:fields [[:id [:varchar "test"]]]}}]
-    (is (= [{:message "Invalid type of field :foo/id.\n\n  [:varchar \"test\"]"
+    (is (= [{:message "Parameter for char type of field :foo/id should be positive integer.\n\n  \"test\""
              :title "MODEL ERROR"}]
           (test-util/get-spec-error-data #(models/->internal-models data))))))
 
@@ -202,13 +202,13 @@
 
   (testing "check invalid float type as vector"
     (let [data {:foo [[:id [:float]]]}]
-      (is (= [{:message "Invalid type of field :foo/id.\n\n  [:float]"
+      (is (= [{:message "Vector form of float type of field :foo/id should have parameter.\n\n  [:float]"
                :title "MODEL ERROR"}]
             (test-util/get-spec-error-data #(models/->internal-models data))))))
 
   (testing "check invalid float type as vector with int"
     (let [data {:foo [[:id [:float 0.1]]]}]
-      (is (= [{:message "Invalid type of field :foo/id.\n\n  [:float 0.1]"
+      (is (= [{:message "Parameter for float type of field :foo/id should be positive integer.\n\n  0.1"
                :title "MODEL ERROR"}]
             (test-util/get-spec-error-data #(models/->internal-models data)))))))
 

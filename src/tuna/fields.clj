@@ -17,37 +17,60 @@
     :no-action})
 
 
-(s/def ::char-type (s/tuple #{:char :varchar} pos-int?))
+(s/def ::char-type (s/tuple #{:char :varchar :float} pos-int?))
 
 (s/def ::float-type (s/tuple #{:float} pos-int?))
 
 
-(def ^:private field-types
-  #{:integer
-    :smallint
-    :bigint
-    :float
-    :real
-    :serial
-    :uuid
-    :boolean
-    :text
-    :timestamp
-    :date
-    :time
-    :point
-    :json
-    :jsonb})
-
-
-(s/def ::type
+(s/def ::keyword-type
   (s/and
-    ; TODO: switch available fields according to db dialect!
-    (s/or
-      :kw field-types
-      :char ::char-type
-      :float ::float-type)
-    (s/conformer spec-util/tagged->value)))
+    keyword?
+    #{:integer
+      :smallint
+      :bigint
+      :float
+      :real
+      :serial
+      :uuid
+      :boolean
+      :text
+      :timestamp
+      :date
+      :time
+      :point
+      :json
+      :jsonb}))
+
+
+(defn- field-type-dispatch
+  [v]
+  (cond
+    (keyword? v) :keyword
+    (and (vector? v)
+      (contains? #{:char :varchar} (first v))) :char
+    (and (vector? v)
+      (contains? #{:float} (first v))) :float))
+
+
+(defmulti field-type field-type-dispatch)
+
+
+(defmethod field-type :keyword
+  [_]
+  ::keyword-type)
+
+
+(defmethod field-type :char
+  [_]
+  ::char-type)
+
+
+(defmethod field-type :float
+  [_]
+  ::float-type)
+
+
+(s/def ::type (s/multi-spec field-type field-type-dispatch))
 
 
 (def ^:private type-hierarchy
@@ -177,10 +200,10 @@
 
 
 (defmulti validate-default-and-type
-  (fn [{field-type :type}]
-    (if (vector? field-type)
-      (first field-type)
-      field-type))
+  (fn [{field-type-val :type}]
+    (if (vector? field-type-val)
+      (first field-type-val)
+      field-type-val))
   :hierarchy #'type-hierarchy)
 
 
