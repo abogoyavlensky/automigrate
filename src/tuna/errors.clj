@@ -27,7 +27,9 @@
 
 (defn- get-model-name
   [data]
-  (-> data :in first))
+  (if (= :tuna.actions/->migrations (:main-spec data))
+    (get-in (:origin-value data) [(first (:in data)) :model-name])
+    (-> data :in first)))
 
 
 (defn- get-model-items-path
@@ -48,8 +50,10 @@
 
 (defn- get-options
   [data]
-  (let [field-path (conj (get-model-items-path data :fields) 2)]
-    (get-in (:origin-value data) field-path)))
+  (if (= :tuna.actions/->migrations (:main-spec data))
+    (:val data)
+    (let [field-path (conj (get-model-items-path data :fields) 2)]
+      (get-in (:origin-value data) field-path))))
 
 
 (defn- get-field-name
@@ -122,7 +126,13 @@
   "MIGRATION ERROR")
 
 
-(defmulti ->error-message last-spec)
+(def ^:private error-hierarchy
+  (-> (make-hierarchy)
+    (derive :tuna.fields/field-with-type :tuna.fields/field)))
+
+
+(defmulti ->error-message last-spec
+  :hierarchy #'error-hierarchy)
 
 
 (defmethod ->error-message :default
@@ -327,6 +337,28 @@
                        (set))
         missing-fields (vec (set/difference index-fields model-fields))]
     (format "Missing indexed fields %s in model %s." missing-fields model-name)))
+
+
+(defmethod ->error-message :tuna.fields/fields
+  [data]
+  (condp = (problem-reason data)
+    '(clojure.core/<= 1
+       (clojure.core/count %)
+       Integer/MAX_VALUE) (add-error-value
+                            "Action should contain at least one field."
+                            (:val data))
+
+    (add-error-value "Invalid fields definition." (:val data))))
+
+
+(defmethod ->error-message :tuna.fields/field
+  [data]
+  (condp = (problem-reason data)
+    '(clojure.core/fn [%]
+       (clojure.core/contains? % :type))
+    (add-error-value "Field should contain type." (:val data))
+
+    (add-error-value "Invalid field definition." (:val data))))
 
 
 (defmethod ->error-message :tuna.fields/field-vec
@@ -576,13 +608,20 @@
 
       '(clojure.core/fn [%]
          (clojure.core/contains? % :fields))
-      (add-error-value (format "Missing :fields key in action") (:val data))
+      (add-error-value (format "Missing :fields key in action.") (:val data))
 
       '(clojure.core/fn [%]
          (clojure.core/contains? % :model-name))
-      (add-error-value (format "Missing :model-name key in action") (:val data))
+      (add-error-value (format "Missing :model-name key in action.") (:val data))
 
       "Migrations' schema error.")))
+
+
+(defmethod ->error-message :tuna.actions/model-name
+  [data]
+  (add-error-value
+    (format "Action has invalid model name.")
+    (:val data)))
 
 
 ; Public
@@ -594,9 +633,10 @@
         main-spec (::s/spec explain-data)
         origin-value (::s/value explain-data)
         reports (for [problem problems
-                      :let [main-spec {:main-spec main-spec}
-                            problem* (assoc problem :origin-value origin-value)]]
-                  {:title (->error-title main-spec)
+                      :let [problem* (assoc problem
+                                       :origin-value origin-value
+                                       :main-spec main-spec)]]
+                  {:title (->error-title problem*)
                    :message (->error-message problem*)
                    :problem problem*})
         messages (->> reports

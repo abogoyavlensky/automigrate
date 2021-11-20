@@ -1,6 +1,5 @@
 (ns tuna.fields
   (:require [clojure.spec.alpha :as s]
-            [spec-dict :as d]
             [tuna.util.spec :as spec-util])
   (:import (clojure.lang PersistentVector)))
 
@@ -276,11 +275,17 @@
   validate-default-and-type)
 
 
+(s/def ::field-with-type
+  (s/merge
+    (s/keys
+      :req-un [::type])
+    ::options))
+
+
 (s/def ::field
   (s/and
-    (d/dict*
-      {:type ::type}
-      ::options)
+    ; TODO: add ::field-with-type-strict-keys
+    ::field-with-type
     ::validate-default-and-null
     ::validate-fk-options-and-null-on-delete
     ::validate-fk-options-and-null-on-update
