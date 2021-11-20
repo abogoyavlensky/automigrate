@@ -100,7 +100,7 @@
             (test-util/get-spec-error-data
               #(#'schema/actions->internal-models data))))))
 
-  (testing "check actions should have correct field options unique"
+  (testing "check actions should have correct field options primary-key"
     (let [data [{:action :create-table
                  :model-name :feed
                  :fields {:name {:type :integer
@@ -110,7 +110,7 @@
             (test-util/get-spec-error-data
               #(#'schema/actions->internal-models data))))))
 
-  (testing "check actions should have correct field options unique"
+  (testing "check actions should have correct field options fk"
     (let [data [{:action :create-table
                  :model-name :feed
                  :fields {:name {:type :integer
@@ -120,12 +120,37 @@
             (test-util/get-spec-error-data
               #(#'schema/actions->internal-models data))))))
 
-  (testing "check actions should have correct field options unique"
+  (testing "check actions should have correct field options default"
     (let [data [{:action :create-table
                  :model-name :feed
                  :fields {:name {:type :integer
                                  :default {:wrong 1}}}}]]
       (is (= [{:message "Option :default of field :feed/name has invalid value.\n\n  {:wrong 1}"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have correct field options default and type"
+    (let [data [{:action :create-table
+                 :model-name :feed
+                 :fields {:name {:type :integer
+                                 :default "wrong type"}}}]]
+      (is (= [{:message (str "Option :default of field :feed/name does not match the field type: "
+                          "`:integer`.\n\n  {:default \"wrong type\", :type :integer}")
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have correct field options fk and default"
+    (let [data [{:action :create-table
+                 :model-name :feed
+                 :fields {:name {:type :integer
+                                 :foreign-key :account/id
+                                 :on-update :set-null
+                                 :null false}}}]]
+      (is (= [{:message (str "Option :on-update of field :feed/name couldn't be :set-null because of:"
+                          " `:null false`.\n\n  {:type :integer, :foreign-key :account/id, "
+                          ":on-update :set-null, :null false}")
                :title migration-error-title}]
             (test-util/get-spec-error-data
               #(#'schema/actions->internal-models data)))))))
