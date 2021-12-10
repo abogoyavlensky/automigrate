@@ -58,11 +58,14 @@
 
 (defn- get-field-name
   [data]
-  (let [path (get-model-items-path data :fields)
-        last-item (peek path)]
-    (if (keyword? last-item)
-      last-item
-      (get-in (:origin-value data) (conj path 0)))))
+  (if (and (= :tuna.actions/->migrations (:main-spec data))
+        (contains? #{:add-column} (-> data :path first)))
+    (get-in (:origin-value data) [(first (:in data)) :field-name])
+    (let [path (get-model-items-path data :fields)
+          last-item (peek path)]
+      (if (keyword? last-item)
+        last-item
+        (get-in (:origin-value data) (conj path 0))))))
 
 
 (defn- get-fq-field-name
@@ -603,7 +606,7 @@
   (let [reason (or (:reason data) (:pred data))]
     (condp = reason
       "no method" (add-error-value
-                    (format "Missing action type.")
+                    (format "Invalid action type.")
                     (:val data))
 
       '(clojure.core/fn [%]

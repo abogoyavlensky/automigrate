@@ -17,14 +17,14 @@
 
   (testing "check actions should have existing action type"
     (let [data [[]]]
-      (is (= [{:message "Missing action type.\n\n  []"
+      (is (= [{:message "Invalid action type.\n\n  []"
                :title migration-error-title}]
             (test-util/get-spec-error-data
               #(#'schema/actions->internal-models data))))))
 
   (testing "check actions should have existing action type"
     (let [data [{:action :MISSING-ACTION}]]
-      (is (= [{:message "Missing action type.\n\n  {:action :MISSING-ACTION}"
+      (is (= [{:message "Invalid action type.\n\n  {:action :MISSING-ACTION}"
                :title migration-error-title}]
             (test-util/get-spec-error-data
               #(#'schema/actions->internal-models data)))))))
@@ -149,6 +149,99 @@
                                  :on-update :set-null
                                  :null false}}}]]
       (is (= [{:message (str "Option :on-update of field :feed/name couldn't be :set-null because of:"
+                          " `:null false`.\n\n  {:type :integer, :foreign-key :account/id, "
+                          ":on-update :set-null, :null false}")
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data)))))))
+
+
+(deftest test-spec-action->migration-drop-table-invalid-model-name
+  (testing "check actions should have correct model name"
+    (let [data [{:action :drop-table
+                 :model-name "wrong-name"}]]
+      (is (= [{:message "Action has invalid model name.\n\n  \"wrong-name\""
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data)))))))
+
+
+(deftest test-spec-action->migration-add-column-invalid-field-options-error
+  (testing "check actions should have correct field type"
+    (let [data [{:action :add-column
+                 :model-name :feed
+                 :field-name :id
+                 :options {:type :wrong-type}}]]
+      (is (= [{:message "Unknown type of field :feed/id.\n\n  :wrong-type"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have correct field options unique"
+    (let [data [{:action :add-column
+                 :model-name :feed
+                 :field-name :id
+                 :options {:type :integer
+                           :unique 1}}]]
+      (is (= [{:message "Option :unique of field :feed/id should be `true`.\n\n  1"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have correct field options primary-key"
+    (let [data [{:action :add-column
+                 :model-name :feed
+                 :field-name :id
+                 :options {:type :integer
+                           :primary-key 1}}]]
+      (is (= [{:message "Option :primary-key of field :feed/id should be `true`.\n\n  1"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have correct field options fk"
+    (let [data [{:action :add-column
+                 :model-name :feed
+                 :field-name :id
+                 :options {:type :integer
+                           :foreign-key 1}}]]
+      (is (= [{:message "Option :foreign-key of field :feed/id should be qualified keyword.\n\n  1"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have correct field options default"
+    (let [data [{:action :add-column
+                 :model-name :feed
+                 :field-name :id
+                 :options {:type :integer
+                           :default {:wrong 1}}}]]
+      (is (= [{:message "Option :default of field :feed/id has invalid value.\n\n  {:wrong 1}"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have correct field options default and type"
+    (let [data [{:action :add-column
+                 :model-name :feed
+                 :field-name :id
+                 :options {:type :integer
+                           :default "wrong type"}}]]
+      (is (= [{:message (str "Option :default of field :feed/id does not match the field type: "
+                          "`:integer`.\n\n  {:default \"wrong type\", :type :integer}")
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have correct field options fk and default"
+    (let [data [{:action :add-column
+                 :model-name :feed
+                 :field-name :id
+                 :options {:type :integer
+                           :foreign-key :account/id
+                           :on-update :set-null
+                           :null false}}]]
+      (is (= [{:message (str "Option :on-update of field :feed/id couldn't be :set-null because of:"
                           " `:null false`.\n\n  {:type :integer, :foreign-key :account/id, "
                           ":on-update :set-null, :null false}")
                :title migration-error-title}]
