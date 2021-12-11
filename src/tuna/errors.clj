@@ -140,7 +140,7 @@
 
 (defmethod ->error-message :default
   [data]
-  (case #p (:main-spec data)
+  (case (:main-spec data)
     :tuna.models/->internal-models
     (add-error-value "Schema failed for model." (:val data))
 
