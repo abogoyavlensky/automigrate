@@ -65,6 +65,7 @@
 
 (s/def ::changes
   (s/and
+    (s/map-of keyword? map? :min-count 1)
     (d/dict*
       (d/->opt (model-util/generate-type-option ::fields/type))
       (d/->opt (model-util/generate-changes [::fields/unique
@@ -73,8 +74,7 @@
                                              ::fields/default
                                              ::fields/foreign-key
                                              ::fields/on-delete
-                                             ::fields/on-update])))
-    #(> (count (keys %)) 0)))
+                                             ::fields/on-update])))))
 
 
 (defmethod action ALTER-COLUMN-ACTION

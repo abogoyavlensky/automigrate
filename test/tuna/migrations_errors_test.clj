@@ -247,3 +247,60 @@
                :title migration-error-title}]
             (test-util/get-spec-error-data
               #(#'schema/actions->internal-models data)))))))
+
+
+(deftest test-spec-action->migration-alter-column-invalid-field-options-error
+  (testing "check actions should have correct field type"
+    (let [data [{:action :alter-column
+                 :model-name :feed
+                 :field-name :id
+                 :options {:type :wrong-type}
+                 :changes {:type {:from :integer
+                                  :to :wrong-type}}}]]
+      (is (= [{:message "Unknown type of field :feed/id.\n\n  :wrong-type"
+               :title migration-error-title}
+              {:message "Schema failed for migration.\n\n  {:from :integer, :to :wrong-type}"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data))))))
+
+  (testing "check actions should have correct field options unique"
+    (let [data [{:action :alter-column
+                 :model-name :feed
+                 :field-name :id
+                 :options {:type :integer
+                           :unique true}
+                 :changes {:unique {:from true
+                                    :to 1}}}]]
+      (is (= [{:message "Schema failed for migration.\n\n  {:from true, :to 1}"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data)))))))
+
+
+(deftest test-spec-action->migration-create-index-invalid-field-options-error
+  (testing "check actions should have correct index type"
+    (let [data [{:action :create-index
+                 :model-name :feed
+                 :index-name :feed-id-idx
+                 :options {:type :wrong-type
+                           :fields [:id]}}]]
+      (is (= [{:message "Invalid type of index :feed.indexes/type.\n\n  :wrong-type"
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data)))))))
+
+
+(deftest test-spec-action->migration-alter-index-invalid-field-options-error
+  (testing "check actions should have correct index unique option"
+    (let [data [{:action :create-index
+                 :model-name :feed
+                 :index-name :feed-id-idx
+                 :options {:type :btree
+                           :fields [:id]
+                           :unique "wrong-value"}}]]
+      (is (= [{:message "Option :unique of index :feed.indexes/unique should satisfy: `true?`."
+               :title migration-error-title}]
+            (test-util/get-spec-error-data
+              #(#'schema/actions->internal-models data)))))))
+

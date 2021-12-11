@@ -59,7 +59,7 @@
 (defn- get-field-name
   [data]
   (if (and (= :tuna.actions/->migrations (:main-spec data))
-        (contains? #{:add-column} (-> data :path first)))
+        (contains? #{:add-column :alter-column} (-> data :path first)))
     (get-in (:origin-value data) [(first (:in data)) :field-name])
     (let [path (get-model-items-path data :fields)
           last-item (peek path)]
@@ -140,7 +140,14 @@
 
 (defmethod ->error-message :default
   [data]
-  (add-error-value "Schema failed for model or migration." (:val data)))
+  (case #p (:main-spec data)
+    :tuna.models/->internal-models
+    (add-error-value "Schema failed for model." (:val data))
+
+    :tuna.actions/->migrations
+    (add-error-value "Schema failed for migration." (:val data))
+
+    (add-error-value "Schema failed for model or migration." (:val data))))
 
 
 ; Models
