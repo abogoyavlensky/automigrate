@@ -409,7 +409,7 @@
   (let [migration-names (migrations-list migrations-dir)
         migration-number (next-migration-number migration-names)
         migration-file-name (str migration-number "_" next-migration-name)]
-    ; TODO: build file file path properly!
+    ; TODO: build file path properly!
     (str migrations-dir "/" migration-file-name "." (name migration-type))))
 
 
@@ -434,7 +434,7 @@
 
 (defmethod make-migrations :default
   ; Make new migration based on models definitions automatically.
-  [{:keys [model-file migrations-dir] :as _args}]
+  [{:keys [model-file migrations-dir]}]
   (try+
     (if-let [next-migration (make-next-migration {:model-file model-file
                                                   :migrations-dir migrations-dir})]
@@ -466,6 +466,9 @@
   [{next-migration-name :name
     migrations-dir :migrations-dir
     migration-type :type}]
+  (when (empty? next-migration-name)
+    (throw+ {:type ::missing-migration-name
+             :message "Missing migration name."}))
   (let [_ (create-migrations-dir migrations-dir)
         next-migration-name* (str/replace next-migration-name #"-" "_")
         migration-file-name-full-path (get-next-migration-file-name

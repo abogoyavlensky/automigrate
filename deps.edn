@@ -37,9 +37,7 @@
            :exec-args {:installer :remote :artifact "tuna.jar"}}
 
   :migrations {:exec-fn tuna.core/run
-               :exec-args {:action :make-migrations
-                           ; TODO: also add ability to set this names by default with params!
-                           :model-file "src/tuna/models.edn"
+               :exec-args {:model-file "src/tuna/models.edn"
                            :migrations-dir "src/tuna/migrations"
-                           ; TODO: add ability to set this with env var nad .env file too!
+                           ; TODO: add ability to set this with env var and .env file too!
                            :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}}}}

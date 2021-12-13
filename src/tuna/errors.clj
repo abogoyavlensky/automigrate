@@ -129,6 +129,11 @@
   "MIGRATION ERROR")
 
 
+(defmethod ->error-title :tuna.core/args
+  [_]
+  "COMMAND ERROR")
+
+
 (def ^:private error-hierarchy
   (-> (make-hierarchy)
     (derive :tuna.fields/field-with-type :tuna.fields/field)))
@@ -632,6 +637,39 @@
   (add-error-value
     (format "Action has invalid model name.")
     (:val data)))
+
+
+; Command arguments
+
+(defmethod ->error-message :tuna.core/args
+  [data]
+  (let [reason (problem-reason data)]
+    (condp = reason
+      "no method" (add-error-value "Invalid command name." (:val data))
+
+      '(clojure.core/fn [%] (clojure.core/contains? % :model-file))
+      (add-error-value "Missing model file path." (:val data))
+
+      '(clojure.core/fn [%] (clojure.core/contains? % :migrations-dir))
+      (add-error-value "Missing migrations dir path." (:val data))
+
+      '(clojure.core/fn [%] (clojure.core/contains? % :db-uri))
+      (add-error-value "Missing db connection config." (:val data))
+
+      '(clojure.core/fn [%] (clojure.core/contains? % :number))
+      (add-error-value "Missing migration number." (:val data))
+
+      "Invalid command arguments.")))
+
+
+(defmethod ->error-message :tuna.core/type
+  [data]
+  (add-error-value "Invalid migration type." (:val data)))
+
+
+(defmethod ->error-message :tuna.core/direction
+  [data]
+  (add-error-value "Invalid direction of migration." (:val data)))
 
 
 ; Public
