@@ -127,18 +127,17 @@
              :migrations-dir config/MIGRATIONS-DIR
              :type "sql"
              :name "add-description-field"})
-  (testing "check list-migrations output"
-    (is (= (str "[ ] 0001_auto_create_table_feed.edn\n"
-             "[ ] 0002_add_description_field.sql\n")
-          (with-out-str
-            (core/run {:cmd :list-migrations
-                       :migrations-dir config/MIGRATIONS-DIR
-                       :db-uri config/DATABASE-URL})))))
   (testing "check that migrations table does not exist"
     (is (thrown? PSQLException
           (->> {:select [:name]
                 ; TODO: make migrations table configurable!
                 :from [db-util/MIGRATIONS-TABLE]
                 :order-by [:created-at]}
-            (db-util/exec! config/DATABASE-CONN))))))
-
+            (db-util/exec! config/DATABASE-CONN)))))
+  (testing "check list-migrations output"
+    (is (= (str "[ ] 0001_auto_create_table_feed.edn\n"
+             "[ ] 0002_add_description_field.sql\n")
+          (with-out-str
+            (core/run {:cmd :list-migrations
+                       :migrations-dir config/MIGRATIONS-DIR
+                       :db-uri config/DATABASE-URL}))))))

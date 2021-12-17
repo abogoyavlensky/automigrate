@@ -130,7 +130,7 @@
     (when (seq duplicated-numbers)
       (throw+ {:type ::duplicated-migration-numbers
                :numbers duplicated-numbers
-               :message (str "There are duplicated migrations' numbers: "
+               :message (str "There are duplicated migration numbers: "
                           (str/join ", " duplicated-numbers)
                           ". Please resolve the conflict and try again.")}))
     migrations))
@@ -560,9 +560,11 @@
     (catch PSQLException e
       (let [msg (ex-message e)
             table-exists-err-pattern #"relation .+ does not exist"]
-       ; Migration table doesn't exist
-        (when (re-find table-exists-err-pattern msg)
-          [])))))
+        (if (re-find table-exists-err-pattern msg)
+          (throw+ {:type ::no-migrations-table
+                   :message "Migrations table does not exist."})
+          (throw+ {:type ::unexpected-db-error
+                   :message "Unexpected db error."}))))))
 
 
 (defmulti exec-action! (juxt :migration-type :direction))
@@ -632,58 +634,77 @@
 (defn- get-detailed-migrations-to-migrate
   "Return migrations to migrate and migration direction."
   [all-migrations migrated target-number]
-  (let [all-migrations-detailed (map detailed-migration all-migrations)
-        all-numbers (set (map :number-int all-migrations-detailed))
-        last-number (apply max all-numbers)
-        target-number* (or target-number last-number)
-        current-number (current-migration-number migrated)
-        direction (if (> target-number* current-number)
-                    FORWARD-DIRECTION
-                    BACKWARD-DIRECTION)]
-    (when-not (or (contains? all-numbers target-number*)
-                (= 0 target-number*))
-      (throw+ {:type ::missing-target-migration-number
-               :number target-number*
-               :message "Missing target migration number"}))
-    (if (= target-number* current-number)
-      []
-      (condp contains? direction
-        #{FORWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
-                                            (drop-while #(>= current-number (:number-int %)))
-                                            (take-while #(>= target-number* (:number-int %))))
-                              :direction direction}
-        #{BACKWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
-                                             (drop-while #(>= target-number* (:number-int %)))
-                                             (take-while #(>= current-number (:number-int %)))
-                                             (sort-by :number-int >))
-                               :direction direction}))))
+  (if-not (seq all-migrations)
+    {}
+    (let [all-migrations-detailed (map detailed-migration all-migrations)
+          all-numbers (set (map :number-int all-migrations-detailed))
+          last-number (apply max all-numbers)
+          target-number* (or target-number last-number)
+          current-number (current-migration-number migrated)
+          direction (if (> target-number* current-number)
+                      FORWARD-DIRECTION
+                      BACKWARD-DIRECTION)]
+      (when-not (or (contains? all-numbers target-number*)
+                  (= 0 target-number*))
+        (throw+ {:type ::invalid-target-migration-number
+                 :number target-number*
+                 :message "Invalid target migration number."}))
+      (if (= target-number* current-number)
+        []
+        (condp contains? direction
+          #{FORWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
+                                              (drop-while #(>= current-number (:number-int %)))
+                                              (take-while #(>= target-number* (:number-int %))))
+                                :direction direction}
+          #{BACKWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
+                                               (drop-while #(>= target-number* (:number-int %)))
+                                               (take-while #(>= current-number (:number-int %)))
+                                               (sort-by :number-int >))
+                                 :direction direction})))))
 
 
 (defn migrate
   "Run migration on a db."
   [{:keys [migrations-dir db-uri number]}]
-  (let [db (db-util/db-conn db-uri)
-        _ (db-util/create-migrations-table db)
-        migrated (already-migrated db)
-        all-migrations (migrations-list migrations-dir)
-        {:keys [to-migrate direction]}
-        (get-detailed-migrations-to-migrate all-migrations migrated number)]
-    (if (seq to-migrate)
-      (doseq [{:keys [migration-name file-name migration-type]} to-migrate]
-        (if (= direction FORWARD-DIRECTION)
-          (println (str "Migrating: " migration-name "..."))
-          (println (str "Unapplying: " migration-name "...")))
-        (jdbc/with-transaction [tx db]
-          (let [actions (read-migration {:file-name file-name
-                                         :migrations-dir migrations-dir})]
-            (exec-actions! {:db tx
-                            :actions actions
-                            :direction direction
-                            :migration-type migration-type}))
+  (try+
+    (let [db (db-util/db-conn db-uri)
+          _ (db-util/create-migrations-table db)
+          migrated (already-migrated db)
+          all-migrations (migrations-list migrations-dir)
+          {:keys [to-migrate direction]}
+          (get-detailed-migrations-to-migrate all-migrations migrated number)]
+      (if (seq to-migrate)
+        (doseq [{:keys [migration-name file-name migration-type]} to-migrate]
           (if (= direction FORWARD-DIRECTION)
-            (save-migration! db migration-name)
-            (delete-migration! db migration-name))))
-      (println "Noting to migrate."))))
+            (println (str "Migrating: " migration-name "..."))
+            (println (str "Unapplying: " migration-name "...")))
+          (jdbc/with-transaction [tx db]
+            (let [actions (read-migration {:file-name file-name
+                                           :migrations-dir migrations-dir})]
+              (exec-actions! {:db tx
+                              :actions actions
+                              :direction direction
+                              :migration-type migration-type}))
+            (if (= direction FORWARD-DIRECTION)
+              (save-migration! db migration-name)
+              (delete-migration! db migration-name))))
+        (println "Nothing to migrate.")))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::duplicated-migration-numbers
+                         ::invalid-target-migration-number} (:type %)) e
+      (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
+
+
+(defn- get-already-migrated-migrations
+  [db]
+  (try+
+    (set (already-migrated db))
+    (catch [:type ::no-migrations-table]
+      ; There is no migrated migrations if table doesn't exist.
+           [])))
 
 
 (defn list-migrations
@@ -692,7 +713,7 @@
   ; TODO: reduce duplication with `migrate` fn!
   (let [migration-names (migrations-list migrations-dir)
         db (db-util/db-conn db-uri)
-        migrated (set (already-migrated db))]
+        migrated (set (get-already-migrated-migrations db))]
     (doseq [file-name migration-names
             :let [migration-name (get-migration-name file-name)
                   sign (if (contains? migrated migration-name) "✓" " ")]]

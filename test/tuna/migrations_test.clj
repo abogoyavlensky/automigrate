@@ -782,7 +782,7 @@
 
 
 (deftest test-validate-migration-numbers
-  (testing "check there are duplicates of migrations' numbers err"
+  (testing "check there are duplicates of migration numbers err"
     (let [names ["0001_test"
                  "0002_foo"
                  "0002_bar"
@@ -791,7 +791,7 @@
                  "0003_bar"]]
       (is (thrown? ExceptionInfo
             (#'migrations/validate-migration-numbers names)))))
-  (testing "check there are no duplicates of migrations' numbers ok"
+  (testing "check there are no duplicates of migration numbers ok"
     (let [names ["0001_test"
                  "0002_foo"
                  "0003_bar"]]

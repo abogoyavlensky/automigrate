@@ -9,6 +9,11 @@
             [tuna.errors :as errors]))
 
 
+(use-fixtures :each
+  (test-util/with-drop-tables config/DATABASE-CONN)
+  (test-util/with-delete-dir config/MIGRATIONS-DIR))
+
+
 (deftest test-run-make-migrations-args-error
   (testing "check invalid command"
     (bond/with-stub! [[file-util/prn-err (constantly nil)]]
@@ -84,7 +89,22 @@
         (is (= [{:message (str "Missing db connection config.\n\n  {:cmd :migrate, "
                             ":migrations-dir \"test/tuna/migrations\"}")
                  :title "COMMAND ERROR"}]
-              (test-util/get-spec-error-data (constantly error))))))))
+              (test-util/get-spec-error-data (constantly error)))))))
+
+  (testing "check invalid target migration number"
+    (core/run {:cmd :make-migrations
+               :model-file (str config/MODELS-DIR "feed_basic.edn")
+               :migrations-dir config/MIGRATIONS-DIR})
+    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
+      (core/run {:cmd :migrate
+                 :db-uri config/DATABASE-URL
+                 :migrations-dir config/MIGRATIONS-DIR
+                 :number 4})
+      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
+        (is (= {:message "-- ERROR -------------------------------------\n\nInvalid target migration number.\n"
+                :number 4
+                :type :tuna.migrations/invalid-target-migration-number}
+              error))))))
 
 
 (deftest test-run-explain-args-error
