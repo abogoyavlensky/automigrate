@@ -536,16 +536,25 @@
 (defn explain
   ; Generate raw sql from migration.
   [{:keys [migrations-dir number direction] :or {direction FORWARD-DIRECTION} :as _args}]
-  (let [migration-names (migrations-list migrations-dir)
-        file-name (get-migration-by-number migration-names number)]
-    (when-not (some? file-name)
-      (throw+ {:type ::no-migration-by-number
-               :number number}))
-    (file-util/safe-println
-      [(format "SQL for migration %s:\n" file-name)])
-    (explain* {:file-name file-name
-               :migrations-dir migrations-dir
-               :direction direction})))
+  (try+
+    (let [migration-names (migrations-list migrations-dir)
+          file-name (get-migration-by-number migration-names number)]
+      (when-not (some? file-name)
+        (throw+ {:type ::no-migration-by-number
+                 :number number
+                 :message (format "Missing migration by number %s" (str number))}))
+      (file-util/safe-println
+        [(format "SQL for migration %s:\n" file-name)])
+      (explain* {:file-name file-name
+                 :migrations-dir migrations-dir
+                 :direction direction}))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::no-migration-by-number
+                         ::duplicated-migration-numbers} (:type %)) e
+      (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
 
 
 (defn- already-migrated
