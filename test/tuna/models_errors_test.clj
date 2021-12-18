@@ -543,20 +543,28 @@
 (deftest test-fk-field-missing-referenced-model-error
   (testing "check missing referenced model error"
     (let [data {:foo [[:bar-id :integer {:foreign-key :bar/id}]]}]
-      (is (= "Foreign key :foo/bar-id has reference on the missing model :bar."
-            (:message (test-util/thrown-with-slingshot-data?
-                        [:type ::models/missing-referenced-model]
-                        (models/->internal-models data))))))))
+      (is (= {:message "Foreign key :foo/bar-id has reference on the missing model :bar."
+              :title "MODEL ERROR"
+              :type :tuna.models/missing-referenced-model
+              :data {:fk-field :foo/bar-id
+                     :referenced-model :bar}}
+            (test-util/thrown-with-slingshot-data?
+              [:type ::models/missing-referenced-model]
+              (models/->internal-models data)))))))
 
 
 (deftest test-fk-field-missing-referenced-field-error
   (testing "check missing referenced field error"
     (let [data {:bar [[:name :text]]
                 :foo {:fields [[:bar-id :integer {:foreign-key :bar/id}]]}}]
-      (is (= "Foreign key :foo/bar-id has reference on the missing field :bar/id."
-            (:message (test-util/thrown-with-slingshot-data?
-                        [:type ::models/missing-referenced-field]
-                        (models/->internal-models data))))))))
+      (is (= {:data {:referenced-field :id
+                     :referenced-model :bar}
+              :message "Foreign key :foo/bar-id has reference on the missing field :bar/id."
+              :title "MODEL ERROR"
+              :type :tuna.models/missing-referenced-field}
+            (test-util/thrown-with-slingshot-data?
+              [:type ::models/missing-referenced-field]
+              (models/->internal-models data)))))))
 
 
 (deftest test-fk-field-referenced-field-is-not-unique

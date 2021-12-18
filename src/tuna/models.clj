@@ -109,6 +109,7 @@
   [models qualified-field-name fk-model-name]
   (when-not (contains? models fk-model-name)
     (throw+ {:type ::missing-referenced-model
+             :title "MODEL ERROR"
              :data {:referenced-model fk-model-name
                     :fk-field qualified-field-name}
              :message (format "Foreign key %s has reference on the missing model %s."
@@ -122,6 +123,7 @@
   (when-not (some? fk-field-options)
     (let [qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
       (throw+ {:type ::missing-referenced-field
+               :title "MODEL ERROR"
                :data {:referenced-model fk-model-name
                       :referenced-field fk-field-name}
                :message (format "Foreign key %s has reference on the missing field %s."
@@ -138,6 +140,7 @@
   (when-not (true? (:unique fk-field-options))
     (let [qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
       (throw+ {:type ::referenced-field-is-not-unique
+               :title "MODEL ERROR"
                :data {:referenced-model fk-model-name
                       :referenced-field fk-field-name}
                :message (format "Foreign key %s has reference on the not unique field %s."
@@ -150,6 +153,7 @@
                 (some? fk-field-type-group)
                 (= field-type-group fk-field-type-group))
       (throw+ {:type ::fk-fields-have-different-types
+               :title "MODEL ERROR"
                :data {:origin-field qualified-field-name
                       :referenced-field qualified-fk-field-name}
                :message (format "Foreign key field %s and referenced field %s have different types."
