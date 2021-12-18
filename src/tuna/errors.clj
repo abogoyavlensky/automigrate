@@ -697,6 +697,6 @@
 (defn custom-error->error-report
   "Convert custom error data output to errors' report."
   [error-data]
-  (let [title (->error-title {})
+  (let [title (or (:title error-data) (->error-title {}))
         formatted-error #(format ERROR-TEMPLATE title %)]
     (update error-data :message formatted-error)))

@@ -3,6 +3,7 @@
             [clojure.spec.alpha :as s]
             [bond.james :as bond]
             [tuna.core :as core]
+            [tuna.migrations :as tuna-migrations]
             [tuna.testing-config :as config]
             [tuna.util.file :as file-util]
             [tuna.util.test :as test-util]
@@ -118,3 +119,19 @@
         (is (= [{:message "Invalid direction of migration.\n\n  :wrong"
                  :title "COMMAND ERROR"}]
               (test-util/get-spec-error-data (constantly error))))))))
+
+
+(deftest test-run-unexpected-error
+  (testing "check fiction unexpected error"
+    #_{:clj-kondo/ignore [:private-call]}
+    (bond/with-stub! [[file-util/prn-err (constantly nil)]
+                      [tuna-migrations/get-detailed-migrations-to-migrate
+                       (fn [& _] (throw (Exception. "Testing error message.")))]]
+      (core/run {:cmd :migrate
+                 :migrations-dir config/MIGRATIONS-DIR
+                 :db-uri config/DATABASE-URL})
+      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
+        (is (= {:message (str "-- UNEXPECTED ERROR -------------------------------------\n\n"
+                           "Testing error message.\n")
+                :title "UNEXPECTED ERROR"}
+              error))))))

@@ -98,4 +98,10 @@
     (catch #(contains? #{:tuna.migrations/missing-migration-name} (:type %)) e
       (-> e
         (errors/custom-error->error-report)
-        (file-util/prn-err)))))
+        (file-util/prn-err)))
+    (catch Exception e
+      (let [message (or (ex-message e) (str e))]
+        (-> {:title "UNEXPECTED ERROR"
+             :message message}
+          (errors/custom-error->error-report)
+          (file-util/prn-err))))))
