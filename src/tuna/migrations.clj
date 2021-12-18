@@ -483,8 +483,8 @@
     (catch #(contains? #{::missing-migration-name
                          ::duplicated-migration-numbers} (:type %)) e
       (-> e
-          (errors/custom-error->error-report)
-          (file-util/prn-err)))))
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
 
 
 (defn- get-migration-by-number
