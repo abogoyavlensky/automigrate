@@ -466,17 +466,25 @@
   [{next-migration-name :name
     migrations-dir :migrations-dir
     migration-type :type}]
-  (when (empty? next-migration-name)
-    (throw+ {:type ::missing-migration-name
-             :message "Missing migration name."}))
-  (let [_ (create-migrations-dir migrations-dir)
-        next-migration-name* (str/replace next-migration-name #"-" "_")
-        migration-file-name-full-path (get-next-migration-file-name
-                                        {:migration-type migration-type
-                                         :migrations-dir migrations-dir
-                                         :next-migration-name next-migration-name*})]
-    (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
-    (println (str "Created migration: " migration-file-name-full-path))))
+  (try+
+    (when (empty? next-migration-name)
+      (throw+ {:type ::missing-migration-name
+               :message "Missing migration name."}))
+    (let [_ (create-migrations-dir migrations-dir)
+          next-migration-name* (str/replace next-migration-name #"-" "_")
+          migration-file-name-full-path (get-next-migration-file-name
+                                          {:migration-type migration-type
+                                           :migrations-dir migrations-dir
+                                           :next-migration-name next-migration-name*})]
+      (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
+      (println (str "Created migration: " migration-file-name-full-path)))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::missing-migration-name
+                         ::duplicated-migration-numbers} (:type %)) e
+      (-> e
+          (errors/custom-error->error-report)
+          (file-util/prn-err)))))
 
 
 (defn- get-migration-by-number
