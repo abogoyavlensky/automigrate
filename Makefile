@@ -118,7 +118,7 @@ migrations:
 .PHONY: migrate  # Migrating migrations
 migrate:
 	@$(INFO) "Migrating..."
-	@clojure -A:dev -X:migrations :cmd :migrate
+	@clojure -A:dev -X:migrations :cmd :migrate $(GOALS)
 
 
 .PHONY: explain  # Print SQL for particular migration
