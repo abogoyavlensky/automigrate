@@ -720,13 +720,22 @@
   "Print migration list with status."
   [{:keys [migrations-dir db-uri]}]
   ; TODO: reduce duplication with `migrate` fn!
-  (let [migration-names (migrations-list migrations-dir)
-        db (db-util/db-conn db-uri)
-        migrated (set (get-already-migrated-migrations db))]
-    (doseq [file-name migration-names
-            :let [migration-name (get-migration-name file-name)
-                  sign (if (contains? migrated migration-name) "✓" " ")]]
-      (file-util/safe-println [(format "[%s] %s" sign file-name)]))))
+  (try+
+    (let [migration-names (migrations-list migrations-dir)
+          db (db-util/db-conn db-uri)
+          migrated (set (get-already-migrated-migrations db))]
+      (doseq [file-name migration-names
+              :let [migration-name (get-migration-name file-name)
+                    sign (if (contains? migrated migration-name) "✓" " ")]]
+        (file-util/safe-println [(format "[%s] %s" sign file-name)])))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::duplicated-migration-numbers
+                         ::no-migrations-table
+                         ::unexpected-db-error} (:type %)) e
+      (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
 
 
 (comment
