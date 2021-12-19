@@ -121,10 +121,12 @@
             (map :name)
             (set)))))
   (testing "test nothing to migrate forward with current number"
-    (core/run {:cmd :migrate
-               :migrations-dir config/MIGRATIONS-DIR
-               :db-uri config/DATABASE-URL
-               :number 2})
+    (is (= "Nothing to migrate.\n"
+          (with-out-str
+            (core/run {:cmd :migrate
+                       :migrations-dir config/MIGRATIONS-DIR
+                       :db-uri config/DATABASE-URL
+                       :number 2}))))
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"}
           (->> {:select [:*]
