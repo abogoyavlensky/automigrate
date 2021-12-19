@@ -165,13 +165,19 @@
       actions/ALTER-INDEX-ACTION} (:index-name action)))
 
 
-(defn- get-next-migration-name
+(defn- get-first-action-name
   [actions]
   (let [action (-> actions first)
         action-name (-> action :action name)
         item-name (-> action extract-item-name name)]
-    (-> (str/join #"_" [AUTO-MIGRATION-PREFIX action-name item-name])
-      (str/replace #"-" "_"))))
+    (str/join #"_" [AUTO-MIGRATION-PREFIX action-name item-name])))
+
+
+(defn- get-next-migration-name
+  "Return given custom name with underscores or first action name."
+  [actions custom-name]
+  (let [migration-name (or custom-name (get-first-action-name actions))]
+    (str/replace migration-name #"-" "_")))
 
 
 (defn- new-field?
@@ -435,12 +441,13 @@
 
 (defmethod make-migrations :default
   ; Make new migration based on models definitions automatically.
-  [{:keys [models-file migrations-dir]}]
+  [{:keys [models-file migrations-dir]
+    custom-migration-name :name}]
   (try+
     (if-let [next-migration (make-next-migration {:models-file models-file
                                                   :migrations-dir migrations-dir})]
       (let [_ (create-migrations-dir migrations-dir)
-            next-migration-name (get-next-migration-name next-migration)
+            next-migration-name (get-next-migration-name next-migration custom-migration-name)
             migration-file-name-full-path (get-next-migration-file-name
                                             {:migration-type AUTO-MIGRATION-EXT
                                              :migrations-dir migrations-dir

@@ -799,3 +799,15 @@
                  "0003_bar"]]
       (is (= names
             (#'migrations/validate-migration-numbers names))))))
+
+
+(deftest test-custom-migration-name-ok
+  (core/run {:cmd :make-migrations
+             :models-file (str config/MODELS-DIR "feed_basic.edn")
+             :migrations-dir config/MIGRATIONS-DIR
+             :name "some-custom-migration-name"})
+  (is (= '({:model-name :feed
+            :fields {:id {:type :serial :null false}}
+            :action :create-table})
+        (file-util/read-edn
+          (str config/MIGRATIONS-DIR "/0001_some_custom_migration_name.edn")))))
