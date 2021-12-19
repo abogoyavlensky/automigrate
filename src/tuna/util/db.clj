@@ -56,7 +56,7 @@
    (let [url (or jdbc-url
                  ; TODO: add ability to read .end file
                  ; TODO: add ability to change env var name
-               (System/getenv "DATABASE_URL"))]
+               (System/getenv "AUTO_MIGRATIONS_JDBS_URL"))]
      (jdbc/get-datasource {:jdbcUrl url}))))
 
 
