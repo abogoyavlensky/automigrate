@@ -69,6 +69,12 @@ lint-init:
 	@clj-kondo --config .clj-kondo/config-ci.edn --lint $(shell clj -Spath)
 
 
+.PHONY: check-deps  # Check deps versions
+check-deps:
+	@$(INFO) "Checking deps versions..."
+	@clojure -M:check-deps
+
+
 .PHONY: check  # Check linting and apply formatting locally
 check:
 	@$(MAKE) fmt

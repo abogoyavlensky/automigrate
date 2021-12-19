@@ -626,5 +626,5 @@
         (with-out-str
           (core/run {:cmd :make-migrations
                      :migrations-dir config/MIGRATIONS-DIR
-                     :model-file (str config/MODELS-DIR "feed_errors.edn")
+                     :models-file (str config/MODELS-DIR "feed_errors.edn")
                      :title "COMMAND ERROR"})))))

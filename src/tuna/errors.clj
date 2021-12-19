@@ -647,7 +647,7 @@
     (condp = reason
       "no method" (add-error-value "Invalid command name." (:val data))
 
-      '(clojure.core/fn [%] (clojure.core/contains? % :model-file))
+      '(clojure.core/fn [%] (clojure.core/contains? % :models-file))
       (add-error-value "Missing model file path." (:val data))
 
       '(clojure.core/fn [%] (clojure.core/contains? % :migrations-dir))

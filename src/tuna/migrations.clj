@@ -32,6 +32,7 @@
 (def ^:private BACKWARD-DIRECTION :backward)
 (def ^:private AUTO-MIGRATION-EXT :edn)
 (def ^:private SQL-MIGRATION-EXT :sql)
+(def EMPTY-SQL-MIGRATION-TYPE :empty-sql)
 (def ^:private FORWARD-MIGRATION-DELIMITER "-- FORWARD")
 (def ^:private BACKWARD-MIGRATION-DELIMITER "-- BACKWARD")
 
@@ -164,13 +165,19 @@
       actions/ALTER-INDEX-ACTION} (:index-name action)))
 
 
-(defn- get-next-migration-name
+(defn- get-first-action-name
   [actions]
   (let [action (-> actions first)
         action-name (-> action :action name)
         item-name (-> action extract-item-name name)]
-    (-> (str/join #"_" [AUTO-MIGRATION-PREFIX action-name item-name])
-      (str/replace #"-" "_"))))
+    (str/join #"_" [AUTO-MIGRATION-PREFIX action-name item-name])))
+
+
+(defn- get-next-migration-name
+  "Return given custom name with underscores or first action name."
+  [actions custom-name]
+  (let [migration-name (or custom-name (get-first-action-name actions))]
+    (str/replace migration-name #"-" "_")))
 
 
 (defn- new-field?
@@ -260,8 +267,8 @@
 
 (defn- read-models
   "Read and validate models from file."
-  [model-file]
-  (->> model-file
+  [models-file]
+  (->> models-file
     (file-util/read-edn)
     (models/->internal-models)))
 
@@ -371,9 +378,9 @@
 
 
 (defn- make-migrations*
-  [model-file migrations-files]
+  [models-file migrations-files]
   (let [old-schema (schema/current-db-schema migrations-files)
-        new-schema (read-models model-file)
+        new-schema (read-models models-file)
         [alterations removals] (differ/diff old-schema new-schema)
         changed-models (-> (set (keys alterations))
                          (set/union (set (keys removals))))
@@ -421,10 +428,10 @@
 
 (defn- make-next-migration
   "Return actions for next migration."
-  [{:keys [model-file migrations-dir]}]
+  [{:keys [models-file migrations-dir]}]
   (->> (file-util/list-files migrations-dir)
     (filter auto-migration?)
-    (make-migrations* model-file)
+    (make-migrations* models-file)
     (flatten)
     (seq)))
 
@@ -434,12 +441,13 @@
 
 (defmethod make-migrations :default
   ; Make new migration based on models definitions automatically.
-  [{:keys [model-file migrations-dir]}]
+  [{:keys [models-file migrations-dir]
+    custom-migration-name :name}]
   (try+
-    (if-let [next-migration (make-next-migration {:model-file model-file
+    (if-let [next-migration (make-next-migration {:models-file models-file
                                                   :migrations-dir migrations-dir})]
       (let [_ (create-migrations-dir migrations-dir)
-            next-migration-name (get-next-migration-name next-migration)
+            next-migration-name (get-next-migration-name next-migration custom-migration-name)
             migration-file-name-full-path (get-next-migration-file-name
                                             {:migration-type AUTO-MIGRATION-EXT
                                              :migrations-dir migrations-dir
@@ -461,11 +469,10 @@
         (file-util/prn-err)))))
 
 
-(defmethod make-migrations SQL-MIGRATION-EXT
+(defmethod make-migrations EMPTY-SQL-MIGRATION-TYPE
   ; Make new migrations based on models definitions automatically.
   [{next-migration-name :name
-    migrations-dir :migrations-dir
-    migration-type :type}]
+    migrations-dir :migrations-dir}]
   (try+
     (when (empty? next-migration-name)
       (throw+ {:type ::missing-migration-name
@@ -473,7 +480,7 @@
     (let [_ (create-migrations-dir migrations-dir)
           next-migration-name* (str/replace next-migration-name #"-" "_")
           migration-file-name-full-path (get-next-migration-file-name
-                                          {:migration-type migration-type
+                                          {:migration-type SQL-MIGRATION-EXT
                                            :migrations-dir migrations-dir
                                            :next-migration-name next-migration-name*})]
       (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
@@ -503,14 +510,19 @@
   (juxt #(get-migration-type (:file-name %)) :direction))
 
 
+(defn- add-transaction-to-explain
+  [actions]
+  (concat ["BEGIN"] actions ["COMMIT;"]))
+
+
 (defmethod explain* [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
   ; Generate raw sql from migration.
   [{:keys [file-name migrations-dir] :as _args}]
   (->> (read-migration {:file-name file-name
                         :migrations-dir migrations-dir})
     (mapv sql/->sql)
-    ; TODO: maybe remove!?
     (flatten)
+    (add-transaction-to-explain)
     (file-util/safe-println)))
 
 
@@ -747,18 +759,18 @@
 
 
 (comment
-  (let [config {:model-file "src/tuna/models.edn"
-                ;:model-file "test/tuna/models/feed_add_column.edn"
+  (let [config {:models-file "src/tuna/models.edn"
+                ;:models-file "test/tuna/models/feed_add_column.edn"
                 :migrations-dir "src/tuna/migrations"
                 ;:migrations-dir "test/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 :number 4}
         db (db-util/db-conn (:db-uri config))
         migrations-files (file-util/list-files (:migrations-dir config))
-        model-file (:model-file config)]
+        models-file (:models-file config)]
       (try+
-        (->> (read-models model-file))
-        ;(->> (make-migrations* model-file migrations-files))
+        (->> (read-models models-file))
+        ;(->> (make-migrations* models-file migrations-files))
         ;(make-next-migration config)
         ;     (flatten))
 
@@ -773,11 +785,11 @@
 
 
 (comment
-  (let [config {:model-file "src/tuna/models.edn"
+  (let [config {:models-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
                 ;:name "some-new-table"
-                ;:type :sql}
+                ;:type :empty-sql}
                 ;:number 3}
                 ;:direction FORWARD-DIRECTION}
                 ;:direction BACKWARD-DIRECTION}

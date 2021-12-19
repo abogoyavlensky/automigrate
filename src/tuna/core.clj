@@ -11,7 +11,7 @@
 (s/check-asserts true)
 
 
-(s/def ::model-file string?)
+(s/def ::models-file string?)
 (s/def ::migrations-dir string?)
 (s/def ::db-uri string?)
 (s/def ::number int?)
@@ -20,7 +20,7 @@
 (s/def ::type
   (s/and
     (s/conformer keyword)
-    #{:sql}))
+    #{migrations/EMPTY-SQL-MIGRATION-TYPE}))
 
 
 (s/def ::name (s/conformer name))
@@ -46,7 +46,7 @@
   [_]
   (s/keys
     :req-un [::cmd
-             ::model-file
+             ::models-file
              ::migrations-dir]
     :opt-un [::type
              ::name]))
