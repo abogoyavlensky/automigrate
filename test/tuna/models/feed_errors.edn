@@ -1,0 +1,5 @@
+{:feed {:fields [[:id :serial {:null false}]
+                 [:name [:varchar "wrong-value"]]]}
+
+ :account [[:id :serial {:null false}]
+           [:address :text {:primary-field 10}]]}

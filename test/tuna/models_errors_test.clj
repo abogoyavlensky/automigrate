@@ -1,7 +1,13 @@
 (ns tuna.models-errors-test
   (:require [clojure.test :refer :all]
+            [tuna.core :as core]
             [tuna.models :as models]
-            [tuna.util.test :as test-util]))
+            [tuna.util.test :as test-util]
+            [tuna.testing-config :as config]))
+
+
+(use-fixtures :each
+  (test-util/with-delete-dir config/MIGRATIONS-DIR))
 
 
 (deftest test-spec-public-model-filter-and-sort-multiple-errors
@@ -609,3 +615,16 @@
       (is (= [{:message "Missing indexed fields [:name] in model :foo."
                :title "MODEL ERROR"}]
             (test-util/get-spec-error-data #(models/->internal-models data)))))))
+
+
+(deftest test-run-multiple-model-errors-error
+  (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+           "Parameter for char type of field :feed/name should be positive integer.\n\n  "
+           "\"wrong-value\""
+           "\n\n-- MODEL ERROR -------------------------------------\n\n"
+           "Field :account/address has extra options.\n\n  {:primary-field 10}\n\n")
+        (with-out-str
+          (core/run {:cmd :make-migrations
+                     :migrations-dir config/MIGRATIONS-DIR
+                     :model-file (str config/MODELS-DIR "feed_errors.edn")
+                     :title "COMMAND ERROR"})))))
