@@ -260,8 +260,8 @@
 
 (defn- read-models
   "Read and validate models from file."
-  [model-file]
-  (->> model-file
+  [models-file]
+  (->> models-file
     (file-util/read-edn)
     (models/->internal-models)))
 
@@ -371,9 +371,9 @@
 
 
 (defn- make-migrations*
-  [model-file migrations-files]
+  [models-file migrations-files]
   (let [old-schema (schema/current-db-schema migrations-files)
-        new-schema (read-models model-file)
+        new-schema (read-models models-file)
         [alterations removals] (differ/diff old-schema new-schema)
         changed-models (-> (set (keys alterations))
                          (set/union (set (keys removals))))
@@ -421,10 +421,10 @@
 
 (defn- make-next-migration
   "Return actions for next migration."
-  [{:keys [model-file migrations-dir]}]
+  [{:keys [models-file migrations-dir]}]
   (->> (file-util/list-files migrations-dir)
     (filter auto-migration?)
-    (make-migrations* model-file)
+    (make-migrations* models-file)
     (flatten)
     (seq)))
 
@@ -434,9 +434,9 @@
 
 (defmethod make-migrations :default
   ; Make new migration based on models definitions automatically.
-  [{:keys [model-file migrations-dir]}]
+  [{:keys [models-file migrations-dir]}]
   (try+
-    (if-let [next-migration (make-next-migration {:model-file model-file
+    (if-let [next-migration (make-next-migration {:models-file models-file
                                                   :migrations-dir migrations-dir})]
       (let [_ (create-migrations-dir migrations-dir)
             next-migration-name (get-next-migration-name next-migration)
@@ -747,18 +747,18 @@
 
 
 (comment
-  (let [config {:model-file "src/tuna/models.edn"
-                ;:model-file "test/tuna/models/feed_add_column.edn"
+  (let [config {:models-file "src/tuna/models.edn"
+                ;:models-file "test/tuna/models/feed_add_column.edn"
                 :migrations-dir "src/tuna/migrations"
                 ;:migrations-dir "test/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 :number 4}
         db (db-util/db-conn (:db-uri config))
         migrations-files (file-util/list-files (:migrations-dir config))
-        model-file (:model-file config)]
+        models-file (:models-file config)]
       (try+
-        (->> (read-models model-file))
-        ;(->> (make-migrations* model-file migrations-files))
+        (->> (read-models models-file))
+        ;(->> (make-migrations* models-file migrations-files))
         ;(make-next-migration config)
         ;     (flatten))
 
@@ -773,7 +773,7 @@
 
 
 (comment
-  (let [config {:model-file "src/tuna/models.edn"
+  (let [config {:models-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
                 ;:name "some-new-table"

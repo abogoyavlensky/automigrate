@@ -44,7 +44,7 @@
 
 
 (deftest test-make-single-migrations-for-basic-model-ok
-  (#'migrations/make-migrations {:model-file (str config/MODELS-DIR "feed_basic.edn")
+  (#'migrations/make-migrations {:models-file (str config/MODELS-DIR "feed_basic.edn")
                                  :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:model-name :feed
             :fields {:id {:type :serial :null false}}
@@ -55,7 +55,7 @@
 
 (deftest test-migrate-single-migrations-for-basic-model-ok
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_basic.edn")
+             :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -70,10 +70,10 @@
 
 (deftest test-migrate-migrations-with-adding-columns-ok
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_basic.edn")
+             :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
             :field-name :created-at
@@ -100,13 +100,13 @@
 
 (deftest test-migrate-forward-to-number-ok
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_basic.edn")
+             :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_alter_column.edn")
+             :models-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (testing "test migrate forward to specific number"
     (core/run {:cmd :migrate
@@ -150,13 +150,13 @@
 
 (deftest test-migrate-backward-to-number-ok
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_basic.edn")
+             :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_alter_column.edn")
+             :models-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :migrate
              :migrations-dir config/MIGRATIONS-DIR
@@ -196,10 +196,10 @@
 
 (deftest test-migrate-migrations-with-alter-columns-ok
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_alter_column.edn")
+             :models-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :alter-column
             :changes {:primary-key {:from :EMPTY
@@ -232,10 +232,10 @@
 
 (deftest test-migrate-migrations-with-drop-columns-ok
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_drop_column.edn")
+             :models-file (str config/MODELS-DIR "feed_drop_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-column
             :field-name :name
@@ -257,10 +257,10 @@
 
 (deftest test-migrate-migrations-with-drop-table-ok
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_add_column.edn")
+             :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :make-migrations
-             :model-file (str config/MODELS-DIR "feed_drop_table.edn")
+             :models-file (str config/MODELS-DIR "feed_drop_table.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-table
             :model-name :feed})
