@@ -41,3 +41,8 @@
   [more]
   (.write *out*
     (str (str/join ";\n" more) "\n")))
+
+
+(defn prn-err
+  [e]
+  (print (str (:message e) "\n")))

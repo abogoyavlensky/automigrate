@@ -1,53 +1,77 @@
 (ns tuna.fields
   (:require [clojure.spec.alpha :as s]
-            [clojure.set :as set]
-            [spec-dict :as d]
-            [tuna.util.spec :as spec-util]))
+            [tuna.util.spec :as spec-util])
+  (:import (clojure.lang PersistentVector)))
 
 
 (def FOREIGN-KEY-OPTION :foreign-key)
 (def ON-DELETE-OPTION :on-delete)
 (def ON-UPDATE-OPTION :on-update)
 
-(def FK-CASCADE :cascade)
-(def FK-SET-NULL :set-null)
-(def FK-SET-DEFAULT :set-default)
-(def FK-RESTRICT :restrict)
-(def FK-NO-ACTION :no-action)
+
+(def fk-actions
+  #{:cascade
+    :set-null
+    :set-default
+    :restrict
+    :no-action})
 
 
-(def FK-ACTIONS
-  #{FK-CASCADE
-    FK-SET-NULL
-    FK-SET-DEFAULT
-    FK-RESTRICT
-    FK-NO-ACTION})
+(s/def ::char-type (s/tuple #{:char :varchar :float} pos-int?))
+
+(s/def ::float-type (s/tuple #{:float} pos-int?))
 
 
-(s/def ::type
+(s/def ::keyword-type
+  ; TODO: switch available fields according to db dialect!
   (s/and
-    ; TODO: switch available fields according to db dialect!
-    (s/or
-      :kw #{:integer
-            :smallint
-            :bigint
-            :float
-            :real
-            :serial
-            :uuid
-            :boolean
-            :text
-            :timestamp
-            :date
-            :time
-            :point
-            :json
-            :jsonb}
-      :fn (s/cat :name #{:char
-                         :varchar
-                         :float}
-            :val pos-int?))
-    (s/conformer spec-util/tagged->value)))
+    keyword?
+    #{:integer
+      :smallint
+      :bigint
+      :float
+      :real
+      :serial
+      :uuid
+      :boolean
+      :text
+      :timestamp
+      :date
+      :time
+      :point
+      :json
+      :jsonb}))
+
+
+(defn- field-type-dispatch
+  [v]
+  (cond
+    (keyword? v) :keyword
+    (and (vector? v)
+      (contains? #{:char :varchar} (first v))) :char
+    (and (vector? v)
+      (contains? #{:float} (first v))) :float))
+
+
+(defmulti field-type field-type-dispatch)
+
+
+(defmethod field-type :keyword
+  [_]
+  ::keyword-type)
+
+
+(defmethod field-type :char
+  [_]
+  ::char-type)
+
+
+(defmethod field-type :float
+  [_]
+  ::float-type)
+
+
+(s/def ::type (s/multi-spec field-type field-type-dispatch))
 
 
 (def ^:private type-hierarchy
@@ -85,78 +109,135 @@
 (s/def ::null boolean?)
 (s/def ::primary-key true?)
 (s/def ::unique true?)
+(s/def ::foreign-key qualified-keyword?)
 
 
-(s/def ::foreign-key
-  qualified-keyword?)
+(s/def ::default-int integer?)
+(s/def ::default-float float?)
+(s/def ::default-bool boolean?)
+(s/def ::default-str string?)
+(s/def ::default-nil nil?)
+
+
+(s/def ::default-fn (s/cat
+                      :name keyword?
+                      :val (s/? (some-fn integer? float? string?))))
+
+
+(defmulti default-option class)
+
+
+(defmethod default-option Long
+  [_]
+  ::default-int)
+
+
+(defmethod default-option Double
+  [_]
+  ::default-float)
+
+
+(defmethod default-option Boolean
+  [_]
+  ::default-bool)
+
+
+(defmethod default-option String
+  [_]
+  ::default-str)
+
+
+(defmethod default-option nil
+  [_]
+  ::default-nil)
+
+
+(defmethod default-option PersistentVector
+  [_]
+  (s/and
+    ::default-fn
+    (s/conformer
+      (fn [value]
+        (let [fn-name (:name value)
+              fn-arg (:val value)]
+          (cond-> [fn-name]
+            (some? fn-arg) (conj fn-arg)))))))
 
 
 (s/def ::default
-  ; TODO: update with dynamic value related to field's type
-  (s/and
-    (s/or
-      :int integer?
-      :bool boolean?
-      :str string?
-      :nil nil?
-      :fn (s/cat
-            :name keyword?
-            :val (s/? #((some-fn int? string?) %))))
-    (s/conformer
-      spec-util/tagged->value)))
+  ; TODO: try update with dynamic value related to field's type
+  (s/multi-spec default-option class))
 
 
-(s/def ::on-delete FK-ACTIONS)
-(s/def ::on-update FK-ACTIONS)
+(s/def ::on-delete fk-actions)
+
+
+(s/def ::on-update fk-actions)
 
 
 (s/def ::options
-  (d/dict
-    (d/->opt (spec-util/specs->dict
-               [::null
-                ::primary-key
-                ::unique
-                ::default
-                ::foreign-key
-                ::on-delete
-                ::on-update]))))
+  (s/keys
+    :opt-un [::null
+             ::primary-key
+             ::unique
+             ::default
+             ::foreign-key
+             ::on-delete
+             ::on-update]))
 
 
-(defn- validate-fk-options
-  "Validate that basic fields mustn't contain foreign-key specific options."
-  [value]
-  (let [option-names (-> (keys value) set)]
-    (if (not (contains? option-names FOREIGN-KEY-OPTION))
-      (empty? (set/intersection option-names
-                #{ON-DELETE-OPTION ON-UPDATE-OPTION}))
-      true)))
+(s/def ::options-strict-keys
+  (spec-util/validate-strict-keys ::options))
+
+
+(s/def ::validate-fk-options-on-delete
+  ; Validate that basic fields mustn't contain foreign-key specific options.
+  (fn [value]
+    (let [option-names (-> (keys value) set)]
+      (if (not (contains? option-names FOREIGN-KEY-OPTION))
+        (not (contains? option-names ON-DELETE-OPTION))
+        true))))
+
+
+(s/def ::validate-fk-options-on-update
+  ; Validate that basic fields mustn't contain foreign-key specific options.
+  (fn [value]
+    (let [option-names (-> (keys value) set)]
+      (if (not (contains? option-names FOREIGN-KEY-OPTION))
+        (not (contains? option-names ON-UPDATE-OPTION))
+        true))))
 
 
 (s/def ::options-strict
   (s/and
-    (d/dict* ::options)
-    validate-fk-options))
+    ::options
+    ::options-strict-keys
+    ::validate-fk-options-on-delete
+    ::validate-fk-options-on-update))
 
 
-(defn- validate-default-and-null
-  [{:keys [null default] :as options}]
-  (not (and (false? null)
-         (nil? default)
-         (contains? options :default))))
+(s/def ::validate-default-and-null
+  (fn [{:keys [null default] :as options}]
+    (not (and (false? null)
+           (nil? default)
+           (contains? options :default)))))
 
 
-(defn- validate-fk-options-and-null
-  [{:keys [null on-delete on-update]}]
-  (not (and (false? null)
-         (or (= :set-null on-delete)
-           (= :set-null on-update)))))
+(s/def ::validate-fk-options-and-null-on-delete
+  (fn [{:keys [null on-delete]}]
+    (not (and (false? null) (= :set-null on-delete)))))
+
+
+(s/def ::validate-fk-options-and-null-on-update
+  (fn [{:keys [null on-update]}]
+    (not (and (false? null) (= :set-null on-update)))))
 
 
 (defmulti validate-default-and-type
-  (fn [{field-type :type}]
-    (if (vector? field-type)
-      (first field-type)
-      field-type))
+  (fn [{field-type-val :type}]
+    (if (vector? field-type-val)
+      (first field-type-val)
+      field-type-val))
   :hierarchy #'type-hierarchy)
 
 
@@ -190,34 +271,46 @@
   true)
 
 
+(s/def ::validate-default-and-type
+  validate-default-and-type)
+
+
+(s/def ::field-with-type
+  (s/merge
+    (s/keys
+      :req-un [::type])
+    ::options))
+
+
 (s/def ::field
   (s/and
-    (d/dict*
-      {:type ::type}
-      ::options)
-    validate-default-and-null
-    validate-fk-options-and-null
-    validate-default-and-type))
+    ; TODO: add ::field-with-type-strict-keys
+    ::field-with-type
+    ::validate-default-and-null
+    ::validate-fk-options-and-null-on-delete
+    ::validate-fk-options-and-null-on-update
+    ::validate-default-and-type))
+
+
+(s/def ::field-name keyword?)
 
 
 (s/def ::field-vec
   (s/cat
-    :name keyword?
+    :name ::field-name
     :type ::type
     :options (s/? ::options-strict)))
 
 
 (s/def ::fields
-  (s/map-of keyword? ::field))
+  (s/map-of ::field-name ::field :min-count 1 :distinct true))
 
 
+; TODO: remove!
 ;;;;;;;;;;;;;;;
 
 (comment
   (let [data {:null true
-              :foreign-key :account/id
-              :on-delete FK-CASCADE}
-              ;:type :integer}
-        data2 {:null false, :type :serial}]))
-;(s/explain ::opts data)
-;(s/explain ::options-strict data)))
+              :foreign-key :account/id}
+        data2 {:null false, :type :serial}]
+    (s/explain-data ::options-strict data)))

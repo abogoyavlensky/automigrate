@@ -1,7 +1,9 @@
 (ns tuna.util.test
   "Utils for simplifying tests."
   (:require [clojure.java.io :as io]
-            [tuna.util.db :as db-util]))
+            [clojure.spec.alpha :as s]
+            [tuna.util.db :as db-util]
+            [slingshot.slingshot :refer [try+]]))
 
 
 (defn- drop-all-tables
@@ -47,3 +49,22 @@
         :from [:information_schema.columns]
         :where [:= :table_name (name table-name)]}
     (db-util/exec! db)))
+
+
+(defmacro thrown-with-slingshot-data?
+  "Catch exception by calling function and return slingshot error data or nil.
+
+  `exception-check`: could be a vector of keywords or a function;
+  `f`: function that should be tested."
+  [exception-check f]
+  `(try+
+     ~f
+     (catch ~exception-check e#
+       e#)))
+
+
+(defn get-spec-error-data
+  [f]
+  (->> (thrown-with-slingshot-data? [:type ::s/invalid] (f))
+    :reports
+    (map #(dissoc % :problem))))

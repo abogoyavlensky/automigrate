@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/abogoyavlensky/tuna/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/tuna/actions/workflows/ci.yaml)
 
-Auto migrations for Clojure projects.
+Database auto-migrations tool for Clojure.
 
 ## Usage
 

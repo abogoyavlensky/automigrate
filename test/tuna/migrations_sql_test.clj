@@ -4,7 +4,8 @@
             [tuna.util.db :as db-util]
             [tuna.util.file :as file-util]
             [tuna.util.test :as test-util]
-            [tuna.testing-config :as config]))
+            [tuna.testing-config :as config])
+  (:import [org.postgresql.util PSQLException]))
 
 
 (use-fixtures :each
@@ -13,10 +14,11 @@
 
 
 (deftest test-make-sql-migration-ok
-  (core/run {:action :make-migrations
+  (core/run {:cmd :make-migrations
              :model-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:action :make-migrations
+  (core/run {:cmd :make-migrations
+             :model-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
              :type "sql"
              :name "add-description-field"})
@@ -26,7 +28,7 @@
       (is (= "0002_add_description_field.sql"
             (.getName (last files))))))
   (testing "check making next auto migration"
-    (core/run {:action :make-migrations
+    (core/run {:cmd :make-migrations
                :model-file (str config/MODELS-DIR "feed_add_column.edn")
                :migrations-dir config/MIGRATIONS-DIR})
     (let [files (file-util/list-files config/MIGRATIONS-DIR)]
@@ -36,10 +38,11 @@
 
 
 (deftest test-migrate-sql-migration-ok
-  (core/run {:action :make-migrations
+  (core/run {:cmd :make-migrations
              :model-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:action :make-migrations
+  (core/run {:cmd :make-migrations
+             :model-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
              :type "sql"
              :name "add-description-field"})
@@ -49,7 +52,7 @@
       "-- BACKWARD\n"
       "ALTER TABLE feed DROP COLUMN description;\n"))
   (testing "check forward migration"
-    (core/run {:action :migrate
+    (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
                :db-uri config/DATABASE-URL})
     (is (= '({:id 1
@@ -66,7 +69,7 @@
             (first)
             :data_type))))
   (testing "check backward migration"
-    (core/run {:action :migrate
+    (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
                :db-uri config/DATABASE-URL
                :number 1})
@@ -83,10 +86,11 @@
 
 
 (deftest test-explain-sql-migration-ok
-  (core/run {:action :make-migrations
+  (core/run {:cmd :make-migrations
              :model-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:action :make-migrations
+  (core/run {:cmd :make-migrations
+             :model-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
              :type "sql"
              :name "add-description-field"})
@@ -99,7 +103,7 @@
     (is (= (str "SQL for migration 0002_add_description_field.sql:\n\n\n"
              "ALTER TABLE feed ADD COLUMN description text;\n\n")
           (with-out-str
-            (core/run {:action :explain
+            (core/run {:cmd :explain
                        :migrations-dir config/MIGRATIONS-DIR
                        :db-uri config/DATABASE-URL
                        :number 2})))))
@@ -107,7 +111,7 @@
     (is (= (str "SQL for migration 0002_add_description_field.sql:\n\n\n"
              "ALTER TABLE feed DROP COLUMN description;\n\n")
           (with-out-str
-            (core/run {:action :explain
+            (core/run {:cmd :explain
                        :migrations-dir config/MIGRATIONS-DIR
                        :db-uri config/DATABASE-URL
                        :number 2
@@ -115,16 +119,25 @@
 
 
 (deftest test-list-migrations-with-sql-one-ok
-  (core/run {:action :make-migrations
+  (core/run {:cmd :make-migrations
              :model-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:action :make-migrations
+  (core/run {:cmd :make-migrations
+             :model-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
              :type "sql"
              :name "add-description-field"})
-  (is (= (str "[ ] 0001_auto_create_table_feed.edn\n"
-           "[ ] 0002_add_description_field.sql\n")
-        (with-out-str
-          (core/run {:action :list-migrations
-                     :migrations-dir config/MIGRATIONS-DIR
-                     :db-uri config/DATABASE-URL})))))
+  (testing "check that migrations table does not exist"
+    (is (thrown? PSQLException
+          (->> {:select [:name]
+                ; TODO: make migrations table configurable!
+                :from [db-util/MIGRATIONS-TABLE]
+                :order-by [:created-at]}
+            (db-util/exec! config/DATABASE-CONN)))))
+  (testing "check list-migrations output"
+    (is (= (str "[ ] 0001_auto_create_table_feed.edn\n"
+             "[ ] 0002_add_description_field.sql\n")
+          (with-out-str
+            (core/run {:cmd :list-migrations
+                       :migrations-dir config/MIGRATIONS-DIR
+                       :db-uri config/DATABASE-URL}))))))

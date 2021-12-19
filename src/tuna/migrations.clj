@@ -15,12 +15,14 @@
             [weavejester.dependency :as dep]
             [tuna.actions :as actions]
             [tuna.models :as models]
+            [tuna.errors :as errors]
             [tuna.sql :as sql]
             [tuna.schema :as schema]
             [tuna.util.file :as file-util]
             [tuna.util.db :as db-util]
             [tuna.util.spec :as spec-util]
-            [tuna.util.model :as model-util]))
+            [tuna.util.model :as model-util])
+  (:import [org.postgresql.util PSQLException]))
 
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
@@ -72,7 +74,7 @@
 
 
 (defmethod read-migration SQL-MIGRATION-EXT
-  ;"Return models' definitions.
+  ; Return model definitions.
   [{:keys [file-name migrations-dir]}]
   (-> (str migrations-dir "/" file-name)
     (slurp)
@@ -128,7 +130,7 @@
     (when (seq duplicated-numbers)
       (throw+ {:type ::duplicated-migration-numbers
                :numbers duplicated-numbers
-               :message (str "There are duplicated migrations' numbers: "
+               :message (str "There are duplicated migration numbers: "
                           (str/join ", " duplicated-numbers)
                           ". Please resolve the conflict and try again.")}))
     migrations))
@@ -145,7 +147,7 @@
 
 (defn- next-migration-number
   [file-names]
-  ; migrations' numbers starting from 1
+  ; migration numbers starting from 1
   (file-util/zfill (inc (count file-names))))
 
 
@@ -261,7 +263,7 @@
   [model-file]
   (->> model-file
     (file-util/read-edn)
-    (spec-util/conform ::models/->internal-models)))
+    (models/->internal-models)))
 
 
 (defn- action-dependencies
@@ -398,7 +400,7 @@
     (->> actions
       (flatten)
       (sort-actions)
-      (map #(spec-util/conform ::actions/->migration %)))))
+      (actions/->migrations))))
 
 
 (defn- get-next-migration-file-name
@@ -407,7 +409,7 @@
   (let [migration-names (migrations-list migrations-dir)
         migration-number (next-migration-number migration-names)
         migration-file-name (str migration-number "_" next-migration-name)]
-    ; TODO: build file file path properly!
+    ; TODO: build file path properly!
     (str migrations-dir "/" migration-file-name "." (name migration-type))))
 
 
@@ -431,37 +433,58 @@
 
 
 (defmethod make-migrations :default
-  ; Make new migrations based on models' definitions automatically.
-  [{:keys [model-file migrations-dir] :as _args}]
-  (if-let [next-migration (make-next-migration {:model-file model-file
-                                                :migrations-dir migrations-dir})]
-    (let [_ (create-migrations-dir migrations-dir)
-          next-migration-name (get-next-migration-name next-migration)
-          migration-file-name-full-path (get-next-migration-file-name
-                                          {:migration-type AUTO-MIGRATION-EXT
-                                           :migrations-dir migrations-dir
-                                           :next-migration-name next-migration-name})]
-      (spit migration-file-name-full-path
-        (with-out-str
-          (pprint/pprint next-migration)))
-      ; TODO: print all changes from migration in verbose mode
-      (println (str "Created migration: " migration-file-name-full-path)))
-    (println "There are no changes in models.")))
+  ; Make new migration based on models definitions automatically.
+  [{:keys [model-file migrations-dir]}]
+  (try+
+    (if-let [next-migration (make-next-migration {:model-file model-file
+                                                  :migrations-dir migrations-dir})]
+      (let [_ (create-migrations-dir migrations-dir)
+            next-migration-name (get-next-migration-name next-migration)
+            migration-file-name-full-path (get-next-migration-file-name
+                                            {:migration-type AUTO-MIGRATION-EXT
+                                             :migrations-dir migrations-dir
+                                             :next-migration-name next-migration-name})]
+        (spit migration-file-name-full-path
+          (with-out-str
+            (pprint/pprint next-migration)))
+        ; TODO: print all changes from migration in verbose mode
+        (println (str "Created migration: " migration-file-name-full-path)))
+      (println "There are no changes in models."))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::models/missing-referenced-model
+                         ::models/missing-referenced-field
+                         ::models/referenced-field-is-not-unique
+                         ::models/fk-fields-have-different-types} (:type %)) e
+      (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
 
 
 (defmethod make-migrations SQL-MIGRATION-EXT
-  ; Make new migrations based on models' definitions automatically.
+  ; Make new migrations based on models definitions automatically.
   [{next-migration-name :name
     migrations-dir :migrations-dir
     migration-type :type}]
-  (let [_ (create-migrations-dir migrations-dir)
-        next-migration-name* (str/replace next-migration-name #"-" "_")
-        migration-file-name-full-path (get-next-migration-file-name
-                                        {:migration-type migration-type
-                                         :migrations-dir migrations-dir
-                                         :next-migration-name next-migration-name*})]
-    (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
-    (println (str "Created migration: " migration-file-name-full-path))))
+  (try+
+    (when (empty? next-migration-name)
+      (throw+ {:type ::missing-migration-name
+               :message "Missing migration name."}))
+    (let [_ (create-migrations-dir migrations-dir)
+          next-migration-name* (str/replace next-migration-name #"-" "_")
+          migration-file-name-full-path (get-next-migration-file-name
+                                          {:migration-type migration-type
+                                           :migrations-dir migrations-dir
+                                           :next-migration-name next-migration-name*})]
+      (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
+      (println (str "Created migration: " migration-file-name-full-path)))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::missing-migration-name
+                         ::duplicated-migration-numbers} (:type %)) e
+      (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
 
 
 (defn- get-migration-by-number
@@ -521,26 +544,44 @@
 (defn explain
   ; Generate raw sql from migration.
   [{:keys [migrations-dir number direction] :or {direction FORWARD-DIRECTION} :as _args}]
-  (let [migration-names (migrations-list migrations-dir)
-        file-name (get-migration-by-number migration-names number)]
-    (when-not (some? file-name)
-      (throw+ {:type ::no-migration-by-number
-               :number number}))
-    (file-util/safe-println
-      [(format "SQL for migration %s:\n" file-name)])
-    (explain* {:file-name file-name
-               :migrations-dir migrations-dir
-               :direction direction})))
+  (try+
+    (let [migration-names (migrations-list migrations-dir)
+          file-name (get-migration-by-number migration-names number)]
+      (when-not (some? file-name)
+        (throw+ {:type ::no-migration-by-number
+                 :number number
+                 :message (format "Missing migration by number %s" (str number))}))
+      (file-util/safe-println
+        [(format "SQL for migration %s:\n" file-name)])
+      (explain* {:file-name file-name
+                 :migrations-dir migrations-dir
+                 :direction direction}))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::no-migration-by-number
+                         ::duplicated-migration-numbers} (:type %)) e
+      (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
 
 
 (defn- already-migrated
   "Get names of previously migrated migrations from db."
   [db]
-  (->> {:select [:name]
-        :from [db-util/MIGRATIONS-TABLE]
-        :order-by [:created-at]}
-    (db-util/exec! db)
-    (map :name)))
+  (try
+    (->> {:select [:name]
+          :from [db-util/MIGRATIONS-TABLE]
+          :order-by [:created-at]}
+      (db-util/exec! db)
+      (map :name))
+    (catch PSQLException e
+      (let [msg (ex-message e)
+            table-exists-err-pattern #"relation .+ does not exist"]
+        (if (re-find table-exists-err-pattern msg)
+          (throw+ {:type ::no-migrations-table
+                   :message "Migrations table does not exist."})
+          (throw+ {:type ::unexpected-db-error
+                   :message "Unexpected db error."}))))))
 
 
 (defmulti exec-action! (juxt :migration-type :direction))
@@ -556,9 +597,8 @@
 
 
 (defmethod exec-action! [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
-  [_]
+  [_])
   ; TODO: implement backward migration!
-  (println "WARNING: backward migration isn't fully implemented yet. Database schema hasn't been changed!"))
 
 
 (defmethod exec-action! [SQL-MIGRATION-EXT FORWARD-DIRECTION]
@@ -578,6 +618,10 @@
 (defn- exec-actions!
   "Perform list of actions on a database."
   [{:keys [db actions direction migration-type]}]
+  (when (and (= AUTO-MIGRATION-EXT migration-type)
+          (= BACKWARD-DIRECTION direction))
+    (println (str "WARNING: backward migration isn't fully implemented yet. "
+               "Database schema hasn't been changed!")))
   (doseq [action actions]
     (exec-action! {:db db
                    :action action
@@ -607,72 +651,99 @@
 (defn- get-detailed-migrations-to-migrate
   "Return migrations to migrate and migration direction."
   [all-migrations migrated target-number]
-  (let [all-migrations-detailed (map detailed-migration all-migrations)
-        all-numbers (set (map :number-int all-migrations-detailed))
-        last-number (apply max all-numbers)
-        target-number* (or target-number last-number)
-        current-number (current-migration-number migrated)
-        direction (if (> target-number* current-number)
-                    FORWARD-DIRECTION
-                    BACKWARD-DIRECTION)]
-    (when-not (or (contains? all-numbers target-number*)
-                (= 0 target-number*))
-      (throw+ {:type ::missing-target-migration-number
-               :number target-number*
-               :message "Missing target migration number"}))
-    (if (= target-number* current-number)
-      []
-      (condp contains? direction
-        #{FORWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
-                                            (drop-while #(>= current-number (:number-int %)))
-                                            (take-while #(>= target-number* (:number-int %))))
-                              :direction direction}
-        #{BACKWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
-                                             (drop-while #(>= target-number* (:number-int %)))
-                                             (take-while #(>= current-number (:number-int %)))
-                                             (sort-by :number-int >))
-                               :direction direction}))))
+  (if-not (seq all-migrations)
+    {}
+    (let [all-migrations-detailed (map detailed-migration all-migrations)
+          all-numbers (set (map :number-int all-migrations-detailed))
+          last-number (apply max all-numbers)
+          target-number* (or target-number last-number)
+          current-number (current-migration-number migrated)
+          direction (if (> target-number* current-number)
+                      FORWARD-DIRECTION
+                      BACKWARD-DIRECTION)]
+      (when-not (or (contains? all-numbers target-number*)
+                  (= 0 target-number*))
+        (throw+ {:type ::invalid-target-migration-number
+                 :number target-number*
+                 :message "Invalid target migration number."}))
+      (if (= target-number* current-number)
+        []
+        (condp contains? direction
+          #{FORWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
+                                              (drop-while #(>= current-number (:number-int %)))
+                                              (take-while #(>= target-number* (:number-int %))))
+                                :direction direction}
+          #{BACKWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
+                                               (drop-while #(>= target-number* (:number-int %)))
+                                               (take-while #(>= current-number (:number-int %)))
+                                               (sort-by :number-int >))
+                                 :direction direction})))))
 
 
 (defn migrate
   "Run migration on a db."
   [{:keys [migrations-dir db-uri number]}]
-  (let [db (db-util/db-conn db-uri)
-        _ (db-util/create-migrations-table db)
-        migrated (already-migrated db)
-        all-migrations (migrations-list migrations-dir)
-        {:keys [to-migrate direction]}
-        (get-detailed-migrations-to-migrate all-migrations migrated number)]
-    (if (seq to-migrate)
-      (doseq [{:keys [migration-name file-name migration-type]} to-migrate]
-        (if (= direction FORWARD-DIRECTION)
-          (println (str "Migrating: " migration-name "..."))
-          (println (str "Unapplying: " migration-name "...")))
-        (jdbc/with-transaction [tx db]
-          (let [actions (read-migration {:file-name file-name
-                                         :migrations-dir migrations-dir})]
-            (exec-actions! {:db tx
-                            :actions actions
-                            :direction direction
-                            :migration-type migration-type}))
+  (try+
+    (let [db (db-util/db-conn db-uri)
+          _ (db-util/create-migrations-table db)
+          migrated (already-migrated db)
+          all-migrations (migrations-list migrations-dir)
+          {:keys [to-migrate direction]}
+          (get-detailed-migrations-to-migrate all-migrations migrated number)]
+      (if (seq to-migrate)
+        (doseq [{:keys [migration-name file-name migration-type]} to-migrate]
           (if (= direction FORWARD-DIRECTION)
-            (save-migration! db migration-name)
-            (delete-migration! db migration-name))))
-      (println "Noting to migrate."))))
+            (println (str "Migrating: " migration-name "..."))
+            (println (str "Unapplying: " migration-name "...")))
+          (jdbc/with-transaction [tx db]
+            (let [actions (read-migration {:file-name file-name
+                                           :migrations-dir migrations-dir})]
+              (exec-actions! {:db tx
+                              :actions actions
+                              :direction direction
+                              :migration-type migration-type}))
+            (if (= direction FORWARD-DIRECTION)
+              (save-migration! db migration-name)
+              (delete-migration! db migration-name))))
+        (println "Nothing to migrate.")))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::duplicated-migration-numbers
+                         ::invalid-target-migration-number} (:type %)) e
+      (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
+
+
+(defn- get-already-migrated-migrations
+  [db]
+  (try+
+    (set (already-migrated db))
+    (catch [:type ::no-migrations-table]
+      ; There is no migrated migrations if table doesn't exist.
+           [])))
 
 
 (defn list-migrations
   "Print migration list with status."
   [{:keys [migrations-dir db-uri]}]
   ; TODO: reduce duplication with `migrate` fn!
-  (let [migration-names (migrations-list migrations-dir)
-        db (db-util/db-conn db-uri)
-        _ (db-util/create-migrations-table db)
-        migrated (set (already-migrated db))]
-    (doseq [file-name migration-names
-            :let [migration-name (get-migration-name file-name)
-                  sign (if (contains? migrated migration-name) "✓" " ")]]
-      (file-util/safe-println [(format "[%s] %s" sign file-name)]))))
+  (try+
+    (let [migration-names (migrations-list migrations-dir)
+          db (db-util/db-conn db-uri)
+          migrated (set (get-already-migrated-migrations db))]
+      (doseq [file-name migration-names
+              :let [migration-name (get-migration-name file-name)
+                    sign (if (contains? migrated migration-name) "✓" " ")]]
+        (file-util/safe-println [(format "[%s] %s" sign file-name)])))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch #(contains? #{::duplicated-migration-numbers
+                         ::no-migrations-table
+                         ::unexpected-db-error} (:type %)) e
+      (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))))
 
 
 (comment
@@ -688,6 +759,7 @@
       (try+
         (->> (read-models model-file))
         ;(->> (make-migrations* model-file migrations-files))
+        ;(make-next-migration config)
         ;     (flatten))
 
          ;(map #(spec-util/conform ::sql/->sql %)))
@@ -695,16 +767,18 @@
          ;(map db-util/fmt))
          ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
+          (print (:message e))
           (:data e)))))
+          ;(-> e :data :clojure.spec.alpha/problems first :pred type)))))
 
 
 (comment
   (let [config {:model-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
                 ;:name "some-new-table"
                 ;:type :sql}
-                :number 10}
+                ;:number 3}
                 ;:direction FORWARD-DIRECTION}
                 ;:direction BACKWARD-DIRECTION}
         db (db-util/db-conn (:db-uri config))]
@@ -712,8 +786,8 @@
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))
     ;MIGRATIONS-TABLE))
-    ;(make-migrations config)))
-    (explain config)))
+    (make-migrations config)))
+    ;(explain config)))
     ;(migrate config)))
     ;(list-migrations config)))
 

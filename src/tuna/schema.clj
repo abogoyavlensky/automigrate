@@ -65,7 +65,14 @@
 
 (defmethod apply-action-to-schema actions/DROP-INDEX-ACTION
   [schema action]
-  (map-util/dissoc-in schema [(:model-name action) :indexes] (:index-name action)))
+  (let [action-name (:model-name action)
+        result (map-util/dissoc-in
+                 schema
+                 [action-name :indexes]
+                 (:index-name action))]
+    (if (seq (get-in result [action-name :indexes]))
+      result
+      (map-util/dissoc-in result [action-name] :indexes))))
 
 
 (defmethod apply-action-to-schema actions/ALTER-INDEX-ACTION
@@ -74,29 +81,17 @@
     (:options action)))
 
 
+(defn- actions->internal-models
+  [actions]
+  ; Throws spec exception if not valid.
+  (actions/validate-actions actions)
+  (->> actions
+    (reduce apply-action-to-schema {})
+    (spec-util/conform ::models/internal-models)))
+
+
 (defn current-db-schema
   "Return map of models derived from existing migrations."
   [migrations-files]
-  ; TODO: add validation of migrations with spec!
-  (let [actions (-> (load-migrations-from-files migrations-files)
-                  (flatten))]
-    (->> actions
-      (reduce apply-action-to-schema {})
-      (spec-util/conform ::models/internal-models))))
-
-
-; TODO: remove!
-;(comment
-;  (require '[clojure.spec.alpha :as s])
-;  (require '[tuna.models :as models])
-;  (require '[differ.core :as differ])
-;  (let [old {:feed {:fields {:id {:type :serial
-;                                  :null false}}}}
-;        new {:feed {:fields {:url {:type :varchar}}}
-;             :user {:fields {:id {:type :serial
-;                                  :null false}}}}
-;        [alterations removals] (differ/diff old new)]
-;    (for [model alterations
-;          :let [model-name (key model)]]
-;     (when-not (contains? old model-name)
-;      [(s/conform ::actions/->migration model)]))))
+  (let [actions (flatten (load-migrations-from-files migrations-files))]
+    (actions->internal-models actions)))

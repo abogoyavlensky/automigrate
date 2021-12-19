@@ -3,7 +3,8 @@
             [spec-dict :as d]
             [tuna.models :as models]
             [tuna.fields :as fields]
-            [tuna.util.model :as model-util]))
+            [tuna.util.model :as model-util]
+            [tuna.util.spec :as spec-util]))
 
 
 (def CREATE-TABLE-ACTION :create-table)
@@ -64,6 +65,7 @@
 
 (s/def ::changes
   (s/and
+    (s/map-of keyword? map? :min-count 1)
     (d/dict*
       (d/->opt (model-util/generate-type-option ::fields/type))
       (d/->opt (model-util/generate-changes [::fields/unique
@@ -72,8 +74,7 @@
                                              ::fields/default
                                              ::fields/foreign-key
                                              ::fields/on-delete
-                                             ::fields/on-update])))
-    #(> (count (keys %)) 0)))
+                                             ::fields/on-update])))))
 
 
 (defmethod action ALTER-COLUMN-ACTION
@@ -125,3 +126,17 @@
 
 
 (s/def ::->migration (s/multi-spec action :action))
+
+
+(s/def ::->migrations
+  (s/coll-of ::->migration))
+
+
+(defn ->migrations
+  [actions]
+  (spec-util/conform ::->migrations actions))
+
+
+(defn validate-actions
+  [actions]
+  (spec-util/valid? ::->migrations actions))

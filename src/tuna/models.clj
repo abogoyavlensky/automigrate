@@ -1,11 +1,12 @@
 (ns tuna.models
   "Module for for transforming models to migrations."
   (:require [clojure.spec.alpha :as s]
-            [clojure.string :as str]
             [slingshot.slingshot :refer [throw+]]
             [clojure.set :as set]
             [tuna.util.model :as model-util]
-            [tuna.fields :as fields]))
+            [tuna.util.spec :as spec-util]
+            [tuna.fields :as fields])
+  (:import (clojure.lang PersistentVector PersistentArrayMap)))
 
 
 (s/def :tuna.models.index/type
@@ -26,17 +27,30 @@
     :opt-un [:tuna.models.index/unique]))
 
 
+(s/def ::index-vec-options
+  (s/keys
+    :req-un [:tuna.models.index/fields]
+    :opt-un [:tuna.models.index/unique]))
+
+
+(s/def ::index-vec-options-strict-keys
+  (spec-util/validate-strict-keys ::index-vec-options))
+
+
+(s/def ::index-name keyword?)
+
+
 (s/def ::index-vec
   (s/cat
-    :name keyword?
+    :name ::index-name
     :type :tuna.models.index/type
-    :options (s/keys
-               :req-un [:tuna.models.index/fields]
-               :opt-un [:tuna.models.index/unique])))
+    :options (s/and
+               ::index-vec-options
+               ::index-vec-options-strict-keys)))
 
 
 (s/def ::indexes
-  (s/map-of keyword? ::index))
+  (s/map-of keyword? ::index :min-count 1 :distinct true))
 
 
 (s/def ::model
@@ -60,58 +74,61 @@
   (s/conformer model-util/map-kw-keys->kebab-case))
 
 
-(defn- validate-fields-duplication
-  "Check if model's fields are duplicated."
-  [fields]
-  (->> (map :name fields)
-    (model-util/has-duplicates?)))
+(s/def ::validate-fields-duplication
+  (fn [fields]
+    (model-util/has-duplicates? (map :name fields))))
 
 
 (s/def :tuna.models.fields->internal/fields
   (s/and
-    (s/coll-of ::fields/field-vec)
-    validate-fields-duplication
+    ::validate-fields-duplication
     ::item-vec->map
     ::map-kw->kebab-case))
 
 
+(s/def ::validate-indexes-duplication
+  (fn [indexes]
+    (model-util/has-duplicates? (map :name indexes))))
+
+
 (s/def :tuna.models.indexes->internal/indexes
   (s/and
-    (s/coll-of ::index-vec)
+    ::validate-indexes-duplication
     ::item-vec->map
     ::map-kw->kebab-case))
 
 
 (s/def ::model->internal
-  (s/and
-    (s/conformer
-      (fn [value]
-        (if (vector? value)
-          {:fields value}
-          value)))
-    (s/keys
-      :req-un [:tuna.models.fields->internal/fields]
-      :opt-un [:tuna.models.indexes->internal/indexes])))
+  (s/keys
+    :req-un [:tuna.models.fields->internal/fields]
+    :opt-un [:tuna.models.indexes->internal/indexes]))
 
 
 (defn- check-referenced-model-exists?
   "Check that referenced model exists."
-  [models fk-model-name]
+  [models qualified-field-name fk-model-name]
   (when-not (contains? models fk-model-name)
     (throw+ {:type ::missing-referenced-model
-             :data {:referenced-model fk-model-name}
-             :message (format "Referenced model %s is missing" fk-model-name)})))
+             :title "MODEL ERROR"
+             :data {:referenced-model fk-model-name
+                    :fk-field qualified-field-name}
+             :message (format "Foreign key %s has reference on the missing model %s."
+                        qualified-field-name
+                        fk-model-name)})))
 
 
 (defn- check-referenced-field-exists?
   "Check that referenced field exists in referenced model."
-  [fk-field-options fk-model-name fk-field-name]
+  [fk-field-options qualified-field-name fk-model-name fk-field-name]
   (when-not (some? fk-field-options)
-    (throw+ {:type ::missing-referenced-field
-             :data {:referenced-model fk-model-name
-                    :referenced-field fk-field-name}
-             :message (format "Referenced field %s of model %s is missing"
-                        fk-field-name fk-model-name)})))
+    (let [qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
+      (throw+ {:type ::missing-referenced-field
+               :title "MODEL ERROR"
+               :data {:referenced-model fk-model-name
+                      :referenced-field fk-field-name}
+               :message (format "Foreign key %s has reference on the missing field %s."
+                          qualified-field-name
+                          qualified-fk-field-name)}))))
 
 
 (defn- check-fields-type-valid?
@@ -119,83 +136,149 @@
 
   Also check that field should has `:unique` option enabled and
   it has the same type as origin field."
-  [field-name field-options fk-field-options fk-model-name fk-field-name]
+  [qualified-field-name field-options fk-field-options fk-model-name fk-field-name]
   (when-not (true? (:unique fk-field-options))
-    (throw+ {:type ::referenced-field-is-not-unique
-             :data {:referenced-model fk-model-name
-                    :referenced-field fk-field-name}
-             :message (format "Referenced field %s of model %s is not unique"
-                        fk-field-name fk-model-name)}))
+    (let [qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
+      (throw+ {:type ::referenced-field-is-not-unique
+               :title "MODEL ERROR"
+               :data {:referenced-model fk-model-name
+                      :referenced-field fk-field-name}
+               :message (format "Foreign key %s has reference on the not unique field %s."
+                          qualified-field-name
+                          qualified-fk-field-name)})))
   (let [field-type-group (fields/check-type-group (:type field-options))
-        fk-field-type-group (fields/check-type-group (:type fk-field-options))]
+        fk-field-type-group (fields/check-type-group (:type fk-field-options))
+        qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
     (when-not (and (some? field-type-group)
                 (some? fk-field-type-group)
                 (= field-type-group fk-field-type-group))
-      (throw+ {:type ::origin-and-referenced-fields-have-different-types
-               :data {:origin-field field-name
-                      :referenced-field fk-field-name}
-               :message (format "Referenced field %s and origin field %s have different types"
-                          fk-field-name
-                          field-name)}))))
+      (throw+ {:type ::fk-fields-have-different-types
+               :title "MODEL ERROR"
+               :data {:origin-field qualified-field-name
+                      :referenced-field qualified-fk-field-name}
+               :message (format "Foreign key field %s and referenced field %s have different types."
+                          qualified-field-name
+                          qualified-fk-field-name)}))))
 
 
 (defn- validate-foreign-key
   [models]
-  (doseq [[_model-name model-value] models]
+  (doseq [[model-name model-value] models]
     (doseq [[field-name field-options] (:fields model-value)
-            :let [[fk-model-name fk-field-name] (model-util/kw->vec
+            :let [qualified-field-name (keyword (name model-name) (name field-name))
+                  [fk-model-name fk-field-name] (model-util/kw->vec
                                                   (:foreign-key field-options))
                   fk-field-options (get-in models [fk-model-name :fields fk-field-name])]]
       (when (and (some? fk-model-name) (some? fk-field-name))
-        (check-referenced-model-exists? models fk-model-name)
-        (check-referenced-field-exists? fk-field-options fk-model-name fk-field-name)
-        (check-fields-type-valid? field-name field-options fk-field-options fk-model-name fk-field-name))))
-  models)
+        (check-referenced-model-exists? models qualified-field-name fk-model-name)
+        (check-referenced-field-exists? fk-field-options qualified-field-name fk-model-name fk-field-name)
+        (check-fields-type-valid?
+          qualified-field-name
+          field-options
+          fk-field-options
+          fk-model-name
+          fk-field-name))))
+  true)
 
 
-(defn- validate-indexes-duplication
-  [models]
-  (->> (vals models)
-    (mapcat (comp keys :indexes))
-    (model-util/has-duplicates?)))
+(s/def ::validate-indexes-duplication-across-models
+  (fn [models]
+    (->> (vals models)
+      (mapcat (comp keys :indexes))
+      (model-util/has-duplicates?))))
 
 
-(defn- validate-indexes
-  [models]
-  (doseq [[model-name model-value] models]
-    (doseq [[_index-name index-options] (:indexes model-value)
-            :let [index-fields (set (:fields index-options))
-                  model-fields (set (keys (:fields model-value)))
-                  missing-fields (set/difference index-fields model-fields)]]
-      (when (seq missing-fields)
-        (throw+ {:type ::missing-indexed-fields
-                 :data {:model-name model-name
-                        :missing-fields missing-fields
-                        :message (format "Missing indexed fields: %s"
-                                   (str/join ", " missing-fields))}}))))
-  models)
-
-
-(defn- validate-models
-  [models]
-  (doseq [[model-name {:keys [fields]}] models]
-    (when (empty? fields)
-      (throw+ {:type ::missing-fields-in-model
-               :data {:model-name model-name}
-               :message (format "Missing fields in model: %s" model-name)})))
-  models)
+(s/def ::validate-indexed-fields
+  (fn [model]
+    (let [index-fields (->> (:indexes model)
+                         (map #(get-in % [:options :fields]))
+                         (flatten)
+                         (set))
+          model-fields (set (map :name (:fields model)))
+          missing-fields (set/difference index-fields model-fields)]
+      (empty? missing-fields))))
 
 
 (s/def ::internal-models
   (s/and
     (s/map-of keyword? ::model)
-    validate-models
     validate-foreign-key
-    validate-indexes-duplication
-    validate-indexes))
+    ::validate-indexes-duplication-across-models))
+
+
+(s/def :tuna.models.fields-vec/fields
+  (s/coll-of ::fields/field-vec :min-count 1 :kind vector? :distinct true))
+
+
+(s/def :tuna.models.indexes-vec/indexes
+  (s/coll-of ::index-vec :min-count 1 :kind vector? :distinct true))
+
+
+(s/def ::public-model-as-vec
+  :tuna.models.fields-vec/fields)
+
+
+(s/def ::public-model-as-map
+  (s/keys
+    :req-un [:tuna.models.fields-vec/fields]
+    :opt-un [:tuna.models.indexes-vec/indexes]))
+
+
+(s/def ::public-model-as-map-strict-keys
+  (spec-util/validate-strict-keys ::public-model-as-map))
+
+
+(defmulti public-model class)
+
+
+(defmethod public-model PersistentVector
+  [_]
+  ::public-model-as-vec)
+
+
+(defmethod public-model PersistentArrayMap
+  [_]
+  (s/and
+    ::public-model-as-map
+    ::public-model-as-map-strict-keys
+    ::validate-indexed-fields))
+
+
+(s/def ::public-model
+  (s/multi-spec public-model class))
+
+
+(s/def ::simplified-model->named-parts
+  (s/conformer
+    (fn [models]
+      (reduce-kv
+        (fn [m k v]
+          (if (vector? v)
+            (assoc m k {:fields v})
+            (assoc m k v)))
+        {}
+        models))))
 
 
 (s/def ::->internal-models
   (s/and
+    (s/map-of keyword? ::public-model)
+    ::simplified-model->named-parts
     (s/map-of keyword? ::model->internal)
     ::internal-models))
+
+
+(defn ->internal-models
+  "Transform public models from file to internal representation."
+  [models]
+  (spec-util/conform ::->internal-models models))
+
+
+; TODO: remove!
+(comment
+  (let [data {:feed [[:id :serial {:null false}]]}]
+
+    ;(s/explain-data ::public-model2 {:fields [[:id :int]]})
+    ;(s/explain-data ::public-model2 [[:id :int]])
+    ;(s/explain-data ::public-model2 [])))
+    (s/conform ::->internal-models data)))
