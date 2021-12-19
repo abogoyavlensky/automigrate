@@ -510,14 +510,19 @@
   (juxt #(get-migration-type (:file-name %)) :direction))
 
 
+(defn- add-transaction-to-explain
+  [actions]
+  (concat ["BEGIN"] actions ["COMMIT;"]))
+
+
 (defmethod explain* [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
   ; Generate raw sql from migration.
   [{:keys [file-name migrations-dir] :as _args}]
   (->> (read-migration {:file-name file-name
                         :migrations-dir migrations-dir})
     (mapv sql/->sql)
-    ; TODO: maybe remove!?
     (flatten)
+    (add-transaction-to-explain)
     (file-util/safe-println)))
 
 

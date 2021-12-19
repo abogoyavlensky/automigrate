@@ -356,7 +356,8 @@
                                                    :action :alter-index}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 1})
-    (is (= ["CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
+    (is (= ["BEGIN"
+            "CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
             "CREATE TABLE account (id SERIAL NULL UNIQUE, name VARCHAR(100) NULL, rate FLOAT)"
             "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"
             "ALTER TABLE account ADD COLUMN day DATE"
@@ -372,7 +373,8 @@
             "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"
             "DROP INDEX feed_name_idx"
             "DROP INDEX feed_name_idx"
-            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"]
+            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"
+            "COMMIT;"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args
