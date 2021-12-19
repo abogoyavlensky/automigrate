@@ -27,3 +27,11 @@ jobs:
 
       - name: Test
         run: docker-compose run --rm test bash -c "make deps && make test"
+
+  check-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check deps
+        run: docker-compose run --rm check make check-deps
