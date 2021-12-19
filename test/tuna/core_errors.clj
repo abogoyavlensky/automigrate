@@ -75,7 +75,7 @@
       (core/run {:cmd :make-migrations
                  :models-file (str config/MODELS-DIR "feed_basic.edn")
                  :migrations-dir config/MIGRATIONS-DIR
-                 :type :sql})
+                 :type :empty-sql})
       (let [error (-> (bond/calls errors/custom-error->error-report) first :args first)]
         (is (= {:message "Missing migration name."}
               (dissoc (test-util/thrown-with-slingshot-data? [:type ::s/invalid] error) :type)))))))

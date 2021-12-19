@@ -20,7 +20,7 @@
   (core/run {:cmd :make-migrations
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
-             :type "sql"
+             :type "empty-sql"
              :name "add-description-field"})
   (testing "check that sql migration has been made"
     (let [files (file-util/list-files config/MIGRATIONS-DIR)]
@@ -44,7 +44,7 @@
   (core/run {:cmd :make-migrations
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
-             :type "sql"
+             :type "empty-sql"
              :name "add-description-field"})
   (spit (str config/MIGRATIONS-DIR "/0002_add_description_field.sql")
     (str "-- FORWARD\n"
@@ -92,7 +92,7 @@
   (core/run {:cmd :make-migrations
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
-             :type "sql"
+             :type "empty-sql"
              :name "add-description-field"})
   (spit (str config/MIGRATIONS-DIR "/0002_add_description_field.sql")
     (str "-- FORWARD\n"
@@ -125,7 +125,7 @@
   (core/run {:cmd :make-migrations
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
-             :type "sql"
+             :type "empty-sql"
              :name "add-description-field"})
   (testing "check that migrations table does not exist"
     (is (thrown? PSQLException

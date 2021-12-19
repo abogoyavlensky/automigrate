@@ -32,6 +32,7 @@
 (def ^:private BACKWARD-DIRECTION :backward)
 (def ^:private AUTO-MIGRATION-EXT :edn)
 (def ^:private SQL-MIGRATION-EXT :sql)
+(def EMPTY-SQL-MIGRATION-TYPE :empty-sql)
 (def ^:private FORWARD-MIGRATION-DELIMITER "-- FORWARD")
 (def ^:private BACKWARD-MIGRATION-DELIMITER "-- BACKWARD")
 
@@ -461,11 +462,10 @@
         (file-util/prn-err)))))
 
 
-(defmethod make-migrations SQL-MIGRATION-EXT
+(defmethod make-migrations EMPTY-SQL-MIGRATION-TYPE
   ; Make new migrations based on models definitions automatically.
   [{next-migration-name :name
-    migrations-dir :migrations-dir
-    migration-type :type}]
+    migrations-dir :migrations-dir}]
   (try+
     (when (empty? next-migration-name)
       (throw+ {:type ::missing-migration-name
@@ -473,7 +473,7 @@
     (let [_ (create-migrations-dir migrations-dir)
           next-migration-name* (str/replace next-migration-name #"-" "_")
           migration-file-name-full-path (get-next-migration-file-name
-                                          {:migration-type migration-type
+                                          {:migration-type SQL-MIGRATION-EXT
                                            :migrations-dir migrations-dir
                                            :next-migration-name next-migration-name*})]
       (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
@@ -777,7 +777,7 @@
                 :migrations-dir "src/tuna/migrations"
                 :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
                 ;:name "some-new-table"
-                ;:type :sql}
+                ;:type :empty-sql}
                 ;:number 3}
                 ;:direction FORWARD-DIRECTION}
                 ;:direction BACKWARD-DIRECTION}

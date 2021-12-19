@@ -20,7 +20,7 @@
 (s/def ::type
   (s/and
     (s/conformer keyword)
-    #{:sql}))
+    #{migrations/EMPTY-SQL-MIGRATION-TYPE}))
 
 
 (s/def ::name (s/conformer name))
