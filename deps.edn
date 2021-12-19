@@ -25,9 +25,9 @@
                                    :fail-fast? true}}}
 
   :check-deps {:extra-deps {com.github.liquidz/antq {:mvn/version "1.3.1"}}
-               :main-opts ["-m" "antq.core"]}
+               :main-opts ["-m" "antq.core" "--force"]}
 
-  :build {:replace-deps {seancorfield/depstar {:mvn/version "2.0.216"}}
+  :build {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.303"}}
           :exec-fn hf.depstar/jar
           :exec-args {:jar "tuna.jar" :sync-pom true}}
 
