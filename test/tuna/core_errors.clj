@@ -98,7 +98,7 @@
                :migrations-dir config/MIGRATIONS-DIR})
     (bond/with-stub! [[file-util/prn-err (constantly nil)]]
       (core/run {:cmd :migrate
-                 :db-uri config/DATABASE-URL
+                 :jdbc-url config/DATABASE-URL
                  :migrations-dir config/MIGRATIONS-DIR
                  :number 4})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
@@ -129,7 +129,7 @@
                        (fn [& _] (throw (Exception. "Testing error message.")))]]
       (core/run {:cmd :migrate
                  :migrations-dir config/MIGRATIONS-DIR
-                 :db-uri config/DATABASE-URL})
+                 :jdbc-url config/DATABASE-URL})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
         (is (= {:message (str "-- UNEXPECTED ERROR -------------------------------------\n\n"
                            "Testing error message.\n")

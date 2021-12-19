@@ -694,9 +694,9 @@
 
 (defn migrate
   "Run migration on a db."
-  [{:keys [migrations-dir db-uri number]}]
+  [{:keys [migrations-dir jdbc-url number]}]
   (try+
-    (let [db (db-util/db-conn db-uri)
+    (let [db (db-util/db-conn jdbc-url)
           _ (db-util/create-migrations-table db)
           migrated (already-migrated db)
           all-migrations (migrations-list migrations-dir)
@@ -738,11 +738,11 @@
 
 (defn list-migrations
   "Print migration list with status."
-  [{:keys [migrations-dir db-uri]}]
+  [{:keys [migrations-dir jdbc-url]}]
   ; TODO: reduce duplication with `migrate` fn!
   (try+
     (let [migration-names (migrations-list migrations-dir)
-          db (db-util/db-conn db-uri)
+          db (db-util/db-conn jdbc-url)
           migrated (set (get-already-migrated-migrations db))]
       (doseq [file-name migration-names
               :let [migration-name (get-migration-name file-name)
@@ -763,9 +763,9 @@
                 ;:models-file "test/tuna/models/feed_add_column.edn"
                 :migrations-dir "src/tuna/migrations"
                 ;:migrations-dir "test/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 :number 4}
-        db (db-util/db-conn (:db-uri config))
+        db (db-util/db-conn (:jdbc-url config))
         migrations-files (file-util/list-files (:migrations-dir config))
         models-file (:models-file config)]
       (try+
@@ -787,13 +787,13 @@
 (comment
   (let [config {:models-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
+                :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
                 ;:name "some-new-table"
                 ;:type :empty-sql}
                 ;:number 3}
                 ;:direction FORWARD-DIRECTION}
                 ;:direction BACKWARD-DIRECTION}
-        db (db-util/db-conn (:db-uri config))]
+        db (db-util/db-conn (:jdbc-url config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))

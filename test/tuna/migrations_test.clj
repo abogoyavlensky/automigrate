@@ -59,7 +59,7 @@
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :migrate
              :migrations-dir config/MIGRATIONS-DIR
-             :db-uri config/DATABASE-URL})
+             :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"})
         (->> {:select [:*]
@@ -87,7 +87,7 @@
           (file-util/read-edn))))
   (core/run {:cmd :migrate
              :migrations-dir config/MIGRATIONS-DIR
-             :db-uri config/DATABASE-URL})
+             :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
@@ -111,7 +111,7 @@
   (testing "test migrate forward to specific number"
     (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
-               :db-uri config/DATABASE-URL
+               :jdbc-url config/DATABASE-URL
                :number 2})
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"}
@@ -125,7 +125,7 @@
           (with-out-str
             (core/run {:cmd :migrate
                        :migrations-dir config/MIGRATIONS-DIR
-                       :db-uri config/DATABASE-URL
+                       :jdbc-url config/DATABASE-URL
                        :number 2}))))
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"}
@@ -137,7 +137,7 @@
   (testing "test migrate forward all"
     (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
-               :db-uri config/DATABASE-URL})
+               :jdbc-url config/DATABASE-URL})
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"
              "0003_auto_alter_column_id"}
@@ -160,7 +160,7 @@
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :migrate
              :migrations-dir config/MIGRATIONS-DIR
-             :db-uri config/DATABASE-URL})
+             :jdbc-url config/DATABASE-URL})
   (is (= #{"0001_auto_create_table_feed"
            "0002_auto_add_column_created_at"
            "0003_auto_alter_column_id"}
@@ -172,7 +172,7 @@
   (testing "test migrate backward to specific number"
     (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
-               :db-uri config/DATABASE-URL
+               :jdbc-url config/DATABASE-URL
                :number 2})
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"}
@@ -184,7 +184,7 @@
   (testing "test unapply all migrations "
     (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
-               :db-uri config/DATABASE-URL
+               :jdbc-url config/DATABASE-URL
                :number 0})
     (is (= #{}
           (->> {:select [:*]
@@ -219,7 +219,7 @@
           (file-util/read-edn))))
   (core/run {:cmd :migrate
              :migrations-dir config/MIGRATIONS-DIR
-             :db-uri config/DATABASE-URL})
+             :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
@@ -244,7 +244,7 @@
           (file-util/read-edn))))
   (core/run {:cmd :migrate
              :migrations-dir config/MIGRATIONS-DIR
-             :db-uri config/DATABASE-URL})
+             :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
@@ -268,7 +268,7 @@
           (file-util/read-edn))))
   (core/run {:cmd :migrate
              :migrations-dir config/MIGRATIONS-DIR
-             :db-uri config/DATABASE-URL})
+             :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2

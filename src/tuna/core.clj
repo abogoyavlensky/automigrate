@@ -13,7 +13,7 @@
 
 (s/def ::models-file string?)
 (s/def ::migrations-dir string?)
-(s/def ::db-uri string?)
+(s/def ::jdbc-url string?)
 (s/def ::number int?)
 
 
@@ -56,7 +56,7 @@
   [_]
   (s/keys
     :req-un [::cmd
-             ::db-uri
+             ::jdbc-url
              ::migrations-dir]
     :opt-un [::number]))
 
@@ -74,7 +74,7 @@
   [_]
   (s/keys
     :req-un [::cmd
-             ::db-uri
+             ::jdbc-url
              ::migrations-dir]))
 
 

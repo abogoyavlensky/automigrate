@@ -52,12 +52,12 @@
   "Return db connection for performing migration."
   ([]
    (db-conn nil))
-  ([db-uri]
-   (let [uri (or db-uri
+  ([jdbc-url]
+   (let [url (or jdbc-url
                  ; TODO: add ability to read .end file
                  ; TODO: add ability to change env var name
                (System/getenv "DATABASE_URL"))]
-     (jdbc/get-datasource {:jdbcUrl uri}))))
+     (jdbc/get-datasource {:jdbcUrl url}))))
 
 
 (defn fmt
