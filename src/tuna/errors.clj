@@ -152,7 +152,7 @@
     :tuna.actions/->migrations
     (add-error-value "Schema failed for migration." (:val data))
 
-    (add-error-value "Schema failed for model or migration." (:val data))))
+    (add-error-value "Schema failed." (:val data))))
 
 
 ; Models

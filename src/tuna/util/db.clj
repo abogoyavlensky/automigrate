@@ -85,8 +85,8 @@
 
 (defn create-migrations-table
   "Create table to keep migrations history."
-  [db]
-  (->> {:create-table [MIGRATIONS-TABLE :if-not-exists]
+  [db migrations-table]
+  (->> {:create-table [migrations-table :if-not-exists]
         :with-columns [[:id :serial [:not nil] [:primary-key]]
                        [:name [:varchar 256] [:not nil] :unique]
                        [:created_at :timestamp [:default [:now]]]]}

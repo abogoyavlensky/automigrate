@@ -136,4 +136,4 @@ explain:
 .PHONY: list  # Print migration's list
 list:
 	@$(INFO) "Migrations found..."
-	@clojure -A:dev -X:migrations :cmd :list-migrations
+	@clojure -A:dev -X:migrations :cmd :list-migrations $(GOALS)

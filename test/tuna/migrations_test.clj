@@ -112,11 +112,12 @@
     (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
                :jdbc-url config/DATABASE-URL
-               :number 2})
+               :number 2
+               :migrations-table "custom-migrations_table"})
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"}
           (->> {:select [:*]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [:custom-migrations-table]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
             (set)))))
@@ -126,23 +127,25 @@
             (core/run {:cmd :migrate
                        :migrations-dir config/MIGRATIONS-DIR
                        :jdbc-url config/DATABASE-URL
-                       :number 2}))))
+                       :number 2
+                       :migrations-table "custom-migrations-table"}))))
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"}
           (->> {:select [:*]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [:custom-migrations-table]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
             (set)))))
   (testing "test migrate forward all"
     (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
-               :jdbc-url config/DATABASE-URL})
+               :jdbc-url config/DATABASE-URL
+               :migrations-table "custom-migrations-table"})
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"
              "0003_auto_alter_column_id"}
           (->> {:select [:*]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [:custom-migrations-table]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
             (set))))))

@@ -130,7 +130,6 @@
   (testing "check that migrations table does not exist"
     (is (thrown? PSQLException
           (->> {:select [:name]
-                ; TODO: make migrations table configurable!
                 :from [db-util/MIGRATIONS-TABLE]
                 :order-by [:created-at]}
             (db-util/exec! config/DATABASE-CONN)))))

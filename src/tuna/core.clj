@@ -1,6 +1,7 @@
 (ns tuna.core
   "Public interface for lib's users."
   (:require [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [slingshot.slingshot :refer [try+]]
             [tuna.migrations :as migrations]
             [tuna.util.spec :as spec-util]
@@ -24,6 +25,14 @@
 
 
 (s/def ::name (s/conformer name))
+
+
+(s/def ::migrations-table
+  (s/and
+    string?
+    (s/conformer
+      (fn [v]
+        (keyword (str/replace v #"_" "-"))))))
 
 
 (s/def ::direction
@@ -58,7 +67,8 @@
     :req-un [::cmd
              ::jdbc-url
              ::migrations-dir]
-    :opt-un [::number]))
+    :opt-un [::number
+             ::migrations-table]))
 
 
 (defmethod run-args :explain
@@ -75,7 +85,8 @@
   (s/keys
     :req-un [::cmd
              ::jdbc-url
-             ::migrations-dir]))
+             ::migrations-dir]
+    :opt-un [::migrations-table]))
 
 
 (s/def ::args
