@@ -43,4 +43,4 @@
                :exec-args {:models-file "src/tuna/models.edn"
                            :migrations-dir "src/tuna/migrations"
                            ; TODO: add ability to set this with env var and .env file too!
-                           :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}}}}
+                           :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}}}}

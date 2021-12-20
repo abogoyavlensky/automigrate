@@ -54,7 +54,7 @@
   (testing "check forward migration"
     (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
-               :db-uri config/DATABASE-URL})
+               :jdbc-url config/DATABASE-URL})
     (is (= '({:id 1
               :name "0001_auto_create_table_feed"}
              {:id 2
@@ -71,7 +71,7 @@
   (testing "check backward migration"
     (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR
-               :db-uri config/DATABASE-URL
+               :jdbc-url config/DATABASE-URL
                :number 1})
     (is (= '({:id 1
               :name "0001_auto_create_table_feed"})
@@ -105,7 +105,7 @@
           (with-out-str
             (core/run {:cmd :explain
                        :migrations-dir config/MIGRATIONS-DIR
-                       :db-uri config/DATABASE-URL
+                       :jdbc-url config/DATABASE-URL
                        :number 2})))))
   (testing "explain backward migration"
     (is (= (str "SQL for migration 0002_add_description_field.sql:\n\n\n"
@@ -113,7 +113,7 @@
           (with-out-str
             (core/run {:cmd :explain
                        :migrations-dir config/MIGRATIONS-DIR
-                       :db-uri config/DATABASE-URL
+                       :jdbc-url config/DATABASE-URL
                        :number 2
                        :direction "backward"}))))))
 
@@ -130,7 +130,6 @@
   (testing "check that migrations table does not exist"
     (is (thrown? PSQLException
           (->> {:select [:name]
-                ; TODO: make migrations table configurable!
                 :from [db-util/MIGRATIONS-TABLE]
                 :order-by [:created-at]}
             (db-util/exec! config/DATABASE-CONN)))))
@@ -140,4 +139,4 @@
           (with-out-str
             (core/run {:cmd :list-migrations
                        :migrations-dir config/MIGRATIONS-DIR
-                       :db-uri config/DATABASE-URL}))))))
+                       :jdbc-url config/DATABASE-URL}))))))

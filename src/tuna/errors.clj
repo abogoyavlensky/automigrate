@@ -152,7 +152,7 @@
     :tuna.actions/->migrations
     (add-error-value "Schema failed for migration." (:val data))
 
-    (add-error-value "Schema failed for model or migration." (:val data))))
+    (add-error-value "Schema failed." (:val data))))
 
 
 ; Models
@@ -653,7 +653,7 @@
       '(clojure.core/fn [%] (clojure.core/contains? % :migrations-dir))
       (add-error-value "Missing migrations dir path." (:val data))
 
-      '(clojure.core/fn [%] (clojure.core/contains? % :db-uri))
+      '(clojure.core/fn [%] (clojure.core/contains? % :jdbc-url))
       (add-error-value "Missing db connection config." (:val data))
 
       '(clojure.core/fn [%] (clojure.core/contains? % :number))

@@ -91,8 +91,8 @@
 
 (defn- save-migration!
   "Save migration to db after applying it."
-  [db migration-name]
-  (->> {:insert-into db-util/MIGRATIONS-TABLE
+  [db migration-name migrations-table]
+  (->> {:insert-into migrations-table
         :values [{:name migration-name}]}
     (db-util/exec! db))
   (println "Successfully migrated: " migration-name))
@@ -100,8 +100,8 @@
 
 (defn- delete-migration!
   "Delete unapplied migration from db."
-  [db migration-name]
-  (->> {:delete-from db-util/MIGRATIONS-TABLE
+  [db migration-name migrations-table]
+  (->> {:delete-from migrations-table
         :where [:= :name migration-name]}
     (db-util/exec! db))
   (println "Successfully unapplied: " migration-name))
@@ -579,10 +579,10 @@
 
 (defn- already-migrated
   "Get names of previously migrated migrations from db."
-  [db]
+  [db migrations-table]
   (try
     (->> {:select [:name]
-          :from [db-util/MIGRATIONS-TABLE]
+          :from [migrations-table]
           :order-by [:created-at]}
       (db-util/exec! db)
       (map :name))
@@ -593,6 +593,7 @@
           (throw+ {:type ::no-migrations-table
                    :message "Migrations table does not exist."})
           (throw+ {:type ::unexpected-db-error
+                   :data (or (ex-message e) (str e))
                    :message "Unexpected db error."}))))))
 
 
@@ -694,11 +695,12 @@
 
 (defn migrate
   "Run migration on a db."
-  [{:keys [migrations-dir db-uri number]}]
+  [{:keys [migrations-dir jdbc-url number migrations-table]
+    :or {migrations-table db-util/MIGRATIONS-TABLE}}]
   (try+
-    (let [db (db-util/db-conn db-uri)
-          _ (db-util/create-migrations-table db)
-          migrated (already-migrated db)
+    (let [db (db-util/db-conn jdbc-url)
+          _ (db-util/create-migrations-table db migrations-table)
+          migrated (already-migrated db migrations-table)
           all-migrations (migrations-list migrations-dir)
           {:keys [to-migrate direction]}
           (get-detailed-migrations-to-migrate all-migrations migrated number)]
@@ -715,8 +717,8 @@
                               :direction direction
                               :migration-type migration-type}))
             (if (= direction FORWARD-DIRECTION)
-              (save-migration! db migration-name)
-              (delete-migration! db migration-name))))
+              (save-migration! db migration-name migrations-table)
+              (delete-migration! db migration-name migrations-table))))
         (println "Nothing to migrate.")))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
@@ -728,9 +730,9 @@
 
 
 (defn- get-already-migrated-migrations
-  [db]
+  [db migrations-table]
   (try+
-    (set (already-migrated db))
+    (set (already-migrated db migrations-table))
     (catch [:type ::no-migrations-table]
       ; There is no migrated migrations if table doesn't exist.
            [])))
@@ -738,12 +740,13 @@
 
 (defn list-migrations
   "Print migration list with status."
-  [{:keys [migrations-dir db-uri]}]
+  [{:keys [migrations-dir jdbc-url migrations-table]
+    :or {migrations-table db-util/MIGRATIONS-TABLE}}]
   ; TODO: reduce duplication with `migrate` fn!
   (try+
     (let [migration-names (migrations-list migrations-dir)
-          db (db-util/db-conn db-uri)
-          migrated (set (get-already-migrated-migrations db))]
+          db (db-util/db-conn jdbc-url)
+          migrated (set (get-already-migrated-migrations db migrations-table))]
       (doseq [file-name migration-names
               :let [migration-name (get-migration-name file-name)
                     sign (if (contains? migrated migration-name) "✓" " ")]]
@@ -763,9 +766,9 @@
                 ;:models-file "test/tuna/models/feed_add_column.edn"
                 :migrations-dir "src/tuna/migrations"
                 ;:migrations-dir "test/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+                :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 :number 4}
-        db (db-util/db-conn (:db-uri config))
+        db (db-util/db-conn (:jdbc-url config))
         migrations-files (file-util/list-files (:migrations-dir config))
         models-file (:models-file config)]
       (try+
@@ -787,13 +790,13 @@
 (comment
   (let [config {:models-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
-                :db-uri "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
+                :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
                 ;:name "some-new-table"
                 ;:type :empty-sql}
                 ;:number 3}
                 ;:direction FORWARD-DIRECTION}
                 ;:direction BACKWARD-DIRECTION}
-        db (db-util/db-conn (:db-uri config))]
+        db (db-util/db-conn (:jdbc-url config))]
     ;(s/explain ::models (models))
     ;(s/valid? ::models (models))
     ;(s/conform ::->migration (first (models)))))

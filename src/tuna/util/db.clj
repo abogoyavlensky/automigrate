@@ -52,12 +52,12 @@
   "Return db connection for performing migration."
   ([]
    (db-conn nil))
-  ([db-uri]
-   (let [uri (or db-uri
+  ([jdbc-url]
+   (let [url (or jdbc-url
                  ; TODO: add ability to read .end file
                  ; TODO: add ability to change env var name
-               (System/getenv "DATABASE_URL"))]
-     (jdbc/get-datasource {:jdbcUrl uri}))))
+               (System/getenv "AUTO_MIGRATIONS_JDBS_URL"))]
+     (jdbc/get-datasource {:jdbcUrl url}))))
 
 
 (defn fmt
@@ -85,8 +85,8 @@
 
 (defn create-migrations-table
   "Create table to keep migrations history."
-  [db]
-  (->> {:create-table [MIGRATIONS-TABLE :if-not-exists]
+  [db migrations-table]
+  (->> {:create-table [migrations-table :if-not-exists]
         :with-columns [[:id :serial [:not nil] [:primary-key]]
                        [:name [:varchar 256] [:not nil] :unique]
                        [:created_at :timestamp [:default [:now]]]]}
