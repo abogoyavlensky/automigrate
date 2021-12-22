@@ -466,6 +466,14 @@
                          ::models/fk-fields-have-different-types} (:type %)) e
       (-> e
         (errors/custom-error->error-report)
+        (file-util/prn-err)))
+    (catch [:reason ::dep/circular-dependency] e
+      (-> {:title "MIGRATION ERROR"
+           :message (format (str "Circular dependency between two migration actions: \n  %s\nand\n  %s\n\n"
+                              "Please split actions by different migrations.")
+                      (pr-str (:dependency e))
+                      (pr-str (:node e)))}
+        (errors/custom-error->error-report)
         (file-util/prn-err)))))
 
 

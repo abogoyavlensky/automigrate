@@ -110,7 +110,7 @@
       (-> e
         (errors/custom-error->error-report)
         (file-util/prn-err)))
-    (catch Exception e
+    (catch Object e
       (let [message (or (ex-message e) (str e))]
         (-> {:title "UNEXPECTED ERROR"
              :message message}

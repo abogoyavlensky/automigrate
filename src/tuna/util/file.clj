@@ -2,7 +2,8 @@
   "Utils for working with file system."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str]))
+            [clojure.string :as str])
+  (:import [java.nio.file Paths]))
 
 
 (def DEFAULT-ZERO-COUNT 4)
@@ -46,3 +47,10 @@
 (defn prn-err
   [e]
   (print (str (:message e) "\n")))
+
+
+(defn join-path
+  "Join multiple pieces into single file path.
+  Origin implementation: https://clojureverse.org/t/how-to-join-file-paths/814"
+  [p & ps]
+  (str (.normalize (Paths/get p (into-array String ps)))))
