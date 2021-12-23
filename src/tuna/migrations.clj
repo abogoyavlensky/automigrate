@@ -55,8 +55,8 @@
 (defmethod read-migration :default
   ;"Return models' definitions."
   [{:keys [file-name migrations-dir]}]
-  (-> (str migrations-dir "/" file-name)
-    (file-util/read-edn)))
+  (let [migration-file-path (file-util/join-path migrations-dir file-name)]
+    (file-util/read-edn migration-file-path)))
 
 
 (defn- get-forward-sql-migration
@@ -77,7 +77,7 @@
 (defmethod read-migration SQL-MIGRATION-EXT
   ; Return model definitions.
   [{:keys [file-name migrations-dir]}]
-  (-> (str migrations-dir "/" file-name)
+  (-> (file-util/join-path migrations-dir file-name)
     (slurp)
     (vector)))
 
@@ -415,9 +415,9 @@
   [{:keys [migration-type migrations-dir next-migration-name]}]
   (let [migration-names (migrations-list migrations-dir)
         migration-number (next-migration-number migration-names)
-        migration-file-name (str migration-number "_" next-migration-name)]
-    ; TODO: build file path properly!
-    (str migrations-dir "/" migration-file-name "." (name migration-type))))
+        migration-file-name (str migration-number "_" next-migration-name)
+        migration-file-with-ext (str migration-file-name "." (name migration-type))]
+    (file-util/join-path migrations-dir migration-file-with-ext)))
 
 
 (defn- auto-migration?
