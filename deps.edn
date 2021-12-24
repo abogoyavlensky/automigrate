@@ -41,6 +41,6 @@
 
   :migrations {:exec-fn tuna.core/run
                :exec-args {:models-file "src/tuna/models.edn"
-                           :migrations-dir "src/tuna/migrations-wrong"
+                           :migrations-dir "src/tuna/migrations"
                            ; TODO: add ability to set this with env var and .env file too!
                            :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}}}}

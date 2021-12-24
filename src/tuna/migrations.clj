@@ -22,7 +22,8 @@
             [tuna.util.db :as db-util]
             [tuna.util.spec :as spec-util]
             [tuna.util.model :as model-util])
-  (:import [org.postgresql.util PSQLException]))
+  (:import [org.postgresql.util PSQLException]
+           [java.io FileNotFoundException]))
 
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
@@ -473,6 +474,11 @@
                               "Please split actions by different migrations.")
                       (pr-str (:dependency e))
                       (pr-str (:node e)))}
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))
+    (catch FileNotFoundException e
+      (-> {:title "ERROR"
+           :message (format "Missing file:\n\n  %s" (ex-message e))}
         (errors/custom-error->error-report)
         (file-util/prn-err)))))
 
