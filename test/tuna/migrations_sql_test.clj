@@ -3,7 +3,7 @@
             [tuna.core :as core]
             [tuna.util.db :as db-util]
             [tuna.util.file :as file-util]
-            [tuna.util.test :as test-util]
+            [tuna.testing-util :as test-util]
             [tuna.testing-config :as config])
   (:import [org.postgresql.util PSQLException]))
 

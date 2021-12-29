@@ -1,7 +1,7 @@
 (ns tuna.migrations-errors-test
   (:require [clojure.test :refer :all]
             [tuna.schema :as schema]
-            [tuna.util.test :as test-util]))
+            [tuna.testing-util :as test-util]))
 
 
 (def ^:private migration-error-title "MIGRATION ERROR")

@@ -1,4 +1,4 @@
-(ns tuna.util.test
+(ns tuna.testing-util
   "Utils for simplifying tests."
   (:require [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
