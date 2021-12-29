@@ -50,14 +50,8 @@
 
 (defn db-conn
   "Return db connection for performing migration."
-  ([]
-   (db-conn nil))
-  ([jdbc-url]
-   (let [url (or jdbc-url
-                 ; TODO: add ability to read .end file
-                 ; TODO: add ability to change env var name
-               (System/getenv "AUTO_MIGRATIONS_JDBS_URL"))]
-     (jdbc/get-datasource {:jdbcUrl url}))))
+  [jdbc-url]
+  (jdbc/get-datasource {:jdbcUrl jdbc-url}))
 
 
 (defn fmt

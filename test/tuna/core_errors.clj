@@ -6,7 +6,7 @@
             [tuna.migrations :as tuna-migrations]
             [tuna.testing-config :as config]
             [tuna.util.file :as file-util]
-            [tuna.util.test :as test-util]
+            [tuna.testing-util :as test-util]
             [tuna.errors :as errors]))
 
 

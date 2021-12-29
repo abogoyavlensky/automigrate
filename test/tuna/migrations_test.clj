@@ -9,7 +9,7 @@
             [tuna.util.db :as db-util]
             [tuna.util.file :as file-util]
             [tuna.util.spec :as spec-util]
-            [tuna.util.test :as test-util]
+            [tuna.testing-util :as test-util]
             [tuna.testing-config :as config])
   (:import [java.io FileNotFoundException]
            [clojure.lang ExceptionInfo]))

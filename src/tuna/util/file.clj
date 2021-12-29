@@ -2,7 +2,8 @@
   "Utils for working with file system."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str]))
+            [clojure.string :as str])
+  (:import [java.nio.file Paths]))
 
 
 (def DEFAULT-ZERO-COUNT 4)
@@ -17,16 +18,9 @@
 
 (defn read-edn
   "Return edn data from file.
-  f - could be file path or reader."
+  f - could be file path, file object or reader."
   [f]
-  (-> (slurp f)
-    (edn/read-string)))
-
-
-(defn read-file-obj
-  [file-obj]
-  (with-open [reader (io/reader file-obj)]
-    (read-edn reader)))
+  (edn/read-string (slurp f)))
 
 
 (defn zfill
@@ -46,3 +40,10 @@
 (defn prn-err
   [e]
   (print (str (:message e) "\n")))
+
+
+(defn join-path
+  "Join multiple pieces into single file path.
+  Origin implementation: https://clojureverse.org/t/how-to-join-file-paths/814"
+  [p & ps]
+  (str (.normalize (Paths/get p (into-array String ps)))))

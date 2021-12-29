@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [tuna.core :as core]
             [tuna.models :as models]
-            [tuna.util.test :as test-util]
+            [tuna.testing-util :as test-util]
             [tuna.testing-config :as config]))
 
 

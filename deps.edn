@@ -2,7 +2,7 @@
  :deps {org.clojure/clojure {:mvn/version "1.10.3"}
         org.clojure/spec.alpha {:mvn/version "0.3.218"}
         spec-dict/spec-dict {:mvn/version "0.2.1"}
-        com.github.seancorfield/honeysql {:mvn/version "2.1.833"}
+        com.github.seancorfield/honeysql {:mvn/version "2.2.840"}
         com.github.seancorfield/next.jdbc {:mvn/version "1.2.761"}
         weavejester/dependency {:mvn/version "0.2.1"}
         differ/differ {:mvn/version "0.3.3"}
@@ -42,5 +42,4 @@
   :migrations {:exec-fn tuna.core/run
                :exec-args {:models-file "src/tuna/models.edn"
                            :migrations-dir "src/tuna/migrations"
-                           ; TODO: add ability to set this with env var and .env file too!
                            :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}}}}

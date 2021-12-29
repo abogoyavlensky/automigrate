@@ -22,7 +22,8 @@
             [tuna.util.db :as db-util]
             [tuna.util.spec :as spec-util]
             [tuna.util.model :as model-util])
-  (:import [org.postgresql.util PSQLException]))
+  (:import [org.postgresql.util PSQLException]
+           [java.io FileNotFoundException]))
 
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
@@ -55,8 +56,8 @@
 (defmethod read-migration :default
   ;"Return models' definitions."
   [{:keys [file-name migrations-dir]}]
-  (-> (str migrations-dir "/" file-name)
-    (file-util/read-edn)))
+  (let [migration-file-path (file-util/join-path migrations-dir file-name)]
+    (file-util/read-edn migration-file-path)))
 
 
 (defn- get-forward-sql-migration
@@ -77,7 +78,7 @@
 (defmethod read-migration SQL-MIGRATION-EXT
   ; Return model definitions.
   [{:keys [file-name migrations-dir]}]
-  (-> (str migrations-dir "/" file-name)
+  (-> (file-util/join-path migrations-dir file-name)
     (slurp)
     (vector)))
 
@@ -415,9 +416,9 @@
   [{:keys [migration-type migrations-dir next-migration-name]}]
   (let [migration-names (migrations-list migrations-dir)
         migration-number (next-migration-number migration-names)
-        migration-file-name (str migration-number "_" next-migration-name)]
-    ; TODO: build file path properly!
-    (str migrations-dir "/" migration-file-name "." (name migration-type))))
+        migration-file-name (str migration-number "_" next-migration-name)
+        migration-file-with-ext (str migration-file-name "." (name migration-type))]
+    (file-util/join-path migrations-dir migration-file-with-ext)))
 
 
 (defn- auto-migration?
@@ -465,6 +466,19 @@
                          ::models/referenced-field-is-not-unique
                          ::models/fk-fields-have-different-types} (:type %)) e
       (-> e
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))
+    (catch [:reason ::dep/circular-dependency] e
+      (-> {:title "MIGRATION ERROR"
+           :message (format (str "Circular dependency between two migration actions: \n  %s\nand\n  %s\n\n"
+                              "Please split actions by different migrations.")
+                      (pr-str (:dependency e))
+                      (pr-str (:node e)))}
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))
+    (catch FileNotFoundException e
+      (-> {:title "ERROR"
+           :message (format "Missing file:\n\n  %s" (ex-message e))}
         (errors/custom-error->error-report)
         (file-util/prn-err)))))
 
