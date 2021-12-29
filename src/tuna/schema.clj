@@ -10,7 +10,7 @@
 
 (defn- load-migrations-from-files
   [migrations-files]
-  (map file-util/read-file-obj migrations-files))
+  (map file-util/read-edn migrations-files))
 
 
 (defmulti apply-action-to-schema

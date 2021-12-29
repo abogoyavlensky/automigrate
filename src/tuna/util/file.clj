@@ -18,16 +18,9 @@
 
 (defn read-edn
   "Return edn data from file.
-  f - could be file path or reader."
+  f - could be file path, file object or reader."
   [f]
-  (-> (slurp f)
-    (edn/read-string)))
-
-
-(defn read-file-obj
-  [file-obj]
-  (with-open [reader (io/reader file-obj)]
-    (read-edn reader)))
+  (edn/read-string (slurp f)))
 
 
 (defn zfill
