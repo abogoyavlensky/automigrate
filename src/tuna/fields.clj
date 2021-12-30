@@ -89,21 +89,11 @@
     (derive :real :float)))
 
 
-(def ^:private type-groups
-  "Type groups for definition of type's relations.
-
-  Used for foreign-key field type validation."
-  ; TODO: use derive with make-hierarchy!
-  {:int #{:integer :serial :bigint :smallint}
-   :char #{:varchar :text :uuid}})
-
-
 (defn check-type-group
+  "Return field type parent or type itself if there is no parent."
   [t]
-  (some->> type-groups
-    (filter #(contains? (val %) t))
-    (first)
-    (key)))
+  (let [field-type-parent (first (parents type-hierarchy t))]
+    (or field-type-parent t)))
 
 
 (s/def ::null boolean?)
@@ -165,7 +155,6 @@
 
 
 (s/def ::default
-  ; TODO: try update with dynamic value related to field's type
   (s/multi-spec default-option class))
 
 
@@ -304,13 +293,3 @@
 
 (s/def ::fields
   (s/map-of ::field-name ::field :min-count 1 :distinct true))
-
-
-; TODO: remove!
-;;;;;;;;;;;;;;;
-
-(comment
-  (let [data {:null true
-              :foreign-key :account/id}
-        data2 {:null false, :type :serial}]
-    (s/explain-data ::options-strict data)))

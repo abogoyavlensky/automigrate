@@ -14,23 +14,34 @@
 
 
 (deftest test-make-sql-migration-ok
-  (core/run {:cmd :make-migrations
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migrations
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR
-             :type "empty-sql"
-             :name "add-description-field"})
+  (is (= (str "Created migration: test/tuna/migrations/0001_auto_create_table_feed.edn\n"
+           "Actions:\n"
+           "  - create table feed\n")
+        (with-out-str
+          (core/run {:cmd :make-migrations
+                     :models-file (str config/MODELS-DIR "feed_basic.edn")
+                     :migrations-dir config/MIGRATIONS-DIR}))))
+  (is (= "Created migration: test/tuna/migrations/0002_add_description_field.sql\n"
+        (with-out-str
+          (core/run {:cmd :make-migrations
+                     :models-file (str config/MODELS-DIR "feed_basic.edn")
+                     :migrations-dir config/MIGRATIONS-DIR
+                     :type "empty-sql"
+                     :name "add-description-field"}))))
   (testing "check that sql migration has been made"
     (let [files (file-util/list-files config/MIGRATIONS-DIR)]
       (is (= 2 (count files)))
       (is (= "0002_add_description_field.sql"
             (.getName (last files))))))
   (testing "check making next auto migration"
-    (core/run {:cmd :make-migrations
-               :models-file (str config/MODELS-DIR "feed_add_column.edn")
-               :migrations-dir config/MIGRATIONS-DIR})
+    (is (= (str "Created migration: test/tuna/migrations/0003_auto_add_column_created_at.edn\n"
+             "Actions:\n"
+             "  - add column created_at in table feed\n"
+             "  - add column name in table feed\n")
+          (with-out-str
+            (core/run {:cmd :make-migrations
+                       :models-file (str config/MODELS-DIR "feed_add_column.edn")
+                       :migrations-dir config/MIGRATIONS-DIR}))))
     (let [files (file-util/list-files config/MIGRATIONS-DIR)]
       (is (= 3 (count files)))
       (is (= "0003_auto_add_column_created_at.edn"

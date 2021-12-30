@@ -166,10 +166,9 @@
       actions/ALTER-INDEX-ACTION} (:index-name action)))
 
 
-(defn- get-first-action-name
-  [actions]
-  (let [action (-> actions first)
-        action-name (-> action :action name)
+(defn- get-action-name
+  [action]
+  (let [action-name (-> action :action name)
         item-name (-> action extract-item-name name)]
     (str/join #"_" [AUTO-MIGRATION-PREFIX action-name item-name])))
 
@@ -177,7 +176,7 @@
 (defn- get-next-migration-name
   "Return given custom name with underscores or first action name."
   [actions custom-name]
-  (let [migration-name (or custom-name (get-first-action-name actions))]
+  (let [migration-name (or custom-name (get-action-name (first actions)))]
     (str/replace migration-name #"-" "_")))
 
 
@@ -437,6 +436,28 @@
     (seq)))
 
 
+(defn- get-action-name-verbose
+  [action]
+  (let [action-name (-> action :action name (str/replace #"-" " "))
+        item-name (-> action extract-item-name name (str/replace #"-" "_"))
+        model-name (:model-name action)
+        at-model (when-not (contains? #{actions/CREATE-TABLE-ACTION
+                                        actions/DROP-TABLE-ACTION}
+                             (:action action))
+                   (str "in table " (-> model-name name (str/replace #"-" "_"))))
+        full-action-name-vec (cond-> [action-name item-name]
+                               (some? at-model) (conj at-model))]
+    (str/join " " full-action-name-vec)))
+
+
+(defn- print-action-names
+  [actions]
+  (let [action-names (mapv (comp #(str "  - " %)
+                             get-action-name-verbose)
+                       actions)]
+    (file-util/safe-println (cons "Actions:" action-names) "")))
+
+
 (defmulti make-migrations :type)
 
 
@@ -456,8 +477,9 @@
         (spit migration-file-name-full-path
           (with-out-str
             (pprint/pprint next-migration)))
-        ; TODO: print all changes from migration in verbose mode
-        (println (str "Created migration: " migration-file-name-full-path)))
+        (println (str "Created migration: " migration-file-name-full-path))
+        ; Print all actions from migration in human-readable format
+        (print-action-names next-migration))
       (println "There are no changes in models."))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
@@ -509,12 +531,11 @@
 
 
 (defn- get-migration-by-number
-  "Return migration file name by number.
-
-  migration-names [<str>]
-  number: <str>"
+  "Return migration file name by number."
   [migration-names number]
-  ; TODO: add args validation!
+  {:pre [(s/assert (s/coll-of string?) migration-names)
+         (s/assert integer? number)]
+   :post [(s/assert string? %)]}
   (->> migration-names
     (filter #(= number (get-migration-number %)))
     (first)))
@@ -546,9 +567,8 @@
 
 
 (defmethod explain* [SQL-MIGRATION-EXT FORWARD-DIRECTION]
-  ; Generate raw sql from migration.
+  ; Generate raw sql from migration for forward direction.
   [{:keys [file-name migrations-dir] :as _args}]
-  ; TODO: print sql for migrations by directions!
   (->> (read-migration {:file-name file-name
                         :migrations-dir migrations-dir})
     (first)
@@ -557,9 +577,8 @@
 
 
 (defmethod explain* [SQL-MIGRATION-EXT BACKWARD-DIRECTION]
-  ; Generate raw sql from migration.
+  ; Generate raw sql from migration for backward direction.
   [{:keys [file-name migrations-dir] :as _args}]
-  ; TODO: print sql for migrations by directions!
   (->> (read-migration {:file-name file-name
                         :migrations-dir migrations-dir})
     (first)
@@ -775,11 +794,12 @@
         (file-util/prn-err)))))
 
 
+; Comments for development.
+
 (comment
   (let [config {:models-file "src/tuna/models.edn"
                 ;:models-file "test/tuna/models/feed_add_column.edn"
                 :migrations-dir "src/tuna/migrations"
-                ;:migrations-dir "test/tuna/migrations"
                 :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
                 :number 4}
         db (db-util/db-conn (:jdbc-url config))
@@ -790,83 +810,14 @@
         ;(->> (make-migrations* models-file migrations-files))
         ;(make-next-migration config)
         ;     (flatten))
-
-         ;(map #(spec-util/conform ::sql/->sql %)))
-         ;(flatten)
-         ;(map db-util/fmt))
-         ;(map #(db-util/exec! db %)))
         (catch [:type ::s/invalid] e
           (print (:message e))
           (:data e)))))
-          ;(-> e :data :clojure.spec.alpha/problems first :pred type)))))
 
 
 (comment
   (let [config {:models-file "src/tuna/models.edn"
                 :migrations-dir "src/tuna/migrations"
                 :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
-                ;:name "some-new-table"
-                ;:type :empty-sql}
-                ;:number 3}
-                ;:direction FORWARD-DIRECTION}
-                ;:direction BACKWARD-DIRECTION}
         db (db-util/db-conn (:jdbc-url config))]
-    ;(s/explain ::models (models))
-    ;(s/valid? ::models (models))
-    ;(s/conform ::->migration (first (models)))))
-    ;MIGRATIONS-TABLE))
     (make-migrations config)))
-    ;(explain config)))
-    ;(migrate config)))
-    ;(list-migrations config)))
-
-
-; TODO: remove!
-(comment
-  (let [db (db-util/db-conn "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna")
-        model [:feed
-               {:fields {:id {:type :integer
-                              :null false
-                              :primary-key true
-                              :default 1
-                              :unique true}
-                         :name {:type [:varchar 100]
-                                :null false}
-                         :created_at {:type :timestamp
-                                      :default [:now]}
-                         :is_active {:type :boolean}
-                         :opts {:type :jsonb}}}]]
-    ;(try+
-    ;  (->> model
-    ;    (spec-util/conform ::action/->migration)
-    ;    (spec-util/conform ::sql/->sql)
-    ;    ;(db-util/fmt))
-    ;    (db-util/exec! db))
-    ;  (catch [:type ::s/invalid] e
-    ;    (:data e)))))
-
-    (->> {:alter-table :feed
-            ;:alter-column [:name :type [:varchar 10]]}
-
-            ;:alter-column [:name :set [:not nil]]}
-            ;:alter-column [:name :drop [:not nil]]}
-
-            ;:alter-column [:name :set [:default "test"]]}
-            ;:alter-column [:name :drop :default]}
-
-            ;:add-index [:unique nil :name]}
-            ;:drop-constraint (keyword (str/join #"-" [(name :feed) (name :name) "key"]))}
-
-            ;:add-index [:primary-key :name]
-            ;:drop-constraint (keyword (str/join #"-" [(name :feed) "pkey"]))}
-
-             ;:add-index [:constraint :feed-account-fkey [:foreign-key :id] [:references :account :id]]}
-             ;:add-index [[:constraint :feed-account-fkey] [:foreign-key :id] [:references :account :id]]}
-             :add-constraint [:feed-account-fkey [:foreign-key :id] [:references :account :id] [:raw "on delete"] :set-null]}
-
-
-        ;{:create-index [:some-index-idx :on :feed :using [:btree :name :id]]}
-        ;{:create-unique-index [:some-index-idx :on :feed :using [:btree :name :id]]}
-        ;{:drop-index :some-index-idx}
-        (db-util/fmt))))
-;(db-util/exec! db)))))
