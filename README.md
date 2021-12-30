@@ -45,4 +45,4 @@ file (in the `:exec-args` for `depstar`).
 
 Copyright © 2021 Andrey Bogoyavlensky
 
-Distributed under the Eclipse Public License version 1.0.
+Distributed under the MIT License.
