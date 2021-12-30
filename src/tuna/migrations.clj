@@ -531,12 +531,11 @@
 
 
 (defn- get-migration-by-number
-  "Return migration file name by number.
-
-  migration-names [<str>]
-  number: <str>"
+  "Return migration file name by number."
   [migration-names number]
-  ; TODO: add args validation!
+  {:pre [(s/assert (s/coll-of string?) migration-names)
+         (s/assert integer? number)]
+   :post [(s/assert string? %)]}
   (->> migration-names
     (filter #(= number (get-migration-number %)))
     (first)))
