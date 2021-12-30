@@ -89,21 +89,11 @@
     (derive :real :float)))
 
 
-(def ^:private type-groups
-  "Type groups for definition of type's relations.
-
-  Used for foreign-key field type validation."
-  ; TODO: use derive with make-hierarchy!
-  {:int #{:integer :serial :bigint :smallint}
-   :char #{:varchar :text :uuid}})
-
-
 (defn check-type-group
+  "Return field type parent or type itself if there is no parent."
   [t]
-  (some->> type-groups
-    (filter #(contains? (val %) t))
-    (first)
-    (key)))
+  (let [field-type-parent (first (parents type-hierarchy t))]
+    (or field-type-parent t)))
 
 
 (s/def ::null boolean?)
