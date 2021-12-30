@@ -844,6 +844,7 @@
       expected-q-edn
       expected-q-sql)))
 
+
 (deftest test-make-and-migrate-alter-varchar-type-field-ok
   (let [existing-actions '({:action :create-table
                             :model-name :feed
