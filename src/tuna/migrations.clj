@@ -223,6 +223,25 @@
         (reduce (partial assoc-option-to-drop old-options) $ options-to-drop)))
 
 
+(defn- get-options-to-add
+  "Update option in diff to option from new model if diff is a vector.
+
+  It is a caveat how differ lib works with changes in vectors. For example, it uses
+  in case when we change field type [:varchar 100] to [:varchar 200]. In diff we see [1 200]
+  cause just second item of a vector has been changed. So for us it is important to have whole
+  new type in options to add, and we just copy it from new model."
+  [fields-diff field-name new-model]
+  (let [field-options-diff (get fields-diff field-name)
+        fields-options-new (get-in new-model [:fields field-name])]
+    (reduce-kv
+      (fn [m k v]
+        (if (vector? v)
+          (assoc m k (get fields-options-new k))
+          (assoc m k v)))
+      {}
+      field-options-diff)))
+
+
 (defn- parse-fields-diff
   "Return field's migrations for model."
   [{:keys [model-diff removals old-model new-model model-name]}]
@@ -231,7 +250,7 @@
         changed-fields (-> (set (keys fields-diff))
                          (set/union (set (keys fields-removals))))]
     (for [field-name changed-fields
-          :let [options-to-add (get fields-diff field-name)
+          :let [options-to-add (get-options-to-add fields-diff field-name new-model)
                 options-to-drop (get fields-removals field-name)
                 new-field?* (new-field? old-model fields-diff field-name)
                 drop-field?* (drop-field? fields-removals field-name)
