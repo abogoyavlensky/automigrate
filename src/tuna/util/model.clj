@@ -58,7 +58,6 @@
   ([changes option-key]
    {:pre [(s/assert ::option-key option-key)]}
    (->> changes
-        ; TODO: use var instead of :EMPTY val!
      (filter #(= EMPTY-OPTION (get (val %) option-key)))
      (map key)
      (set))))

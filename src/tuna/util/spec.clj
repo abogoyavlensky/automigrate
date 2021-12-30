@@ -24,7 +24,7 @@
 (defn valid?
   "Check if data valid for spec and return the data or throw explained exception."
   [spec data]
-  ; TODO: call validation once!
+  ; TODO: try to call validation once!
   (if (s/valid? spec data)
     data
     (throw-exception-for-spec! spec data)))

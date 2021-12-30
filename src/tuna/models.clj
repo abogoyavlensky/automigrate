@@ -272,13 +272,3 @@
   "Transform public models from file to internal representation."
   [models]
   (spec-util/conform ::->internal-models models))
-
-
-; TODO: remove!
-(comment
-  (let [data {:feed [[:id :serial {:null false}]]}]
-
-    ;(s/explain-data ::public-model2 {:fields [[:id :int]]})
-    ;(s/explain-data ::public-model2 [[:id :int]])
-    ;(s/explain-data ::public-model2 [])))
-    (s/conform ::->internal-models data)))

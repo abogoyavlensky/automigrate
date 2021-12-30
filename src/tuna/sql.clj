@@ -123,7 +123,6 @@
       {:type :tuna.sql.option->sql/type}
       (d/->opt (spec-util/specs->dict options-specs)))
     ::->foreign-key-complete))
-; TODO: add conformer output validation!
 
 
 (s/def ::fields
@@ -380,39 +379,3 @@
     (if (sequential? formatted-action)
       (map #(db-util/fmt %) formatted-action)
       (db-util/fmt formatted-action))))
-
-
-; TODO: remove!
-(comment
-  (require '[tuna.util.spec :as spec-util])
-  (let [alter-column {:action :alter-column,
-                      :changes {:default {:from :EMPTY, :to 0},
-                                :primary-key {:from true, :to :EMPTY},
-                                :type {:from :text, :to :integer},
-                                :unique {:from :EMPTY, :to true}
-                                :null {:to :EMPTY :from true}},
-                      :field-name :number
-                      :model-name :account}
-        alter-column-fk {:action :alter-column,
-                         :field-name :task,
-                         :model-name :feed,
-                         :options {:type :integer
-                                   :foreign-key :account/id
-                                   :on-delete :set-null
-                                   :on-update :cascade}
-                         :changes {:on-delete {:from :cascade, :to :set-null}
-                                   :on-update {:from :EMPTY, :to :cascade}}}
-        create-table {:action :create-table
-                      :model-name :foo1
-                      :fields
-                      {:id {:type :serial, :unique true}
-                       :account {:type :integer
-                                 :foreign-key :account/id
-                                 :on-delete :cascade}}}
-        action {:action :alter-column,
-                :field-name :account,
-                :model-name :feed,
-                :options {:type :integer},
-                :changes {:foreign-key {:from :feed/id
-                                        :to :EMPTY}}}]
-    (spec-util/conform ::->sql action)))
