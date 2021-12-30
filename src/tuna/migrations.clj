@@ -166,10 +166,9 @@
       actions/ALTER-INDEX-ACTION} (:index-name action)))
 
 
-(defn- get-first-action-name
-  [actions]
-  (let [action (-> actions first)
-        action-name (-> action :action name)
+(defn- get-action-name
+  [action]
+  (let [action-name (-> action :action name)
         item-name (-> action extract-item-name name)]
     (str/join #"_" [AUTO-MIGRATION-PREFIX action-name item-name])))
 
@@ -177,7 +176,7 @@
 (defn- get-next-migration-name
   "Return given custom name with underscores or first action name."
   [actions custom-name]
-  (let [migration-name (or custom-name (get-first-action-name actions))]
+  (let [migration-name (or custom-name (get-action-name (first actions)))]
     (str/replace migration-name #"-" "_")))
 
 
@@ -437,6 +436,28 @@
     (seq)))
 
 
+(defn- get-action-name-verbose
+  [action]
+  (let [action-name (-> action :action name (str/replace #"-" " "))
+        item-name (-> action extract-item-name name (str/replace #"-" "_"))
+        model-name (:model-name action)
+        at-model (when-not (contains? #{actions/CREATE-TABLE-ACTION
+                                        actions/DROP-TABLE-ACTION}
+                             (:action action))
+                   (str "in table " (-> model-name name (str/replace #"-" "_"))))
+        full-action-name-vec (cond-> [action-name item-name]
+                               (some? at-model) (conj at-model))]
+    (str/join " " full-action-name-vec)))
+
+
+(defn- print-action-names
+  [actions]
+  (let [action-names (mapv (comp #(str "  - " %)
+                             get-action-name-verbose)
+                       actions)]
+    (file-util/safe-println (cons "Actions:" action-names) "")))
+
+
 (defmulti make-migrations :type)
 
 
@@ -456,8 +477,9 @@
         (spit migration-file-name-full-path
           (with-out-str
             (pprint/pprint next-migration)))
-        ; TODO: print all changes from migration in verbose mode
-        (println (str "Created migration: " migration-file-name-full-path)))
+        (println (str "Created migration: " migration-file-name-full-path))
+        ; Print all actions from migration in human-readable format
+        (print-action-names next-migration))
       (println "There are no changes in models."))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))

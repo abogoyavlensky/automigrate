@@ -32,9 +32,11 @@
 
 
 (defn safe-println
-  [more]
-  (.write *out*
-    (str (str/join ";\n" more) "\n")))
+  ([more]
+   (safe-println more ";"))
+  ([more  delimiter]
+   (.write *out*
+     (str (str/join (str delimiter "\n") more) "\n"))))
 
 
 (defn prn-err

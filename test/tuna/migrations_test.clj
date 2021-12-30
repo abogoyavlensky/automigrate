@@ -105,9 +105,14 @@
   (core/run {:cmd :make-migrations
              :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migrations
-             :models-file (str config/MODELS-DIR "feed_alter_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
+  (is (= (str "Created migration: test/tuna/migrations/0003_auto_alter_column_id.edn\n"
+           "Actions:\n"
+           "  - alter column id in table feed\n"
+           "  - alter column name in table feed\n")
+        (with-out-str
+          (core/run {:cmd :make-migrations
+                     :models-file (str config/MODELS-DIR "feed_alter_column.edn")
+                     :migrations-dir config/MIGRATIONS-DIR}))))
   (testing "test migrate forward to specific number"
     (core/run {:cmd :migrate
                :migrations-dir config/MIGRATIONS-DIR

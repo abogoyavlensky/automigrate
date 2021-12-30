@@ -155,7 +155,6 @@
 
 
 (s/def ::default
-  ; TODO: try update with dynamic value related to field's type
   (s/multi-spec default-option class))
 
 
@@ -294,13 +293,3 @@
 
 (s/def ::fields
   (s/map-of ::field-name ::field :min-count 1 :distinct true))
-
-
-; TODO: remove!
-;;;;;;;;;;;;;;;
-
-(comment
-  (let [data {:null true
-              :foreign-key :account/id}
-        data2 {:null false, :type :serial}]
-    (s/explain-data ::options-strict data)))
