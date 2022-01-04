@@ -1,7 +1,6 @@
 (ns tuna.util.model
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
-            [medley.core :as medley]
             [tuna.util.spec :as spec-util]
             [clojure.string :as str]))
 
@@ -39,7 +38,19 @@
 
 (defn map-kw-keys->kebab-case
   [map-kw]
-  (medley/map-keys kw->kebab-case map-kw))
+  (reduce-kv
+    (fn [m k v]
+      (assoc m (kw->kebab-case k) v))
+    {}
+    map-kw))
+
+
+(defn- remove-empty-option
+  "Remove option key if value by `option-key` direction is empty."
+  [option-key m k v]
+  (if (not= EMPTY-OPTION (get v option-key))
+    (assoc m k (get v option-key))
+    m))
 
 
 (defn changes-to-add
@@ -47,9 +58,7 @@
    (changes-to-add changes OPTION-KEY-FORWARD))
   ([changes option-key]
    {:pre [(s/assert ::option-key option-key)]}
-   (->> changes
-     (medley/remove-kv #(= EMPTY-OPTION (-> %2 (get option-key))))
-     (reduce-kv #(assoc %1 %2 (get %3 option-key)) {}))))
+   (reduce-kv (partial remove-empty-option option-key) {} changes)))
 
 
 (defn changes-to-drop

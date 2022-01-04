@@ -4,8 +4,7 @@
             [tuna.util.db :as db-util]
             [tuna.util.file :as file-util]
             [tuna.testing-util :as test-util]
-            [tuna.testing-config :as config])
-  (:import [org.postgresql.util PSQLException]))
+            [tuna.testing-config :as config]))
 
 
 (use-fixtures :each
@@ -139,7 +138,7 @@
              :type "empty-sql"
              :name "add-description-field"})
   (testing "check that migrations table does not exist"
-    (is (thrown? PSQLException
+    (is (thrown? Exception
           (->> {:select [:name]
                 :from [db-util/MIGRATIONS-TABLE]
                 :order-by [:created-at]}
