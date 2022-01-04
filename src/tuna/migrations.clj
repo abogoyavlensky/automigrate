@@ -22,8 +22,7 @@
             [tuna.util.db :as db-util]
             [tuna.util.spec :as spec-util]
             [tuna.util.model :as model-util])
-  (:import [org.postgresql.util PSQLException]
-           [java.io FileNotFoundException]))
+  (:import [java.io FileNotFoundException]))
 
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
@@ -638,7 +637,7 @@
           :order-by [:created-at]}
       (db-util/exec! db)
       (map :name))
-    (catch PSQLException e
+    (catch Exception e
       (let [msg (ex-message e)
             table-exists-err-pattern #"relation .+ does not exist"]
         (if (re-find table-exists-err-pattern msg)

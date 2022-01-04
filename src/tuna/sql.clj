@@ -7,8 +7,7 @@
             [tuna.fields :as fields]
             [tuna.util.db :as db-util]
             [tuna.util.model :as model-util]
-            [tuna.util.spec :as spec-util]
-            [medley.core :as medley]))
+            [tuna.util.spec :as spec-util]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
@@ -227,9 +226,9 @@
   (let [changes-to-add (model-util/changes-to-add (:changes action))
         changes-to-drop (model-util/changes-to-drop (:changes action))
         foreign-key (foreign-key-changes (:options action) changes-to-add changes-to-drop)]
-    {:changes-to-add (-> changes-to-add
-                       (dissoc :on-delete :on-update)
-                       (medley/assoc-some :foreign-key foreign-key))
+    {:changes-to-add (cond-> changes-to-add
+                       true (dissoc :on-delete :on-update)
+                       (some? foreign-key) (assoc :foreign-key foreign-key))
      :changes-to-drop (disj changes-to-drop :on-delete :on-update)}))
 
 
