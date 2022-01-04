@@ -821,3 +821,47 @@
             :action :create-table})
         (file-util/read-edn
           (str config/MIGRATIONS-DIR "/0001_some_custom_migration_name.edn")))))
+
+
+(deftest test-make-and-migrate-alter-varchar-value-field-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:name {:type [:varchar 100]}}})
+        changed-models {:feed
+                        {:fields [[:name [:varchar 200]]]}}
+        expected-actions '({:action :alter-column
+                            :field-name :name
+                            :model-name :feed
+                            :options {:type [:varchar 200]}
+                            :changes {:type {:from [:varchar 100]
+                                             :to [:varchar 200]}}})
+        expected-q-edn '({:alter-table (:feed {:alter-column [:name :type [:varchar 200]]})})
+        expected-q-sql (list ["ALTER TABLE feed ALTER COLUMN name TYPE VARCHAR(200)"])]
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)))
+
+
+(deftest test-make-and-migrate-alter-varchar-type-field-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:name {:type [:varchar 100]}}})
+        changed-models {:feed
+                        {:fields [[:name [:char 100]]]}}
+        expected-actions '({:action :alter-column
+                            :field-name :name
+                            :model-name :feed
+                            :options {:type [:char 100]}
+                            :changes {:type {:from [:varchar 100]
+                                             :to [:char 100]}}})
+        expected-q-edn '({:alter-table (:feed {:alter-column [:name :type [:char 100]]})})
+        expected-q-sql (list ["ALTER TABLE feed ALTER COLUMN name TYPE CHAR(100)"])]
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)))

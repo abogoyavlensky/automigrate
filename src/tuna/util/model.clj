@@ -65,19 +65,19 @@
 
 (defn check-option-state
   [value]
-  (not= (:from value) (:to value)))
+  (not= (get value OPTION-KEY-BACKWARD) (get value OPTION-KEY-FORWARD)))
 
 
 (defn option-states
   [field-spec]
   (s/and
     (d/dict*
-      ^:opt {:from (s/and (s/or :empty #{EMPTY-OPTION}
-                            :value field-spec)
-                     (s/conformer spec-util/tagged->value))
-             :to (s/and (s/or :empty #{EMPTY-OPTION}
-                          :value field-spec)
-                   (s/conformer spec-util/tagged->value))})
+      ^:opt {OPTION-KEY-BACKWARD (s/and (s/or :empty #{EMPTY-OPTION}
+                                          :value field-spec)
+                                   (s/conformer spec-util/tagged->value))
+             OPTION-KEY-FORWARD (s/and (s/or :empty #{EMPTY-OPTION}
+                                         :value field-spec)
+                                  (s/conformer spec-util/tagged->value))})
     check-option-state))
 
 
@@ -95,8 +95,8 @@
   [type-spec]
   {:type (s/and
            (d/dict*
-             ^:opt {:from type-spec
-                    :to type-spec})
+             ^:opt {OPTION-KEY-BACKWARD type-spec
+                    OPTION-KEY-FORWARD type-spec})
            check-option-state)})
 
 
