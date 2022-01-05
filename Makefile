@@ -7,7 +7,7 @@ INFO := @sh -c '\
     printf $(NC)' VALUE
 
 
-DIRS?=src test
+DIRS?=src test build.clj
 GOALS = $(filter-out $@,$(MAKECMDGOALS))
 
 .SILENT:  # Ignore output of make `echo` command
@@ -23,26 +23,6 @@ help:
 deps:
 	@$(INFO) "Install deps..."
 	@clojure -P -X:test:dev
-
-
-.PHONY: build  # Build a deployable jar
-build:
-	@$(INFO) "Building jar..."
-	@clojure -X:build
-
-
-.PHONY: install  # Build and install package locally
-install:
-	@$(MAKE) build
-	@$(INFO) "Installing jar locally..."
-	@clojure -X:install
-
-
-.PHONY: deploy  # Build and deploy package to Clojars
-deploy:
-	@$(MAKE) build
-	@$(INFO) "Deploying jar to Clojars..."
-	@clojure -X:deploy
 
 
 .PHONY: fmt-check  # Checking code formatting
@@ -131,3 +111,27 @@ explain:
 list:
 	@$(INFO) "Migrations found..."
 	@clojure -A:dev -X:migrations :cmd :list-migrations $(GOALS)
+
+
+# Build and release
+
+.PHONY: build  # Build a deployable jar
+build:
+	@$(INFO) "Building a jar..."
+	@clojure -T:build build $(GOALS)
+
+
+.PHONY: install  # Build and install package locally
+install:
+	@$(INFO) "Building a jar..."
+	@clojure -T:build build $(GOALS)
+	@$(INFO) "Installing a jar locally..."
+	@clojure -T:build install $(GOALS)
+
+
+# TODO: update!
+#.PHONY: deploy  # Build and deploy package to Clojars
+#deploy:
+#	@$(MAKE) build
+#	@$(INFO) "Deploying jar to Clojars..."
+#	@clojure -X:deploy
