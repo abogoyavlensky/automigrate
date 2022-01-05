@@ -112,7 +112,7 @@ stop:
 .PHONY: migrations  # Making migrations
 migrations:
 	@$(INFO) "Making migrations..."
-	@clojure -A:dev -X:migrations :cmd :make-migrations $(GOALS)
+	@clojure -A:dev -X:migrations :cmd :make-migration $(GOALS)
 
 
 .PHONY: migrate  # Migrating migrations
