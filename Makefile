@@ -25,6 +25,12 @@ deps:
 	@clojure -P -X:test:dev
 
 
+.PHONY: repl  # Running repl
+repl:
+	@$(INFO) "Running repl..."
+	@clj -A:test:dev
+
+
 .PHONY: fmt-check  # Checking code formatting
 fmt-check:
 	@$(INFO) "Checking code formatting..."
@@ -133,7 +139,7 @@ deploy-ci:
 	@clojure -T:build deploy
 
 
-.PHONY: release  # Bump tag version, build and deploy package to Clojars
+.PHONY: release  # Bump tag version and push it to remote rpeo
 release:
 	@$(INFO) "Deploying jar-file to Clojars..."
 	@clojure -T:build release :bump $(GOALS)
