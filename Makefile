@@ -115,23 +115,25 @@ list:
 
 # Build and release
 
-.PHONY: build  # Build a deployable jar
-build:
-	@$(INFO) "Building a jar..."
-	@clojure -T:build build $(GOALS)
-
-
-.PHONY: install  # Build and install package locally
-install:
-	@$(INFO) "Building a jar..."
-	@clojure -T:build build $(GOALS)
+.PHONY: install-snapshot  # Build and install snapshot of package with next version locally
+install-snapshot:
 	@$(INFO) "Installing a jar locally..."
-	@clojure -T:build install $(GOALS)
+	@clojure -T:build install :snapshot? true :bump $(GOALS)
 
 
-# TODO: update!
-#.PHONY: deploy  # Build and deploy package to Clojars
-#deploy:
-#	@$(MAKE) build
-#	@$(INFO) "Deploying jar to Clojars..."
-#	@clojure -X:deploy
+.PHONY: deploy-snapshot  # Build and deploy snapshot of package with next version to Clojars from local machine
+deploy-snapshot:
+	@$(INFO) "Deploying jar-file to Clojars..."
+	@clojure -T:build deploy :snapshot? true :bump $(GOALS)
+
+
+.PHONY: deploy-ci  # Build and deploy latest version of package to Clojars in CI
+deploy-ci:
+	@$(INFO) "Deploying jar-file to Clojars..."
+	@clojure -T:build deploy
+
+
+.PHONY: release  # Bump tag version, build and deploy package to Clojars
+release:
+	@$(INFO) "Deploying jar-file to Clojars..."
+	@clojure -T:build release :bump $(GOALS)
