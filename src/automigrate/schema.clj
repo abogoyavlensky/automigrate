@@ -1,11 +1,11 @@
-(ns tuna.schema
+(ns automigrate.schema
   "Module for generating db schema from migrations."
-  (:require [tuna.util.file :as file-util]
-            [tuna.actions :as actions]
-            [tuna.models :as models]
-            [tuna.util.map :as map-util]
-            [tuna.util.spec :as spec-util]
-            [tuna.util.model :as model-util]))
+  (:require [automigrate.util.file :as file-util]
+            [automigrate.actions :as actions]
+            [automigrate.models :as models]
+            [automigrate.util.map :as map-util]
+            [automigrate.util.spec :as spec-util]
+            [automigrate.util.model :as model-util]))
 
 
 (defn- load-migrations-from-files

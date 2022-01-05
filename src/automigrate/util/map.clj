@@ -1,4 +1,4 @@
-(ns tuna.util.map)
+(ns automigrate.util.map)
 
 
 (defn dissoc-in

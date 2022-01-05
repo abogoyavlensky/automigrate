@@ -1,7 +1,7 @@
-(ns tuna.util.model
+(ns automigrate.util.model
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
-            [tuna.util.spec :as spec-util]
+            [automigrate.util.spec :as spec-util]
             [clojure.string :as str]))
 
 

@@ -1,8 +1,8 @@
-# tuna
+# automigrate
 
-[![CI](https://github.com/abogoyavlensky/tuna/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/tuna/actions/workflows/ci.yaml)
+[![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/ci.yaml)
 
-Database auto-migrations tool for Clojure.
+Database auto-migration tool for Clojure.
 
 ## Usage
 
@@ -11,7 +11,7 @@ TODO: write usage documentation!
 
 Invoke a library API function from the command-line:
 
-    $ clojure -X abogoyavlensky.tuna/foo :a 1 :b '"two"'
+    $ clojure -X abogoyavlensky.automigrate/foo :a 1 :b '"two"'
     {:a 1, :b "two"} "Hello, World!"
 
 Run the project's tests (they'll fail until you edit them):

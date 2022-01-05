@@ -1,4 +1,4 @@
-(ns tuna.migrations
+(ns automigrate.migrations
   "Module for applying changes to migrations and db.
   Also contains tools for inspection of db state by migrations
   and state of migrations itself."
@@ -13,15 +13,15 @@
             [slingshot.slingshot :refer [throw+ try+]]
             [differ.core :as differ]
             [weavejester.dependency :as dep]
-            [tuna.actions :as actions]
-            [tuna.models :as models]
-            [tuna.errors :as errors]
-            [tuna.sql :as sql]
-            [tuna.schema :as schema]
-            [tuna.util.file :as file-util]
-            [tuna.util.db :as db-util]
-            [tuna.util.spec :as spec-util]
-            [tuna.util.model :as model-util])
+            [automigrate.actions :as actions]
+            [automigrate.models :as models]
+            [automigrate.errors :as errors]
+            [automigrate.sql :as sql]
+            [automigrate.schema :as schema]
+            [automigrate.util.file :as file-util]
+            [automigrate.util.db :as db-util]
+            [automigrate.util.spec :as spec-util]
+            [automigrate.util.model :as model-util])
   (:import [java.io FileNotFoundException]))
 
 
@@ -815,10 +815,10 @@
 ; Comments for development.
 
 (comment
-  (let [config {:models-file "src/tuna/models.edn"
-                ;:models-file "test/tuna/models/feed_add_column.edn"
-                :migrations-dir "src/tuna/migrations"
-                :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"
+  (let [config {:models-file "src/automigrate/models.edn"
+                ;:models-file "test/automigrate/models/feed_add_column.edn"
+                :migrations-dir "src/automigrate/migrations"
+                :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"
                 :number 4}
         db (db-util/db-conn (:jdbc-url config))
         migrations-files (file-util/list-files (:migrations-dir config))
@@ -834,8 +834,8 @@
 
 
 (comment
-  (let [config {:models-file "src/tuna/models.edn"
-                :migrations-dir "src/tuna/migrations"
-                :jdbc-url "jdbc:postgresql://localhost:5432/tuna?user=tuna&password=tuna"}
+  (let [config {:models-file "src/automigrate/models.edn"
+                :migrations-dir "src/automigrate/migrations"
+                :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}
         db (db-util/db-conn (:jdbc-url config))]
     (make-migrations config)))

@@ -1,16 +1,16 @@
-(ns tuna.migrations-test
+(ns automigrate.migrations-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
             [bond.james :as bond]
-            [tuna.migrations :as migrations]
-            [tuna.core :as core]
-            [tuna.schema :as schema]
-            [tuna.sql :as sql]
-            [tuna.util.db :as db-util]
-            [tuna.util.file :as file-util]
-            [tuna.util.spec :as spec-util]
-            [tuna.testing-util :as test-util]
-            [tuna.testing-config :as config])
+            [automigrate.migrations :as migrations]
+            [automigrate.core :as core]
+            [automigrate.schema :as schema]
+            [automigrate.sql :as sql]
+            [automigrate.util.db :as db-util]
+            [automigrate.util.file :as file-util]
+            [automigrate.util.spec :as spec-util]
+            [automigrate.testing-util :as test-util]
+            [automigrate.testing-config :as config])
   (:import [java.io FileNotFoundException]
            [clojure.lang ExceptionInfo]))
 
@@ -105,7 +105,7 @@
   (core/run {:cmd :make-migrations
              :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (is (= (str "Created migration: test/tuna/migrations/0003_auto_alter_column_id.edn\n"
+  (is (= (str "Created migration: test/automigrate/migrations/0003_auto_alter_column_id.edn\n"
            "Actions:\n"
            "  - alter column id in table feed\n"
            "  - alter column name in table feed\n")

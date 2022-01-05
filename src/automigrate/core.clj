@@ -1,12 +1,12 @@
-(ns tuna.core
+(ns automigrate.core
   "Public interface for lib's users."
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [slingshot.slingshot :refer [try+]]
-            [tuna.migrations :as migrations]
-            [tuna.util.spec :as spec-util]
-            [tuna.util.file :as file-util]
-            [tuna.errors :as errors]))
+            [automigrate.migrations :as migrations]
+            [automigrate.util.spec :as spec-util]
+            [automigrate.util.file :as file-util]
+            [automigrate.errors :as errors]))
 
 ; Enable asserts for spec in function's pre and post conditions
 (s/check-asserts true)

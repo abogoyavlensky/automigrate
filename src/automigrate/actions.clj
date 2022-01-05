@@ -1,10 +1,10 @@
-(ns tuna.actions
+(ns automigrate.actions
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
-            [tuna.models :as models]
-            [tuna.fields :as fields]
-            [tuna.util.model :as model-util]
-            [tuna.util.spec :as spec-util]))
+            [automigrate.models :as models]
+            [automigrate.fields :as fields]
+            [automigrate.util.model :as model-util]
+            [automigrate.util.spec :as spec-util]))
 
 
 (def CREATE-TABLE-ACTION :create-table)
@@ -95,7 +95,7 @@
              ::model-name]))
 
 
-(s/def :tuna.actions.indexes/options
+(s/def :automigrate.actions.indexes/options
   ::models/index)
 
 
@@ -105,7 +105,7 @@
     :req-un [::action
              ::index-name
              ::model-name
-             :tuna.actions.indexes/options]))
+             :automigrate.actions.indexes/options]))
 
 
 (defmethod action DROP-INDEX-ACTION
@@ -122,7 +122,7 @@
     :req-un [::action
              ::index-name
              ::model-name
-             :tuna.actions.indexes/options]))
+             :automigrate.actions.indexes/options]))
 
 
 (s/def ::->migration (s/multi-spec action :action))

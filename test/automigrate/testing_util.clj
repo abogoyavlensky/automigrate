@@ -1,8 +1,8 @@
-(ns tuna.testing-util
+(ns automigrate.testing-util
   "Utils for simplifying tests."
   (:require [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
-            [tuna.util.db :as db-util]
+            [automigrate.util.db :as db-util]
             [slingshot.slingshot :refer [try+]]))
 
 

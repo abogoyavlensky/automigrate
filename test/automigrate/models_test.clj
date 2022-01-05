@@ -1,7 +1,7 @@
-(ns tuna.models-test
+(ns automigrate.models-test
   (:require [clojure.test :refer :all]
             [clojure.spec.alpha :as s]
-            [tuna.models :as models])
+            [automigrate.models :as models])
   (:import (clojure.lang ExceptionInfo)))
 
 

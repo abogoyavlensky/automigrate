@@ -1,13 +1,13 @@
-(ns tuna.core-errors
+(ns automigrate.core-errors
   (:require [clojure.test :refer :all]
             [clojure.spec.alpha :as s]
             [bond.james :as bond]
-            [tuna.core :as core]
-            [tuna.migrations :as tuna-migrations]
-            [tuna.testing-config :as config]
-            [tuna.util.file :as file-util]
-            [tuna.testing-util :as test-util]
-            [tuna.errors :as errors]))
+            [automigrate.core :as core]
+            [automigrate.migrations :as automigrate-migrations]
+            [automigrate.testing-config :as config]
+            [automigrate.util.file :as file-util]
+            [automigrate.testing-util :as test-util]
+            [automigrate.errors :as errors]))
 
 
 (use-fixtures :each
@@ -23,8 +23,8 @@
                  :migrations-dir config/MIGRATIONS-DIR})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
         (is (= [{:message (str "Invalid command name.\n\n  {:cmd :wrong-cmd, "
-                            ":models-file \"test/tuna/models/feed_basic.edn\", "
-                            ":migrations-dir \"test/tuna/migrations\"}")
+                            ":models-file \"test/automigrate/models/feed_basic.edn\", "
+                            ":migrations-dir \"test/automigrate/migrations\"}")
                  :title "COMMAND ERROR"}]
               (test-util/get-spec-error-data (constantly error)))))))
 
@@ -34,8 +34,8 @@
                  :migrations-dir config/MIGRATIONS-DIR})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
         (is (= [{:message (str "Invalid command name.\n\n  {"
-                            ":models-file \"test/tuna/models/feed_basic.edn\", "
-                            ":migrations-dir \"test/tuna/migrations\"}")
+                            ":models-file \"test/automigrate/models/feed_basic.edn\", "
+                            ":migrations-dir \"test/automigrate/migrations\"}")
                  :title "COMMAND ERROR"}]
               (test-util/get-spec-error-data (constantly error)))))))
 
@@ -45,7 +45,7 @@
                  :migrations-dir config/MIGRATIONS-DIR})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
         (is (= [{:message (str "Missing model file path.\n\n  {:cmd :make-migrations, "
-                            ":migrations-dir \"test/tuna/migrations\"}")
+                            ":migrations-dir \"test/automigrate/migrations\"}")
                  :title "COMMAND ERROR"}]
               (test-util/get-spec-error-data (constantly error)))))))
 
@@ -55,7 +55,7 @@
                  :models-file (str config/MODELS-DIR "feed_basic.edn")})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
         (is (= [{:message (str "Missing migrations dir path.\n\n  {:cmd :make-migrations, "
-                            ":models-file \"test/tuna/models/feed_basic.edn\"}")
+                            ":models-file \"test/automigrate/models/feed_basic.edn\"}")
                  :title "COMMAND ERROR"}]
               (test-util/get-spec-error-data (constantly error)))))))
 
@@ -88,7 +88,7 @@
                  :migrations-dir config/MIGRATIONS-DIR})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
         (is (= [{:message (str "Missing db connection config.\n\n  {:cmd :migrate, "
-                            ":migrations-dir \"test/tuna/migrations\"}")
+                            ":migrations-dir \"test/automigrate/migrations\"}")
                  :title "COMMAND ERROR"}]
               (test-util/get-spec-error-data (constantly error)))))))
 
@@ -104,7 +104,7 @@
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
         (is (= {:message "-- ERROR -------------------------------------\n\nInvalid target migration number.\n"
                 :number 4
-                :type :tuna.migrations/invalid-target-migration-number}
+                :type :automigrate.migrations/invalid-target-migration-number}
               error))))))
 
 
@@ -125,7 +125,7 @@
   (testing "check fiction unexpected error"
     #_{:clj-kondo/ignore [:private-call]}
     (bond/with-stub! [[file-util/prn-err (constantly nil)]
-                      [tuna-migrations/get-detailed-migrations-to-migrate
+                      [automigrate-migrations/get-detailed-migrations-to-migrate
                        (fn [& _] (throw (Exception. "Testing error message.")))]]
       (core/run {:cmd :migrate
                  :migrations-dir config/MIGRATIONS-DIR

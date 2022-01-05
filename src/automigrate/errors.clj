@@ -1,4 +1,4 @@
-(ns tuna.errors
+(ns automigrate.errors
   (:require [clojure.string :as str]
             [clojure.spec.alpha :as s]
             [clojure.set :as set]))
@@ -27,7 +27,7 @@
 
 (defn- get-model-name
   [data]
-  (if (= :tuna.actions/->migrations (:main-spec data))
+  (if (= :automigrate.actions/->migrations (:main-spec data))
     (get-in (:origin-value data) [(first (:in data)) :model-name])
     (-> data :in first)))
 
@@ -50,7 +50,7 @@
 
 (defn- get-options
   [data]
-  (if (= :tuna.actions/->migrations (:main-spec data))
+  (if (= :automigrate.actions/->migrations (:main-spec data))
     (:val data)
     (let [field-path (conj (get-model-items-path data :fields) 2)]
       (get-in (:origin-value data) field-path))))
@@ -58,7 +58,7 @@
 
 (defn- get-field-name
   [data]
-  (if (and (= :tuna.actions/->migrations (:main-spec data))
+  (if (and (= :automigrate.actions/->migrations (:main-spec data))
         (contains? #{:add-column :alter-column} (-> data :path first)))
     (get-in (:origin-value data) [(first (:in data)) :field-name])
     (let [path (get-model-items-path data :fields)
@@ -114,29 +114,29 @@
   "ERROR")
 
 
-(defmethod ->error-title :tuna.models/->internal-models
+(defmethod ->error-title :automigrate.models/->internal-models
   [_]
   "MODEL ERROR")
 
 
-(defmethod ->error-title :tuna.actions/->migrations
+(defmethod ->error-title :automigrate.actions/->migrations
   [_]
   "MIGRATION ERROR")
 
 
-(defmethod ->error-title :tuna.models/internal-models
+(defmethod ->error-title :automigrate.models/internal-models
   [_]
   "MIGRATION ERROR")
 
 
-(defmethod ->error-title :tuna.core/args
+(defmethod ->error-title :automigrate.core/args
   [_]
   "COMMAND ERROR")
 
 
 (def ^:private error-hierarchy
   (-> (make-hierarchy)
-    (derive :tuna.fields/field-with-type :tuna.fields/field)))
+    (derive :automigrate.fields/field-with-type :automigrate.fields/field)))
 
 
 (defmulti ->error-message last-spec
@@ -146,10 +146,10 @@
 (defmethod ->error-message :default
   [data]
   (case (:main-spec data)
-    :tuna.models/->internal-models
+    :automigrate.models/->internal-models
     (add-error-value "Schema failed for model." (:val data))
 
-    :tuna.actions/->migrations
+    :automigrate.actions/->migrations
     (add-error-value "Schema failed for migration." (:val data))
 
     (add-error-value "Schema failed." (:val data))))
@@ -157,7 +157,7 @@
 
 ; Models
 
-(defmethod ->error-message :tuna.models/->internal-models
+(defmethod ->error-message :automigrate.models/->internal-models
   [data]
   (condp = (:pred data)
     `keyword? (add-error-value "Model name should be a keyword." (:val data))
@@ -165,7 +165,7 @@
     "Models' definition error."))
 
 
-(defmethod ->error-message :tuna.models/public-model
+(defmethod ->error-message :automigrate.models/public-model
   [data]
   (let [model-name (get-model-name data)]
     (condp = (problem-reason data)
@@ -179,7 +179,7 @@
       (format "Invalid definition of the model %s." model-name))))
 
 
-(defmethod ->error-message :tuna.models/public-model-as-map
+(defmethod ->error-message :automigrate.models/public-model-as-map
   [data]
   (let [model-name (get-model-name data)]
     (when-not (vector? (:val data))
@@ -192,13 +192,13 @@
         (format "Model %s should be a map." model-name)))))
 
 
-(defmethod ->error-message :tuna.models/public-model-as-vec
+(defmethod ->error-message :automigrate.models/public-model-as-vec
   [data]
   (let [model-name (get-model-name data)]
     (format "Model %s should be a vector." model-name)))
 
 
-(defmethod ->error-message :tuna.models.fields-vec/fields
+(defmethod ->error-message :automigrate.models.fields-vec/fields
   [data]
   (let [model-name (get-model-name data)]
     (when-not (map? (:val data))
@@ -219,7 +219,7 @@
         (format "Fields definition error in model %s." model-name)))))
 
 
-(defmethod ->error-message :tuna.models.indexes-vec/indexes
+(defmethod ->error-message :automigrate.models.indexes-vec/indexes
   [data]
   (let [model-name (get-model-name data)]
     (condp = (:pred data)
@@ -239,7 +239,7 @@
       (format "Indexes definition error in model %s." model-name))))
 
 
-(defmethod ->error-message :tuna.models/index-vec
+(defmethod ->error-message :automigrate.models/index-vec
   [data]
   (let [model-name (get-model-name data)]
     (if (= "Extra input" (:reason data))
@@ -252,7 +252,7 @@
         (:val data)))))
 
 
-(defmethod ->error-message :tuna.models.index/fields
+(defmethod ->error-message :automigrate.models.index/fields
   [data]
   (let [model-name (get-model-name data)
         fq-index-name (get-fq-index-name data)]
@@ -263,7 +263,7 @@
       (:val data))))
 
 
-(defmethod ->error-message :tuna.models/index-vec-options
+(defmethod ->error-message :automigrate.models/index-vec-options
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (condp = (:pred data)
@@ -273,19 +273,19 @@
       (format "Invalid definition of the index %s." fq-index-name))))
 
 
-(defmethod ->error-message :tuna.models/index-vec-options-strict-keys
+(defmethod ->error-message :automigrate.models/index-vec-options-strict-keys
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (format "Options of index %s have extra keys." fq-index-name)))
 
 
-(defmethod ->error-message :tuna.models.index/unique
+(defmethod ->error-message :automigrate.models.index/unique
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (format "Option :unique of index %s should satisfy: `true?`." fq-index-name)))
 
 
-(defmethod ->error-message :tuna.models/index-name
+(defmethod ->error-message :automigrate.models/index-name
   [data]
   (let [model-name (get-model-name data)]
     (if (= "Insufficient input" (:reason data))
@@ -295,7 +295,7 @@
         (:val data)))))
 
 
-(defmethod ->error-message :tuna.models.index/type
+(defmethod ->error-message :automigrate.models.index/type
   [data]
   (let [fq-index-name (get-fq-index-name data)
         value (:val data)]
@@ -306,7 +306,7 @@
         value))))
 
 
-(defmethod ->error-message :tuna.models/validate-fields-duplication
+(defmethod ->error-message :automigrate.models/validate-fields-duplication
   [data]
   (let [model-name (get-model-name data)]
     (add-error-value
@@ -314,7 +314,7 @@
       (:val data))))
 
 
-(defmethod ->error-message :tuna.models/validate-indexes-duplication
+(defmethod ->error-message :automigrate.models/validate-indexes-duplication
   [data]
   (let [model-name (get-model-name data)]
     (add-error-value
@@ -322,13 +322,13 @@
       (:val data))))
 
 
-(defmethod ->error-message :tuna.models/public-model-as-map-strict-keys
+(defmethod ->error-message :automigrate.models/public-model-as-map-strict-keys
   [data]
   (let [model-name (get-model-name data)]
     (format "Model %s definition has extra key." model-name)))
 
 
-(defmethod ->error-message :tuna.models/validate-indexes-duplication-across-models
+(defmethod ->error-message :automigrate.models/validate-indexes-duplication-across-models
   [data]
   (let [duplicated-indexes (->> (:origin-value data)
                              (vals)
@@ -341,7 +341,7 @@
     (format "Models have duplicated indexes: [%s]." (str/join ", " duplicated-indexes))))
 
 
-(defmethod ->error-message :tuna.models/validate-indexed-fields
+(defmethod ->error-message :automigrate.models/validate-indexed-fields
   [data]
   (let [model-name (get-model-name data)
         model (:val data)
@@ -354,7 +354,7 @@
     (format "Missing indexed fields %s in model %s." missing-fields model-name)))
 
 
-(defmethod ->error-message :tuna.fields/fields
+(defmethod ->error-message :automigrate.fields/fields
   [data]
   (condp = (problem-reason data)
     '(clojure.core/<= 1
@@ -366,7 +366,7 @@
     (add-error-value "Invalid fields definition." (:val data))))
 
 
-(defmethod ->error-message :tuna.fields/field
+(defmethod ->error-message :automigrate.fields/field
   [data]
   (condp = (problem-reason data)
     '(clojure.core/fn [%]
@@ -376,7 +376,7 @@
     (add-error-value "Invalid field definition." (:val data))))
 
 
-(defmethod ->error-message :tuna.fields/field-vec
+(defmethod ->error-message :automigrate.fields/field-vec
   [data]
   (let [model-name (get-model-name data)]
     (if (:reason data)
@@ -394,7 +394,7 @@
         (:val data)))))
 
 
-(defmethod ->error-message :tuna.fields/type
+(defmethod ->error-message :automigrate.fields/type
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (:val data)]
@@ -405,7 +405,7 @@
         value))))
 
 
-(defmethod ->error-message :tuna.fields/float-type
+(defmethod ->error-message :automigrate.fields/float-type
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (:val data)]
@@ -424,7 +424,7 @@
         value))))
 
 
-(defmethod ->error-message :tuna.fields/keyword-type
+(defmethod ->error-message :automigrate.fields/keyword-type
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (:val data)]
@@ -433,7 +433,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/char-type
+(defmethod ->error-message :automigrate.fields/char-type
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (:val data)]
@@ -452,7 +452,7 @@
         value))))
 
 
-(defmethod ->error-message :tuna.fields/field-name
+(defmethod ->error-message :automigrate.fields/field-name
   [data]
   (let [model-name (get-model-name data)]
     (if (= "Insufficient input" (:reason data))
@@ -462,7 +462,7 @@
         (:val data)))))
 
 
-(defmethod ->error-message :tuna.fields/options
+(defmethod ->error-message :automigrate.fields/options
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -471,7 +471,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/null
+(defmethod ->error-message :automigrate.fields/null
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -480,7 +480,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/primary-key
+(defmethod ->error-message :automigrate.fields/primary-key
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -489,7 +489,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/unique
+(defmethod ->error-message :automigrate.fields/unique
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -498,7 +498,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/options-strict-keys
+(defmethod ->error-message :automigrate.fields/options-strict-keys
   [data]
   (let [fq-field-name (get-fq-field-name data)]
     (add-error-value
@@ -506,7 +506,7 @@
       (:val data))))
 
 
-(defmethod ->error-message :tuna.fields/default
+(defmethod ->error-message :automigrate.fields/default
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -515,7 +515,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/foreign-key
+(defmethod ->error-message :automigrate.fields/foreign-key
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -524,7 +524,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/on-delete
+(defmethod ->error-message :automigrate.fields/on-delete
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -533,7 +533,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/on-update
+(defmethod ->error-message :automigrate.fields/on-update
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -542,7 +542,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/validate-fk-options-on-delete
+(defmethod ->error-message :automigrate.fields/validate-fk-options-on-delete
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -551,7 +551,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/validate-fk-options-on-update
+(defmethod ->error-message :automigrate.fields/validate-fk-options-on-update
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
@@ -560,7 +560,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/validate-default-and-type
+(defmethod ->error-message :automigrate.fields/validate-default-and-type
   [data]
   (let [fq-field-name (get-fq-field-name data)
         field-type (get-in data [:val :type])
@@ -573,7 +573,7 @@
       value)))
 
 
-(defmethod ->error-message :tuna.fields/validate-default-and-null
+(defmethod ->error-message :automigrate.fields/validate-default-and-null
   [data]
   (let [fq-field-name (get-fq-field-name data)]
     (add-error-value
@@ -582,7 +582,7 @@
       (:val data))))
 
 
-(defmethod ->error-message :tuna.fields/validate-fk-options-and-null-on-delete
+(defmethod ->error-message :automigrate.fields/validate-fk-options-and-null-on-delete
   [data]
   (let [fq-field-name (get-fq-field-name data)]
     (add-error-value
@@ -591,7 +591,7 @@
       (:val data))))
 
 
-(defmethod ->error-message :tuna.fields/validate-fk-options-and-null-on-update
+(defmethod ->error-message :automigrate.fields/validate-fk-options-and-null-on-update
   [data]
   (let [fq-field-name (get-fq-field-name data)]
     (add-error-value
@@ -602,7 +602,7 @@
 
 ; Migrations
 
-(defmethod ->error-message :tuna.actions/->migrations
+(defmethod ->error-message :automigrate.actions/->migrations
   [data]
   (let [reason (or (:reason data) (:pred data))]
     (condp = reason
@@ -613,7 +613,7 @@
       "Migrations' schema error.")))
 
 
-(defmethod ->error-message :tuna.actions/->migration
+(defmethod ->error-message :automigrate.actions/->migration
   [data]
   (let [reason (or (:reason data) (:pred data))]
     (condp = reason
@@ -632,7 +632,7 @@
       "Migrations' schema error.")))
 
 
-(defmethod ->error-message :tuna.actions/model-name
+(defmethod ->error-message :automigrate.actions/model-name
   [data]
   (add-error-value
     (format "Action has invalid model name.")
@@ -641,7 +641,7 @@
 
 ; Command arguments
 
-(defmethod ->error-message :tuna.core/args
+(defmethod ->error-message :automigrate.core/args
   [data]
   (let [reason (problem-reason data)]
     (condp = reason
@@ -662,12 +662,12 @@
       "Invalid command arguments.")))
 
 
-(defmethod ->error-message :tuna.core/type
+(defmethod ->error-message :automigrate.core/type
   [data]
   (add-error-value "Invalid migration type." (:val data)))
 
 
-(defmethod ->error-message :tuna.core/direction
+(defmethod ->error-message :automigrate.core/direction
   [data]
   (add-error-value "Invalid direction of migration." (:val data)))
 

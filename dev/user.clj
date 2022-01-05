@@ -17,4 +17,4 @@
   "Reload changed namespaces."
   []
   (reset)
-  (test/run-all-tests #"tuna.*-test"))
+  (test/run-all-tests #"automigrate.*-test"))

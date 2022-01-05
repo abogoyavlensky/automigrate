@@ -1,9 +1,9 @@
-(ns tuna.schema-test
+(ns automigrate.schema-test
   (:require [clojure.test :refer :all]
             [bond.james :as bond]
-            [tuna.migrations :as migrations]
-            [tuna.schema :as schema]
-            [tuna.util.file :as file-util]))
+            [automigrate.migrations :as migrations]
+            [automigrate.schema :as schema]
+            [automigrate.util.file :as file-util]))
 
 
 (deftest test-make-migrations*-add-column-ok

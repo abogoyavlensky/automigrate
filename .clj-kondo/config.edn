@@ -7,12 +7,12 @@
                                         clojure.spec.alpha s
                                         spec-dict d
                                         clojure.java.jdbc jdbc
-                                        tuna.util.db db-util
-                                        tuna.util.file file-util
-                                        tuna.util.spec spec-util
-                                        tuna.util.map map-util
-                                        tuna.util.model model-util
-                                        tuna.testing-util test-util
+                                        automigrate.util.db db-util
+                                        automigrate.util.file file-util
+                                        automigrate.util.spec spec-util
+                                        automigrate.util.map map-util
+                                        automigrate.util.model model-util
+                                        automigrate.testing-util test-util
                                         clojure.java.io io
                                         clojure.edn edn
                                         clojure.string str
