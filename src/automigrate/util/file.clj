@@ -1,4 +1,4 @@
-(ns tuna.util.file
+(ns automigrate.util.file
   "Utils for working with file system."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]

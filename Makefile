@@ -89,16 +89,10 @@ test:
 
 # Docker-compose
 
-.PHONY: up  # Run db
+.PHONY: up  # Run db, testing db and db admin web UI locally for development
 up:
 	@$(INFO) "Running db..."
 	@docker-compose up -d db adminer test-postgres
-
-
-.PHONY: up-test  # Run db
-up-test:
-	@$(INFO) "Running testing dbs..."
-	@docker-compose up -d test-postgres
 
 
 .PHONY: ps  # List docker containers

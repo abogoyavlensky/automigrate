@@ -20,7 +20,7 @@
   
   
   
-  <artifactId>tuna</artifactId>
+  <artifactId>automigrate</artifactId>
               
   
   
@@ -34,7 +34,7 @@
   
   
   
-  <name>tuna</name>
+  <name>automigrate</name>
               
   
   
@@ -48,7 +48,7 @@
   
   
   
-  <url>https://github.com/abogoyavlensky/tuna</url>
+  <url>https://github.com/abogoyavlensky/automigrate</url>
               
   
   
@@ -139,21 +139,21 @@
     
     
     
-    <url>https://github.com/abogoyavlensky/tuna</url>
+    <url>https://github.com/abogoyavlensky/automigrate</url>
                             
     
     
     
     
     
-    <connection>scm:git:git://github.com/abogoyavlensky/tuna.git</connection>
+    <connection>scm:git:git://github.com/abogoyavlensky/automigrate.git</connection>
                             
     
     
     
     
     
-    <developerConnection>scm:git:ssh://git@github.com/abogoyavlensky/tuna.git</developerConnection>
+    <developerConnection>scm:git:ssh://git@github.com/abogoyavlensky/automigrate.git</developerConnection>
                             
     
     

@@ -1,7 +1,7 @@
-(ns tuna.fields-test
+(ns automigrate.fields-test
   (:require [clojure.test :refer :all]
             [clojure.spec.alpha :as s]
-            [tuna.fields :as fields]))
+            [automigrate.fields :as fields]))
 
 
 (deftest test-validate-fk-options-on-delete

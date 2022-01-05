@@ -16,7 +16,7 @@ lsp/
 .idea/
 
 # for local testing
-src/tuna/models.edn
-src/tuna/migrations/
-test/tuna/migrations/
+src/automigrate/models.edn
+src/automigrate/migrations/
+test/automigrate/migrations/
 .lsp/sqlite.5.db

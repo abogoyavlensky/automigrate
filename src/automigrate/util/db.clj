@@ -1,4 +1,4 @@
-(ns tuna.util.db
+(ns automigrate.util.db
   "Utils for working with database."
   (:require [next.jdbc :as jdbc]
             [next.jdbc.result-set :as jdbc-rs]
@@ -8,7 +8,7 @@
 
 (def MIGRATIONS-TABLE
   "Default migrations table name."
-  :tuna-migrations)
+  :automigrate-migrations)
 
 
 ; Additional sql clauses

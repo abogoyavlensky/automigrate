@@ -1,36 +1,36 @@
-(ns tuna.models
+(ns automigrate.models
   "Module for for transforming models to migrations."
   (:require [clojure.spec.alpha :as s]
             [slingshot.slingshot :refer [throw+]]
             [clojure.set :as set]
-            [tuna.util.model :as model-util]
-            [tuna.util.spec :as spec-util]
-            [tuna.fields :as fields])
+            [automigrate.util.model :as model-util]
+            [automigrate.util.spec :as spec-util]
+            [automigrate.fields :as fields])
   (:import (clojure.lang PersistentVector PersistentArrayMap)))
 
 
-(s/def :tuna.models.index/type
+(s/def :automigrate.models.index/type
   #{:btree :gin :gist :spgist :brin :hash})
 
 
-(s/def :tuna.models.index/fields
+(s/def :automigrate.models.index/fields
   (s/coll-of keyword? :min-count 1 :kind vector? :distinct true))
 
 
-(s/def :tuna.models.index/unique true?)
+(s/def :automigrate.models.index/unique true?)
 
 
 (s/def ::index
   (s/keys
-    :req-un [:tuna.models.index/type
-             :tuna.models.index/fields]
-    :opt-un [:tuna.models.index/unique]))
+    :req-un [:automigrate.models.index/type
+             :automigrate.models.index/fields]
+    :opt-un [:automigrate.models.index/unique]))
 
 
 (s/def ::index-vec-options
   (s/keys
-    :req-un [:tuna.models.index/fields]
-    :opt-un [:tuna.models.index/unique]))
+    :req-un [:automigrate.models.index/fields]
+    :opt-un [:automigrate.models.index/unique]))
 
 
 (s/def ::index-vec-options-strict-keys
@@ -43,7 +43,7 @@
 (s/def ::index-vec
   (s/cat
     :name ::index-name
-    :type :tuna.models.index/type
+    :type :automigrate.models.index/type
     :options (s/and
                ::index-vec-options
                ::index-vec-options-strict-keys)))
@@ -79,7 +79,7 @@
     (model-util/has-duplicates? (map :name fields))))
 
 
-(s/def :tuna.models.fields->internal/fields
+(s/def :automigrate.models.fields->internal/fields
   (s/and
     ::validate-fields-duplication
     ::item-vec->map
@@ -91,7 +91,7 @@
     (model-util/has-duplicates? (map :name indexes))))
 
 
-(s/def :tuna.models.indexes->internal/indexes
+(s/def :automigrate.models.indexes->internal/indexes
   (s/and
     ::validate-indexes-duplication
     ::item-vec->map
@@ -100,8 +100,8 @@
 
 (s/def ::model->internal
   (s/keys
-    :req-un [:tuna.models.fields->internal/fields]
-    :opt-un [:tuna.models.indexes->internal/indexes]))
+    :req-un [:automigrate.models.fields->internal/fields]
+    :opt-un [:automigrate.models.indexes->internal/indexes]))
 
 
 (defn- check-referenced-model-exists?
@@ -206,22 +206,22 @@
     ::validate-indexes-duplication-across-models))
 
 
-(s/def :tuna.models.fields-vec/fields
+(s/def :automigrate.models.fields-vec/fields
   (s/coll-of ::fields/field-vec :min-count 1 :kind vector? :distinct true))
 
 
-(s/def :tuna.models.indexes-vec/indexes
+(s/def :automigrate.models.indexes-vec/indexes
   (s/coll-of ::index-vec :min-count 1 :kind vector? :distinct true))
 
 
 (s/def ::public-model-as-vec
-  :tuna.models.fields-vec/fields)
+  :automigrate.models.fields-vec/fields)
 
 
 (s/def ::public-model-as-map
   (s/keys
-    :req-un [:tuna.models.fields-vec/fields]
-    :opt-un [:tuna.models.indexes-vec/indexes]))
+    :req-un [:automigrate.models.fields-vec/fields]
+    :opt-un [:automigrate.models.indexes-vec/indexes]))
 
 
 (s/def ::public-model-as-map-strict-keys

@@ -1,9 +1,9 @@
-(ns tuna.models-errors-test
+(ns automigrate.models-errors-test
   (:require [clojure.test :refer :all]
-            [tuna.core :as core]
-            [tuna.models :as models]
-            [tuna.testing-util :as test-util]
-            [tuna.testing-config :as config]))
+            [automigrate.core :as core]
+            [automigrate.models :as models]
+            [automigrate.testing-util :as test-util]
+            [automigrate.testing-config :as config]))
 
 
 (use-fixtures :each
@@ -551,7 +551,7 @@
     (let [data {:foo [[:bar-id :integer {:foreign-key :bar/id}]]}]
       (is (= {:message "Foreign key :foo/bar-id has reference on the missing model :bar."
               :title "MODEL ERROR"
-              :type :tuna.models/missing-referenced-model
+              :type :automigrate.models/missing-referenced-model
               :data {:fk-field :foo/bar-id
                      :referenced-model :bar}}
             (test-util/thrown-with-slingshot-data?
@@ -567,7 +567,7 @@
                      :referenced-model :bar}
               :message "Foreign key :foo/bar-id has reference on the missing field :bar/id."
               :title "MODEL ERROR"
-              :type :tuna.models/missing-referenced-field}
+              :type :automigrate.models/missing-referenced-field}
             (test-util/thrown-with-slingshot-data?
               [:type ::models/missing-referenced-field]
               (models/->internal-models data)))))))

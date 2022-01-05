@@ -1,8 +1,8 @@
-(ns tuna.util.spec
+(ns automigrate.util.spec
   "Tools for simplifying spec usage."
   (:require [clojure.spec.alpha :as s]
             [slingshot.slingshot :refer [throw+]]
-            [tuna.errors :as spec-errors]))
+            [automigrate.errors :as spec-errors]))
 
 
 (defn tagged->value

@@ -1,10 +1,10 @@
-(ns tuna.migrations-sql-test
+(ns automigrate.migrations-sql-test
   (:require [clojure.test :refer :all]
-            [tuna.core :as core]
-            [tuna.util.db :as db-util]
-            [tuna.util.file :as file-util]
-            [tuna.testing-util :as test-util]
-            [tuna.testing-config :as config]))
+            [automigrate.core :as core]
+            [automigrate.util.db :as db-util]
+            [automigrate.util.file :as file-util]
+            [automigrate.testing-util :as test-util]
+            [automigrate.testing-config :as config]))
 
 
 (use-fixtures :each
@@ -13,14 +13,14 @@
 
 
 (deftest test-make-sql-migration-ok
-  (is (= (str "Created migration: test/tuna/migrations/0001_auto_create_table_feed.edn\n"
+  (is (= (str "Created migration: test/automigrate/migrations/0001_auto_create_table_feed.edn\n"
            "Actions:\n"
            "  - create table feed\n")
         (with-out-str
           (core/run {:cmd :make-migrations
                      :models-file (str config/MODELS-DIR "feed_basic.edn")
                      :migrations-dir config/MIGRATIONS-DIR}))))
-  (is (= "Created migration: test/tuna/migrations/0002_add_description_field.sql\n"
+  (is (= "Created migration: test/automigrate/migrations/0002_add_description_field.sql\n"
         (with-out-str
           (core/run {:cmd :make-migrations
                      :models-file (str config/MODELS-DIR "feed_basic.edn")
@@ -33,7 +33,7 @@
       (is (= "0002_add_description_field.sql"
             (.getName (last files))))))
   (testing "check making next auto migration"
-    (is (= (str "Created migration: test/tuna/migrations/0003_auto_add_column_created_at.edn\n"
+    (is (= (str "Created migration: test/automigrate/migrations/0003_auto_add_column_created_at.edn\n"
              "Actions:\n"
              "  - add column created_at in table feed\n"
              "  - add column name in table feed\n")

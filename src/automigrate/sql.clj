@@ -1,13 +1,13 @@
-(ns tuna.sql
+(ns automigrate.sql
   "Module for transforming actions from migration to SQL queries."
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [spec-dict :as d]
-            [tuna.actions :as actions]
-            [tuna.fields :as fields]
-            [tuna.util.db :as db-util]
-            [tuna.util.model :as model-util]
-            [tuna.util.spec :as spec-util]))
+            [automigrate.actions :as actions]
+            [automigrate.fields :as fields]
+            [automigrate.util.db :as db-util]
+            [automigrate.util.model :as model-util]
+            [automigrate.util.spec :as spec-util]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
@@ -16,13 +16,13 @@
 (def ^:private DEFAULT-INDEX :btree)
 
 
-(s/def :tuna.sql.option->sql/type
+(s/def :automigrate.sql.option->sql/type
   (s/and
     ::fields/type
     (s/conformer identity)))
 
 
-(s/def :tuna.sql.option->sql/null
+(s/def :automigrate.sql.option->sql/null
   (s/and
     ::fields/null
     (s/conformer
@@ -32,7 +32,7 @@
           [:not nil])))))
 
 
-(s/def :tuna.sql.option->sql/primary-key
+(s/def :automigrate.sql.option->sql/primary-key
   (s/and
     ::fields/primary-key
     (s/conformer
@@ -40,7 +40,7 @@
         [:primary-key]))))
 
 
-(s/def :tuna.sql.option->sql/unique
+(s/def :automigrate.sql.option->sql/unique
   (s/and
     ::fields/unique
     (s/conformer
@@ -48,7 +48,7 @@
         :unique))))
 
 
-(s/def :tuna.sql.option->sql/default
+(s/def :automigrate.sql.option->sql/default
   (s/and
     ::fields/default
     (s/conformer
@@ -68,14 +68,14 @@
            fields/ON-UPDATE-OPTION ::fields/on-update}))
 
 
-(s/def :tuna.sql.option->sql/foreign-key
+(s/def :automigrate.sql.option->sql/foreign-key
   (s/and
     (s/conformer
       (fn [value]
         [(cons :references (model-util/kw->vec value))]))))
 
 
-(s/def :tuna.sql.option->sql/on-delete
+(s/def :automigrate.sql.option->sql/on-delete
   (s/and
     ::fields/on-delete
     (s/conformer
@@ -83,7 +83,7 @@
         (fk-opt->raw fields/ON-DELETE-OPTION value)))))
 
 
-(s/def :tuna.sql.option->sql/on-update
+(s/def :automigrate.sql.option->sql/on-update
   (s/and
     ::fields/on-update
     (s/conformer
@@ -92,13 +92,13 @@
 
 
 (def ^:private options-specs
-  [:tuna.sql.option->sql/null
-   :tuna.sql.option->sql/primary-key
-   :tuna.sql.option->sql/unique
-   :tuna.sql.option->sql/default
-   :tuna.sql.option->sql/foreign-key
-   :tuna.sql.option->sql/on-delete
-   :tuna.sql.option->sql/on-update])
+  [:automigrate.sql.option->sql/null
+   :automigrate.sql.option->sql/primary-key
+   :automigrate.sql.option->sql/unique
+   :automigrate.sql.option->sql/default
+   :automigrate.sql.option->sql/foreign-key
+   :automigrate.sql.option->sql/on-delete
+   :automigrate.sql.option->sql/on-update])
 
 
 (s/def ::->foreign-key-complete
@@ -119,7 +119,7 @@
 (s/def ::options->sql
   (s/and
     (d/dict*
-      {:type :tuna.sql.option->sql/type}
+      {:type :automigrate.sql.option->sql/type}
       (d/->opt (spec-util/specs->dict options-specs)))
     ::->foreign-key-complete))
 
@@ -184,7 +184,7 @@
 (s/def ::changes
   (s/and
     (d/dict*
-      (d/->opt (model-util/generate-type-option :tuna.sql.option->sql/type))
+      (d/->opt (model-util/generate-type-option :automigrate.sql.option->sql/type))
       (d/->opt (model-util/generate-changes options-specs)))
     #(> (count (keys %)) 0)))
 
@@ -330,7 +330,7 @@
       :req-un [::actions/action
                ::actions/index-name
                ::actions/model-name
-               :tuna.actions.indexes/options])
+               :automigrate.actions.indexes/options])
     ::create-index->sql))
 
 
@@ -364,7 +364,7 @@
       :req-un [::actions/action
                ::actions/index-name
                ::actions/model-name
-               :tuna.actions.indexes/options])
+               :automigrate.actions.indexes/options])
     ::alter-index->sql))
 
 

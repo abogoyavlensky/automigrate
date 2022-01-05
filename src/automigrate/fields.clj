@@ -1,6 +1,6 @@
-(ns tuna.fields
+(ns automigrate.fields
   (:require [clojure.spec.alpha :as s]
-            [tuna.util.spec :as spec-util])
+            [automigrate.util.spec :as spec-util])
   (:import (clojure.lang PersistentVector)))
 
 
