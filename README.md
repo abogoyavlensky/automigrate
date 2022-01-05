@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/ci.yaml)
 
-Database auto-migrations tool for Clojure.
+Database auto-migration tool for Clojure.
 
 ## Usage
 
