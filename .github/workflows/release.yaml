@@ -20,4 +20,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Build jar-file and deploy to Clojars
-        run: docker-compose run --rm test bash -c "make deploy-ci"
+        run: docker-compose run --rm build bash -c "make deploy-ci"
+        env:
+          CLOJARS_PASSWORD: ${{secrets.DEPLOY_TOKEN}}
+          CLOJARS_USERNAME: ${{secrets.DEPLOY_USERNAME}}
