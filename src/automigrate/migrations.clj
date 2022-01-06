@@ -798,10 +798,12 @@
     (let [migration-names (migrations-list migrations-dir)
           db (db-util/db-conn jdbc-url)
           migrated (set (get-already-migrated-migrations db migrations-table))]
-      (doseq [file-name migration-names
-              :let [migration-name (get-migration-name file-name)
-                    sign (if (contains? migrated migration-name) "✓" " ")]]
-        (file-util/safe-println [(format "[%s] %s" sign file-name)])))
+      (if (seq migration-names)
+        (doseq [file-name migration-names
+                :let [migration-name (get-migration-name file-name)
+                      sign (if (contains? migrated migration-name) "✓" " ")]]
+          (file-util/safe-println [(format "[%s] %s" sign file-name)]))
+        (println "Migrations not found.")))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
     (catch #(contains? #{::duplicated-migration-numbers
