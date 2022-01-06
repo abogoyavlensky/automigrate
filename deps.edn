@@ -24,7 +24,7 @@
                                    :fail-fast? true}}}
 
   :check-deps {:extra-deps {com.github.liquidz/antq {:mvn/version "1.3.1"}}
-               :main-opts ["-m" "antq.core" "--force"]}
+               :main-opts ["-m" "antq.core" "--force" "--exclude=io.github.seancorfield/build-clj"]}
 
   :build {:deps {io.github.seancorfield/build-clj {:git/tag "v0.6.6"
                                                    :git/sha "171d5f1"}}
