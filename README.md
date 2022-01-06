@@ -2,11 +2,29 @@
 
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 
-Database auto-migration tool for Clojure.
+Database auto-migration tool for Clojure. Define models as plain edn data structures, 
+and create database schema migrations based on changes of the models automatically.
+
+## Features
+
+- define db schema as **models** in edn **declaratively**;
+- **automatically** update db schema **migrations** based on models' changes;
+- create and update tables, columns and indexes without touching SQL;
+- ability to add raw SQL migration for specific cases;
+- view raw SQL for any migration;
+- migrate to any migration in forward and backward *[:construction: under development]* directions.
 
 ## Usage
 
-TODO!
+### Installation
+
+### Getting started
+
+### CLI interface
+
+### Model definition
+
+
 
 ## Development
 
@@ -28,7 +46,7 @@ make install-snapshot :patch  # build and install locally a new version of lib b
 make release :patch  # bump git tag version by semver rules and push to remote repo
 ```
 
-In CI there is the github action which publish any new git tag as new version of the lib to Clojars.
+*In CI there is the github action which publish any new git tag as new version of the lib to Clojars.*
 
 ## License
 
