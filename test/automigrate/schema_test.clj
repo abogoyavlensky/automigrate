@@ -6,7 +6,7 @@
             [automigrate.util.file :as file-util]))
 
 
-(deftest test-make-migrations*-add-column-ok
+(deftest test-make-migration*-add-column-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
@@ -24,10 +24,10 @@
               :field-name :name,
               :model-name :feed,
               :options {:type [:varchar 100], :null true}})
-          (#'migrations/make-migrations* "" [])))))
+          (#'migrations/make-migration* "" [])))))
 
 
-(deftest test-make-migrations*-add-column-restore-ok
+(deftest test-make-migration*-add-column-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
@@ -45,10 +45,10 @@
                                                     [[:id :serial {:null false}]
                                                      [:name [:varchar 100] {:null true}]
                                                      [:created_at :timestamp {:default [:now]}]]})]]
-    (is (not (seq (#'migrations/make-migrations* "" []))))))
+    (is (not (seq (#'migrations/make-migration* "" []))))))
 
 
-(deftest test-make-migrations*-alter-column-restore-ok
+(deftest test-make-migration*-alter-column-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
@@ -78,10 +78,10 @@
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]
                                                               [:created_at :date]]}})]]
-    (is (not (seq (#'migrations/make-migrations* "" []))))))
+    (is (not (seq (#'migrations/make-migration* "" []))))))
 
 
-(deftest test-make-migrations*-drop-column-restore-ok
+(deftest test-make-migration*-drop-column-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
@@ -105,10 +105,10 @@
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name [:varchar 100] {:null true}]]}})]]
-    (is (not (seq (#'migrations/make-migrations* "" []))))))
+    (is (not (seq (#'migrations/make-migration* "" []))))))
 
 
-(deftest test-make-migrations*-drop-table-restore-ok
+(deftest test-make-migration*-drop-table-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
@@ -126,10 +126,10 @@
                    [file-util/read-edn (constantly {:account
                                                     [[:id :serial {:null false}]
                                                      [:name [:varchar 256]]]})]]
-    (is (not (seq (#'migrations/make-migrations* "" []))))))
+    (is (not (seq (#'migrations/make-migration* "" []))))))
 
 
-(deftest test-make-migrations*-foreign-key-restore-ok
+(deftest test-make-migration*-foreign-key-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
@@ -150,10 +150,10 @@
                                                     :account
                                                     {:fields [[:id :serial {:unique true}]
                                                               [:name [:varchar 256]]]}})]]
-    (is (not (seq (#'migrations/make-migrations* "" []))))))
+    (is (not (seq (#'migrations/make-migration* "" []))))))
 
 
-(deftest test-make-migrations*-create-index-restore-ok
+(deftest test-make-migration*-create-index-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
@@ -173,10 +173,10 @@
                                                               [:name :text]]
                                                      :indexes [[:feed_name_id_unique_idx :btree {:fields [:name :id]
                                                                                                  :unique true}]]}})]]
-    (is (not (seq (#'migrations/make-migrations* "" []))))))
+    (is (not (seq (#'migrations/make-migration* "" []))))))
 
 
-(deftest test-make-migrations*-drop-index-restore-ok
+(deftest test-make-migration*-drop-index-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
@@ -197,10 +197,10 @@
                    [file-util/read-edn (constantly {:feed
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]]}})]]
-    (is (not (seq (#'migrations/make-migrations* "" []))))))
+    (is (not (seq (#'migrations/make-migration* "" []))))))
 
 
-(deftest test-make-migrations*-alter-index-restore-ok
+(deftest test-make-migration*-alter-index-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
@@ -224,10 +224,10 @@
                                                     {:fields [[:id :serial {:null false}]
                                                               [:name :text]]
                                                      :indexes [[:feed_name_id_idx :btree {:fields [:name :id]}]]}})]]
-    (is (not (seq (#'migrations/make-migrations* "" []))))))
+    (is (not (seq (#'migrations/make-migration* "" []))))))
 
 
-(deftest test-make-migrations*-create-table-with-fk-on-delete-restore-ok
+(deftest test-make-migration*-create-table-with-fk-on-delete-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (let [existing-actions '({:action :create-table
                             :model-name :account
@@ -251,10 +251,10 @@
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly existing-models)]]
-      (is (not (seq (#'migrations/make-migrations* "" [])))))))
+      (is (not (seq (#'migrations/make-migration* "" [])))))))
 
 
-(deftest test-make-migrations*-alter-column-with-fk-on-delete-restore-ok
+(deftest test-make-migration*-alter-column-with-fk-on-delete-restore-ok
   #_{:clj-kondo/ignore [:private-call]}
   (let [existing-actions '({:action :create-table
                             :model-name :account
@@ -285,4 +285,4 @@
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly existing-models)]]
-      (is (not (seq (#'migrations/make-migrations* "" [])))))))
+      (is (not (seq (#'migrations/make-migration* "" [])))))))

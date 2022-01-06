@@ -42,7 +42,7 @@
 
 
 (s/def ::cmd
-  #{:make-migrations
+  #{:make-migration
     :migrate
     :explain
     :list-migrations})
@@ -51,7 +51,7 @@
 (defmulti run-args :cmd)
 
 
-(defmethod run-args :make-migrations
+(defmethod run-args :make-migration
   [_]
   (s/keys
     :req-un [::cmd
@@ -99,7 +99,7 @@
   (try+
     (let [args* (spec-util/conform ::args args)
           cmd-fn (case cmd
-                   :make-migrations migrations/make-migrations
+                   :make-migration migrations/make-migration
                    :migrate migrations/migrate
                    :explain migrations/explain
                    :list-migrations migrations/list-migrations)]

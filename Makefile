@@ -7,7 +7,7 @@ INFO := @sh -c '\
     printf $(NC)' VALUE
 
 
-DIRS?=src test
+DIRS?=src test build.clj
 GOALS = $(filter-out $@,$(MAKECMDGOALS))
 
 .SILENT:  # Ignore output of make `echo` command
@@ -25,24 +25,10 @@ deps:
 	@clojure -P -X:test:dev
 
 
-.PHONY: build  # Build a deployable jar
-build:
-	@$(INFO) "Building jar..."
-	@clojure -X:build
-
-
-.PHONY: install  # Build and install package locally
-install:
-	@$(MAKE) build
-	@$(INFO) "Installing jar locally..."
-	@clojure -X:install
-
-
-.PHONY: deploy  # Build and deploy package to Clojars
-deploy:
-	@$(MAKE) build
-	@$(INFO) "Deploying jar to Clojars..."
-	@clojure -X:deploy
+.PHONY: repl  # Running repl
+repl:
+	@$(INFO) "Running repl..."
+	@clj -A:test:dev
 
 
 .PHONY: fmt-check  # Checking code formatting
@@ -112,7 +98,7 @@ stop:
 .PHONY: migrations  # Making migrations
 migrations:
 	@$(INFO) "Making migrations..."
-	@clojure -A:dev -X:migrations :cmd :make-migrations $(GOALS)
+	@clojure -A:dev -X:migrations :cmd :make-migration $(GOALS)
 
 
 .PHONY: migrate  # Migrating migrations
@@ -131,3 +117,29 @@ explain:
 list:
 	@$(INFO) "Migrations found..."
 	@clojure -A:dev -X:migrations :cmd :list-migrations $(GOALS)
+
+
+# Build and release
+
+.PHONY: install-snapshot  # Build and install snapshot of package with next version locally
+install-snapshot:
+	@$(INFO) "Installing a jar locally..."
+	@clojure -T:build install :snapshot? true :bump $(GOALS)
+
+
+.PHONY: deploy-snapshot  # Build and deploy snapshot of package with next version to Clojars from local machine
+deploy-snapshot:
+	@$(INFO) "Deploying jar-file to Clojars..."
+	@clojure -T:build deploy :snapshot? true :bump $(GOALS)
+
+
+.PHONY: deploy-ci  # Build and deploy latest version of package to Clojars in CI
+deploy-ci:
+	@$(INFO) "Deploying jar-file to Clojars..."
+	@clojure -T:build deploy
+
+
+.PHONY: release  # Bump tag version and push it to remote rpeo
+release:
+	@$(INFO) "Deploying jar-file to Clojars..."
+	@clojure -T:build release :bump $(GOALS)

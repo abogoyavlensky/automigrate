@@ -22,6 +22,17 @@ services:
     environment:
       ADMINER_DEFAULT_SERVER: db
 
+  # Database for testing
+
+  test-postgres:
+    image: postgres
+    ports:
+      - 5555:5432
+    environment:
+      POSTGRES_DB: automigrate
+      POSTGRES_USER: automigrate
+      POSTGRES_PASSWORD: automigrate
+
   # For testing in CI
 
   test:
@@ -33,13 +44,12 @@ services:
     volumes:
       - .:/app
 
-  #  databases for testing
+  # Build jar-file in CI
 
-  test-postgres:
-    image: postgres
-    ports:
-      - 5555:5432
+  build:
+    image: abogoyavlensky/clojure-openjdk11-build:0.1.3
     environment:
-      POSTGRES_DB: automigrate
-      POSTGRES_USER: automigrate
-      POSTGRES_PASSWORD: automigrate
+      - CLOJARS_PASSWORD
+      - CLOJARS_USERNAME
+    volumes:
+      - .:/app

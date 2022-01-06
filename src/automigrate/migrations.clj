@@ -395,7 +395,7 @@
                :options options-to-alter}))))
 
 
-(defn- make-migrations*
+(defn- make-migration*
   [models-file migrations-files]
   (let [old-schema (schema/current-db-schema migrations-files)
         new-schema (read-models models-file)
@@ -449,7 +449,7 @@
   [{:keys [models-file migrations-dir]}]
   (->> (file-util/list-files migrations-dir)
     (filter auto-migration?)
-    (make-migrations* models-file)
+    (make-migration* models-file)
     (flatten)
     (seq)))
 
@@ -476,10 +476,10 @@
     (file-util/safe-println (cons "Actions:" action-names) "")))
 
 
-(defmulti make-migrations :type)
+(defmulti make-migration :type)
 
 
-(defmethod make-migrations :default
+(defmethod make-migration :default
   ; Make new migration based on models definitions automatically.
   [{:keys [models-file migrations-dir]
     custom-migration-name :name}]
@@ -523,7 +523,7 @@
         (file-util/prn-err)))))
 
 
-(defmethod make-migrations EMPTY-SQL-MIGRATION-TYPE
+(defmethod make-migration EMPTY-SQL-MIGRATION-TYPE
   ; Make new migrations based on models definitions automatically.
   [{next-migration-name :name
     migrations-dir :migrations-dir}]
@@ -798,10 +798,12 @@
     (let [migration-names (migrations-list migrations-dir)
           db (db-util/db-conn jdbc-url)
           migrated (set (get-already-migrated-migrations db migrations-table))]
-      (doseq [file-name migration-names
-              :let [migration-name (get-migration-name file-name)
-                    sign (if (contains? migrated migration-name) "✓" " ")]]
-        (file-util/safe-println [(format "[%s] %s" sign file-name)])))
+      (if (seq migration-names)
+        (doseq [file-name migration-names
+                :let [migration-name (get-migration-name file-name)
+                      sign (if (contains? migrated migration-name) "✓" " ")]]
+          (file-util/safe-println [(format "[%s] %s" sign file-name)]))
+        (println "Migrations not found.")))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
     (catch #(contains? #{::duplicated-migration-numbers
@@ -825,7 +827,7 @@
         models-file (:models-file config)]
       (try+
         (->> (read-models models-file))
-        ;(->> (make-migrations* models-file migrations-files))
+        ;(->> (make-migration* models-file migrations-files))
         ;(make-next-migration config)
         ;     (flatten))
         (catch [:type ::s/invalid] e
@@ -838,4 +840,4 @@
                 :migrations-dir "src/automigrate/migrations"
                 :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}
         db (db-util/db-conn (:jdbc-url config))]
-    (make-migrations config)))
+    (make-migration config)))

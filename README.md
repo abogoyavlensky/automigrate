@@ -6,40 +6,29 @@ Database auto-migration tool for Clojure.
 
 ## Usage
 
-TODO: write usage documentation!
+TODO!
 
+## Development
 
-Invoke a library API function from the command-line:
+### Run locally
 
-    $ clojure -X abogoyavlensky.automigrate/foo :a 1 :b '"two"'
-    {:a 1, :b "two"} "Hello, World!"
+```bash
+make up  # run docker-compose with databases for development
+make repl  # run builtin repl with dev aliases; also you could use any repl you want
+make test  # run whole tests locally against testing database started by docker-compose
+make fmt  # run formatting in action mode
+make lint  # run linting
+make check-deps  # run checking new versions of deps in force mode
+```
 
-Run the project's tests (they'll fail until you edit them):
+### Release new version
 
-    $ make test
+```bash
+make install-snapshot :patch  # build and install locally a new version of lib based on latest git tag and using semver
+make release :patch  # bump git tag version by semver rules and push to remote repo
+```
 
-Build a deployable jar of this library:
-
-    $ clojure -X:jar
-
-This will update the generated `pom.xml` file to keep the dependencies synchronized with
-your `deps.edn` file. You can update the version information in the `pom.xml` using the
-`:version` argument:
-
-    $ clojure -X:jar :version '"1.2.3"'
-
-Install it locally (requires the `pom.xml` file):
-
-    $ make install
-
-Deploy it to Clojars -- needs `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` environment
-variables (requires the `pom.xml` file):
-
-    $ make dpeloy
-
-If you don't plan to install/deploy the library, you can remove the
-`pom.xml` file but you will also need to remove `:sync-pom true` from the `deps.edn`
-file (in the `:exec-args` for `depstar`).
+In CI there is the github action which publish any new git tag as new version of the lib to Clojars.
 
 ## License
 

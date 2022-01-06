@@ -1,9 +1,11 @@
-name: CI
+name: Checks
 
 
 on:
   push:
     branches: [ master ]
+    tags:
+      - "*"
   pull_request:
     branches: [ master ]
 

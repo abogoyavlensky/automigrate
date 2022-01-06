@@ -1,0 +1,26 @@
+name: Release
+
+
+on:
+  workflow_run:
+    workflows: Checks
+    tags:
+      - "*"
+    types: completed
+  push:
+    tags:
+      - "*"
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build jar-file and deploy to Clojars
+        run: docker-compose run --rm build bash -c "make deploy-ci"
+        env:
+          CLOJARS_PASSWORD: ${{secrets.DEPLOY_TOKEN}}
+          CLOJARS_USERNAME: ${{secrets.DEPLOY_USERNAME}}
