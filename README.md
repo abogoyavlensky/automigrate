@@ -1,6 +1,6 @@
 # automigrate
 
-[![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/ci.yaml)
+[![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 
 Database auto-migration tool for Clojure.
 
