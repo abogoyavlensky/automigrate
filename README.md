@@ -18,12 +18,42 @@ and create database schema migrations based on changes of the models automatical
 
 ### Installation
 
+**TODO:** add release label from Clojars! 
+
+#### tools.deps
+
+An example config for development environment:
+
+*deps.edn :deps*
+
+```clojure
+{:deps {org.clojure/clojure {:mvn/version "1.10.3"}
+        org.postgresql/postgresql {:mvn/version "42.3.1"}}
+ 
+ :aliases {:migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "RELEASE"}}
+                        :exec-fn automigrate.core/run
+                        :exec-args {:models-file "src/myproject/models.edn"
+                                    :migrations-dir "src/myproject/migrations"
+                                    :jdbc-url "jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"}}
+           ...}
+ ...}
+```
+
+Then you could use it as:
+
+```bash
+clojure -X:migrations :cmd :make-migration
+```
+
 ### Getting started
 
 ### CLI interface
 
+#### Commands
+
 ### Model definition
 
+### Raw SQL migration 
 
 
 ## Development
