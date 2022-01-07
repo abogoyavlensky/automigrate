@@ -95,7 +95,7 @@
   (->> {:insert-into migrations-table
         :values [{:name migration-name}]}
     (db-util/exec! db))
-  (println "Successfully migrated: " migration-name))
+  (println (str "Successfully migrated: " migration-name)))
 
 
 (defn- delete-migration!
@@ -104,7 +104,7 @@
   (->> {:delete-from migrations-table
         :where [:= :name migration-name]}
     (db-util/exec! db))
-  (println "Successfully unapplied: " migration-name))
+  (println (str "Successfully unapplied: " migration-name)))
 
 
 (defn- get-migration-name

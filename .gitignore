@@ -20,3 +20,4 @@ src/automigrate/models.edn
 src/automigrate/migrations/
 test/automigrate/migrations/
 .lsp/sqlite.5.db
+resources/
