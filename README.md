@@ -125,7 +125,8 @@ COMMIT;
 - [ ] Support running with Leiningen.
 - [ ] Handle project and resources paths properly.
 - [ ] Test against different versions of db and Clojure.
-- [ ] Use spec conformers more idiomatically without transformations.  
+- [ ] Use spec conformers more idiomatically without transformations.
+- [ ] Improve error messages. 
 
 
 ### Things still in designing

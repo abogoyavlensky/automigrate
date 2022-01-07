@@ -118,7 +118,19 @@
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
         (is (= [{:message "Invalid direction of migration.\n\n  :wrong"
                  :title "COMMAND ERROR"}]
-              (test-util/get-spec-error-data (constantly error))))))))
+              (test-util/get-spec-error-data (constantly error)))))))
+
+  (testing "check missing migration by number"
+    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
+      (core/run {:cmd :explain
+                 :migrations-dir config/MIGRATIONS-DIR
+                 :number 10})
+      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
+        (is (= {:message (str "-- ERROR -------------------------------------\n\n"
+                           "Missing migration by number 10\n")
+                :number 10
+                :type :automigrate.migrations/no-migration-by-number}
+              error))))))
 
 
 (deftest test-run-unexpected-error
