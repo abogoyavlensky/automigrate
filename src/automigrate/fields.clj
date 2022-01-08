@@ -17,7 +17,7 @@
     :no-action})
 
 
-(s/def ::char-type (s/tuple #{:char :varchar :float} pos-int?))
+(s/def ::char-type (s/tuple #{:char :varchar} pos-int?))
 
 (s/def ::float-type (s/tuple #{:float} pos-int?))
 

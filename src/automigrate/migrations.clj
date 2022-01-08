@@ -684,7 +684,7 @@
   (when (and (= AUTO-MIGRATION-EXT migration-type)
           (= BACKWARD-DIRECTION direction))
     (println (str "WARNING: backward migration isn't fully implemented yet. "
-               "Database schema hasn't been changed!")))
+               "Database schema has not been changed!")))
   (doseq [action actions]
     (exec-action! {:db db
                    :action action

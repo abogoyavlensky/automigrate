@@ -54,7 +54,7 @@ clojure -X:migrations :cmd :make-migration
 
 ### Getting started
 
-After configuration you could create models.edn file with first model, 
+After configuration, you could create models.edn file with first model, 
 make migration for it and migrate db schema. Let's do ti step by step.
 
 #### Add model
@@ -213,7 +213,7 @@ Migrate backward up to particular migration number:
 ```shell
 $ clojure -X:migrations :cmd :migrate :number 1
 Unapplying: 0002_create_table_author...
-WARNING: backward migration isn't fully implemented yet. Database schema hasn't been changed!
+WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
 Successfully unapplied: 0002_create_table_author
 ```
 
@@ -223,10 +223,10 @@ $ clojure -X:migrations :cmd :migrate :number 0
 Unapplying: 0003_add_custom_trigger...
 Successfully unapplied: 0003_add_custom_trigger
 Unapplying: 0002_create_table_author...
-WARNING: backward migration isn't fully implemented yet. Database schema hasn't been changed!
+WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
 Successfully unapplied: 0002_create_table_author
 Unapplying: 0001_auto_create_table_book...
-WARNING: backward migration isn't fully implemented yet. Database schema hasn't been changed!
+WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
 Successfully unapplied: 0001_auto_create_table_book
 ```
 
@@ -294,6 +294,105 @@ WARNING: backward migration isn't fully implemented yet.
 
 ### Model definition
 
+Models it is a map with model name as keyword key. Model's definition could be a vector of vectors in simple case to define just fields.
+As we saw in previous example:
+
+```clojure
+{:book [[:id :serial {:unique true
+                      :primary-key true}]
+        [:name [:varchar 256] {:null false}]
+        [:description :text]]}
+```
+
+Or it could be a map with two keys `:fields` and optional `:indexes`. Each is a vector of vectors too. 
+Same model could be described as a map:
+```clojure
+{:book {:fields [[:id :serial {:unique true
+                      :primary-key true}]
+                [:name [:varchar 256] {:null false}]
+                [:description :text]]}}
+```
+
+#### Fields
+
+Each field is a vector of three elements: `[:field-name :field-type {:some-optoin :option-value}]`. 
+Third element is optional, but name and type are required.
+
+First element is a name and must be a keyword.
+
+##### Field types
+Second element could be a keyword or a vector of keyword and integer. 
+Available field types are presented in following table:
+
+| Field type             | Description                                                         |
+|------------------------|---------------------------------------------------------------------|
+| `:integer`             |                                                                     |
+| `:smallint`            |                                                                     |
+| `:bigint`              |                                                                     |
+| `:float`               |                                                                     |
+| `:real`                |                                                                     |
+| `:serial`              |                                                                     |
+| `:uuid`                |                                                                     |
+| `:boolean`             |                                                                     |
+| `:text`                |                                                                     |
+| `:timestamp`           |                                                                     |
+| `:date`                |                                                                     |
+| `:time`                |                                                                     |
+| `:point`               |                                                                     |
+| `:json`                |                                                                     |
+| `:jsonb`               |                                                                     |
+| `[:varchar <pos-int>]` | second element is the length of value                               |
+| `[:char <pos-int>]`    | second element is the length of value                               |
+| `[:float <pos-int>]`   | second element is the minimum acceptable precision in binary digits |
+
+##### Field options
+
+Options value is a map where key is name of the option and value is available option value. All options are optional.  
+Available options are presented in table:
+
+| Field option   | Description                                                                        | Value                                                                                                        |
+|----------------|------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `:null`        | Set to `false` for not nullable field. Field nullable by default If it is not set. | `boolean?`                                                                                                   |
+| `:primary-key` | Set to `true` for making primary key field.                                        | `true?`                                                                                                      |
+| `:unique`      | Set to `true` to add unique constraint for a field.                                | `true?`                                                                                                      |
+| `:default`     | Default value for a field.                                                         | `boolean?`, `integer?`, `float?`, `string?`, `nil?`, or fn defined as `[:keyword <integer? float? string?>]` |
+| `:foreign-key` | Set to namespaced keyword to point a primary key field from another model.         | `:another-model/field-name`                                                                                  |
+| `:on-delete`   | Specify delete action for `:foreign-key`.                                          | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                           |
+| `:on-update`   | Specify update action for `:foreign-key`.                                          |                                                                                                              |
+
+
+#### Indexes
+
+Each index is a vector of three elements: `[:name-of-index :type-of-index {:fields [:field-from-model-to-index] :unique boolean?}]`
+
+First element is a name and must be a keyword.
+
+##### Index types
+
+Second element must be a keyword of available index types are presented in following table:
+
+| Field type | Description |
+|------------|-------------|
+| `:btree`   |             |
+| `:gin`     |             |
+| `:gist`    |             |
+| `:spgist`  |             |
+| `:brin`    |             |
+| `:hash`    |             |
+
+##### Index options
+
+Options value is a map where key is name of the option and value is available option value. 
+Option `:fields` is required others are optional (for now there is just `:unique`).  
+Available options are presented in table:
+
+
+| Field option | Description                                                          | Value               |
+|--------------|----------------------------------------------------------------------|---------------------|
+| `:fields`    | Vector of fields as keywords. Index will be created for that fields. | [`:field-name` ...] |
+| `:unique`    | Set to `true` if index should be unique.                             | `true?`             |
+
+
 ### Raw SQL migration 
 
 
@@ -302,6 +401,10 @@ WARNING: backward migration isn't fully implemented yet.
 - [ ] Support backward auto-migration.
 - [ ] Support custom migration using Clojure.
 - [ ] Support running with Leiningen.
+- [ ] Expand fields support.
+- [ ] Support array fields in PostgreSQL.
+- [ ] Support enum field type.
+- [ ] Support comment for field.
 - [ ] Handle project and resources paths properly.
 - [ ] Test against different versions of db and Clojure.
 - [ ] Improve error messages.
@@ -338,7 +441,7 @@ make install-snapshot :patch  # build and install locally a new version of lib b
 make release :patch  # bump git tag version by semver rules and push to remote repo
 ```
 
-*In CI there is the github action which publish any new git tag as new version of the lib to Clojars.*
+*In CI there is the GitHub action which publish any new git tag as new version of the lib to Clojars.*
 
 
 ## License
