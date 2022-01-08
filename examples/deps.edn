@@ -5,4 +5,4 @@
  {:migrations {:exec-fn automigrate.core/run
                :exec-args {:models-file "models.edn"
                            :migrations-dir "migrations"
-                           :jdbc-url "jdbc:postgresql://localhost:5432/demo?user=demo&password=demo"}}}}
+                           :jdbc-url "jdbc:postgresql://localhost:5333/demo?user=demo&password=demo"}}}}

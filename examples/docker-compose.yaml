@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:14-alpine
     ports:
-      - 5432:5432
+      - 5333:5432
     environment:
       POSTGRES_DB: automigrate
       POSTGRES_USER: automigrate
@@ -13,14 +13,11 @@ services:
   adminer:
     image: adminer
     ports:
-      - 8080:8080
+      - 8081:8080
     environment:
       ADMINER_DEFAULT_SERVER: db
 
   build:
     image: abogoyavlensky/clojure-openjdk11-build:0.1.3
-    environment:
-      - CLOJARS_PASSWORD
-      - CLOJARS_USERNAME
     volumes:
       - .:/app
