@@ -455,7 +455,7 @@ $ clojure -X:migrations :cmd :migrate :jdbc-url ${DATABASE_URL}
 Migrating: ...
 ```
 
-*In the future I try to add more convenient options if it will be needed.* 
+*In the future there could be more convenient options if it will be needed.* 
 
 ## Roadmap draft
 
