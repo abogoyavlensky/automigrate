@@ -9,8 +9,8 @@
                       :primary-key true}]
         [:name [:varchar 256] {:null false}]
         [:description :text]
-        [:condition [:varchar 10] {:null false
-                                   :default "new"}]
+        [:amount :integer {:null false
+                           :default 0}]
         [:author :integer {:null false
                            :foreign-key :author/id
                            :on-delete :cascade}]]}

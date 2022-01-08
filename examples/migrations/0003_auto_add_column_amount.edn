@@ -1,0 +1,4 @@
+({:action :add-column,
+  :field-name :amount,
+  :model-name :book,
+  :options {:null false, :default 0, :type :integer}})

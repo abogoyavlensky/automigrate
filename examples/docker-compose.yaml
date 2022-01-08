@@ -4,11 +4,11 @@ services:
   db:
     image: postgres:14-alpine
     ports:
-      - 5333:5432
+      - 5432
     environment:
-      POSTGRES_DB: automigrate
-      POSTGRES_USER: automigrate
-      POSTGRES_PASSWORD: automigrate
+      POSTGRES_DB: demo
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
 
   adminer:
     image: adminer
@@ -17,7 +17,10 @@ services:
     environment:
       ADMINER_DEFAULT_SERVER: db
 
-  clj:
+  demo:
     image: clojure:openjdk-11-tools-deps-1.10.3.1040-slim-buster
+    working_dir: /app
+    links:
+      - db
     volumes:
       - .:/app

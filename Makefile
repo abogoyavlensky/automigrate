@@ -136,7 +136,7 @@ deploy-snapshot:
 .PHONY: deploy-ci  # Build and deploy latest version of package to Clojars in CI
 deploy-ci:
 	@$(INFO) "Deploying jar-file to Clojars..."
-	@clojure -T:build deploy
+	@clojure -T:build deploy :release? true
 
 
 .PHONY: release  # Bump tag version and push it to remote rpeo

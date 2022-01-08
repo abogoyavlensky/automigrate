@@ -21,6 +21,14 @@
   (tools-build/git-process {:git-args ["describe" "--tags" "--abbrev=0"]}))
 
 
+(defn- latest-git-tag-name-across-all-branches
+  "Return latest git tag name as a string across all branches."
+  []
+  (let [latest-tag-rev (tools-build/git-process
+                         {:git-args ["rev-list" "--tags" "--max-count=1"]})]
+    (tools-build/git-process {:git-args ["describe" "--tags" latest-tag-rev]})))
+
+
 (s/def ::version
   (s/coll-of integer? :min-count 3 :max-count 3 :kind vector?))
 
@@ -71,9 +79,11 @@
   "Return version by latest tag.
 
   Optionally you could bump any part of version or add snapshot suffix."
-  [{:keys [snapshot? bump] :as version-args}]
+  [{:keys [snapshot? bump release?] :as version-args}]
   {:pre [(s/assert ::version-args version-args)]}
-  (let [latest-version (latest-git-tag-name)]
+  (let [latest-version (if (true? release?)
+                         (latest-git-tag-name)
+                         (latest-git-tag-name-across-all-branches))]
     (s/assert ::version (split-git-tag latest-version))
     (cond-> latest-version
       (some? bump) (bump-version bump)

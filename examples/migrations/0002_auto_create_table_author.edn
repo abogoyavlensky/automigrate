@@ -1,0 +1,19 @@
+({:action :create-table,
+  :model-name :author,
+  :fields
+  {:id {:unique true, :primary-key true, :type :serial},
+   :first-name {:type [:varchar 256]},
+   :second-name {:type [:varchar 256]},
+   :created-at {:default [:now], :type :timestamp}}}
+ {:action :create-index,
+  :index-name :author-created-at-idx,
+  :model-name :author,
+  :options {:fields [:created-at], :type :btree}}
+ {:action :add-column,
+  :field-name :author,
+  :model-name :book,
+  :options
+  {:null false,
+   :foreign-key :author/id,
+   :on-delete :cascade,
+   :type :integer}})

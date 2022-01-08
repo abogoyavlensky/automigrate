@@ -21,3 +21,4 @@ src/automigrate/migrations/
 test/automigrate/migrations/
 .lsp/sqlite.5.db
 resources/
+examples/.cpcache/
