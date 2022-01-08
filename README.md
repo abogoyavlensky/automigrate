@@ -114,6 +114,9 @@ CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, des
 COMMIT;
 ```
 
+:information_source: *For a little more complex example please check [README.md](/examples/README.md) 
+from `examples` dir of this repo.* 
+
 ## Documentation
 
 ### CLI interface
