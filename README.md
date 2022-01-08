@@ -17,7 +17,7 @@ and create database schema migrations based on changes of the models automatical
 
 ## State
 
-Project is in alpha state till the `1.0.0` version, and it is not intended for production use for now. 
+Project is in alpha state till the `1.0.0` version, and it is not ready for production use for now. 
 Breaking changes are possible.
 
 
@@ -435,10 +435,27 @@ Migrating: 0003_make_all_accounts_active...
 Successfully migrated: 0003_make_all_accounts_active
 ```
 
-### Other details
+### Technical details
 
-- for now auto-migration is supported for: tables, columns, indexes;
-- each migration is wrapped by transaction; 
+- for now auto-migration is supported for: tables, columns and indexes;
+- each migration is wrapped by transaction;
+
+
+### Use in production
+
+:warning: *For now the lib is not ready for production use. 
+But it is really appreciated if you try it for you personal projects! :wink:*
+
+For now, there is just single way to configure db connection url as a `:jdbc-url` arg for a command.
+The idea here is that, you could override default dev `:jdbc-url` value from `deps.edn` by running `migrate`
+command with env var inlined, using bash-script, makefile or whatever you want:
+
+```shell
+$ clojure -X:migrations :cmd :migrate :jdbc-url ${DATABASE_URL} 
+Migrating: ...
+```
+
+*In the future I try to add more convenient options if it will be needed.* 
 
 ## Roadmap draft
 
