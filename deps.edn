@@ -31,6 +31,6 @@
           :ns-default build}
 
   :migrations {:exec-fn automigrate.core/run
-               :exec-args {:models-file "src/automigrate/models.edn"
-                           :migrations-dir "src/automigrate/migrations"
+               :exec-args {:models-file "resources/db/models.edn"
+                           :migrations-dir "resources/db/migrations"
                            :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}}}}

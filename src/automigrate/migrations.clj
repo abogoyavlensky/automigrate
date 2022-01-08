@@ -95,7 +95,7 @@
   (->> {:insert-into migrations-table
         :values [{:name migration-name}]}
     (db-util/exec! db))
-  (println "Successfully migrated: " migration-name))
+  (println (str "Successfully migrated: " migration-name)))
 
 
 (defn- delete-migration!
@@ -104,7 +104,7 @@
   (->> {:delete-from migrations-table
         :where [:= :name migration-name]}
     (db-util/exec! db))
-  (println "Successfully unapplied: " migration-name))
+  (println (str "Successfully unapplied: " migration-name)))
 
 
 (defn- get-migration-name
@@ -552,8 +552,7 @@
   "Return migration file name by number."
   [migration-names number]
   {:pre [(s/assert (s/coll-of string?) migration-names)
-         (s/assert integer? number)]
-   :post [(s/assert string? %)]}
+         (s/assert integer? number)]}
   (->> migration-names
     (filter #(= number (get-migration-number %)))
     (first)))
@@ -685,7 +684,7 @@
   (when (and (= AUTO-MIGRATION-EXT migration-type)
           (= BACKWARD-DIRECTION direction))
     (println (str "WARNING: backward migration isn't fully implemented yet. "
-               "Database schema hasn't been changed!")))
+               "Database schema has not been changed!")))
   (doseq [action actions]
     (exec-action! {:db db
                    :action action

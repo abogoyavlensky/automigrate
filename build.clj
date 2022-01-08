@@ -10,7 +10,7 @@
 (s/check-asserts true)
 
 
-(def ^:private lib 'com.github.abogoyavlensky/automigrate)
+(def ^:private lib 'net.clojars.abogoyavlensky/automigrate)
 
 (def ^:private SNAPSHOT-SUFFIX "-SNAPSHOT")
 

@@ -1,0 +1,8 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.10.3"}
+        org.postgresql/postgresql {:mvn/version "42.3.1"}}
+ :aliases
+ {:migrations {:exec-fn automigrate.core/run
+               :exec-args {:models-file "models.edn"
+                           :migrations-dir "migrations"
+                           :jdbc-url "jdbc:postgresql://localhost:5333/demo?user=demo&password=demo"}}}}
