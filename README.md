@@ -369,7 +369,7 @@ First element is a name and must be a keyword.
 
 ##### Index types
 
-Second element must be a keyword of available index types are presented in following table:
+Second element required and must be a keyword of available index types are presented in following table:
 
 | Field type | Description |
 |------------|-------------|
