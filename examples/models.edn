@@ -1,0 +1,16 @@
+{:author {:fields [[:id :serial {:unique true
+                                 :primary-key true}]
+                   [:first-name [:varchar 256]]
+                   [:second-name [:varchar 256]]
+                   [:created-at :timestamp {:default [:now]}]]
+          :indexes [[:author-created-at-idx :btree {:fields [:created-at]}]]}
+
+ :book [[:id :serial {:unique true
+                      :primary-key true}]
+        [:name [:varchar 256] {:null false}]
+        [:description :text]
+        [:condition [:varchar 10] {:null false
+                                   :default "new"}]
+        [:author :integer {:null false
+                           :foreign-key :author/id
+                           :on-delete :cascade}]]}

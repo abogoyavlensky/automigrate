@@ -331,7 +331,7 @@ Available field types are presented in following table:
 | `:bigint`              |                                                                     |
 | `:float`               |                                                                     |
 | `:real`                |                                                                     |
-| `:serial`              |                                                                     |
+| `:serial`              | auto-incremented integer field                                      |
 | `:uuid`                |                                                                     |
 | `:boolean`             |                                                                     |
 | `:text`                |                                                                     |
