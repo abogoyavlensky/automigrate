@@ -393,8 +393,52 @@ Available options are presented in table:
 | `:unique`    | Set to `true` if index should be unique.                             | `true?`             |
 
 
-### Raw SQL migration 
+### Custom SQL migration 
 
+There are some specific cases which is not supported by auto-migrations for a while. 
+Or there are cases when you need to add simple data migration.
+You can add a custom SQL migration which contains a raw SQL for forward and backward direction separately in single sql-file.
+For that you could run command for making empty sql migration with custom name:
+
+```shell
+$ clojure -X:migrations :cmd :make-migration :type :empty-sql :name make_all_accounts_active
+Created migration: resources/db/migrations/0003_make_all_accounts_active.sql
+```
+
+Newly created file will look like:
+```sql
+-- FORWARD
+
+
+-- BACKWARD
+
+```
+
+You could fill it with two block of queries for forward and backward migration. For example:
+```sql
+-- FORWARD
+
+UPDATE account
+SET is_active = true;
+
+-- BACKWARD
+
+UPDATE account
+SET is_active = false;
+
+```
+
+Then migrate it as usual:
+```shell
+$ clojure -X:migrations :cmd :migrate
+Migrating: 0003_make_all_accounts_active...
+Successfully migrated: 0003_make_all_accounts_active
+```
+
+### Other details
+
+- for now auto-migration is supported for: tables, columns, indexes;
+- each migration is wrapped by transaction; 
 
 ## Roadmap draft
 
