@@ -17,12 +17,12 @@
            "Actions:\n"
            "  - create table feed\n")
         (with-out-str
-          (core/run {:cmd :make-migration
+          (core/run {:cmd :make
                      :models-file (str config/MODELS-DIR "feed_basic.edn")
                      :migrations-dir config/MIGRATIONS-DIR}))))
   (is (= "Created migration: test/automigrate/migrations/0002_add_description_field.sql\n"
         (with-out-str
-          (core/run {:cmd :make-migration
+          (core/run {:cmd :make
                      :models-file (str config/MODELS-DIR "feed_basic.edn")
                      :migrations-dir config/MIGRATIONS-DIR
                      :type "empty-sql"
@@ -38,7 +38,7 @@
              "  - add column created_at in table feed\n"
              "  - add column name in table feed\n")
           (with-out-str
-            (core/run {:cmd :make-migration
+            (core/run {:cmd :make
                        :models-file (str config/MODELS-DIR "feed_add_column.edn")
                        :migrations-dir config/MIGRATIONS-DIR}))))
     (let [files (file-util/list-files config/MIGRATIONS-DIR)]
@@ -48,10 +48,10 @@
 
 
 (deftest test-migrate-sql-migration-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
              :type "empty-sql"
@@ -96,10 +96,10 @@
 
 
 (deftest test-explain-sql-migration-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
              :type "empty-sql"
@@ -129,10 +129,10 @@
 
 
 (deftest test-list-migrations-with-sql-one-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
              :type "empty-sql"
@@ -147,6 +147,6 @@
     (is (= (str "[ ] 0001_auto_create_table_feed.edn\n"
              "[ ] 0002_add_description_field.sql\n")
           (with-out-str
-            (core/run {:cmd :list-migrations
+            (core/run {:cmd :list
                        :migrations-dir config/MIGRATIONS-DIR
                        :jdbc-url config/DATABASE-URL}))))))

@@ -9,7 +9,7 @@ $ docker-compose up -d db adminer
 Check existing migrations:
 
 ```shell
-$ docker-compose run demo clojure -X:migrations :cmd :list-migrations
+$ docker-compose run demo clojure -X:migrations :cmd :list
 Creating examples_demo_run ... done
 [ ] 0001_auto_create_table_book.edn
 [ ] 0002_auto_create_table_author.edn
@@ -32,7 +32,7 @@ Successfully migrated: 0003_auto_add_column_amount
 Check migrations' status again:
 
 ```shell
-$ docker-compose run demo clojure -X:migrations :cmd :list-migrations
+$ docker-compose run demo clojure -X:migrations :cmd :list
 Creating examples_demo_run ... done
 [✓] 0001_auto_create_table_book.edn
 [✓] 0002_auto_create_table_author.edn
@@ -45,7 +45,7 @@ Now you can open adminer UI in browser and check newly created tables by link: [
 
 ### Next steps
 To see creating in action you can change any model or add new one and run 
-`$ docker-compose run demo clojure -X:migrations :cmd :make-migration`.
+`$ docker-compose run demo clojure -X:migrations :cmd :make`.
 
 Or you could try different commands with different args from documentation section 
 [CLI interface](https://github.com/abogoyavlensky/automigrate#cli-interface).
