@@ -6,7 +6,8 @@
             [automigrate.migrations :as migrations]
             [automigrate.util.spec :as spec-util]
             [automigrate.util.file :as file-util]
-            [automigrate.errors :as errors]))
+            [automigrate.errors :as errors])
+  (:refer-clojure :exclude [list]))
 
 ; Enable asserts for spec in function's pre and post conditions
 (s/check-asserts true)
@@ -51,6 +52,14 @@
 (defmulti run-args :cmd)
 
 
+(s/def ::make-args
+  (s/keys
+    :req-un [::models-file
+             ::migrations-dir]
+    :opt-un [::type
+             ::name]))
+
+
 (defmethod run-args :make
   [_]
   (s/keys
@@ -59,6 +68,8 @@
              ::migrations-dir]
     :opt-un [::type
              ::name]))
+  ;(merge ::make-args
+  ;  :req-un [::cmd]))
 
 
 (defmethod run-args :migrate
@@ -91,6 +102,38 @@
 
 (s/def ::args
   (s/multi-spec run-args :cmd))
+
+
+; Public interface
+
+(defn make
+  [args]
+  (try+
+    (let [args* (spec-util/conform ::make-args args)]
+      (migrations/make-migration args*))
+    (catch [:type ::s/invalid] e
+      (file-util/prn-err e))
+    (catch Object e
+      (let [message (or (ex-message e) (str e))]
+        (-> {:title "UNEXPECTED ERROR"
+             :message message}
+          (errors/custom-error->error-report)
+          (file-util/prn-err))))))
+
+
+(defn migrate
+  [args]
+  (migrations/migrate (dissoc args :cmd)))
+
+
+(defn explain
+  [args]
+  (migrations/explain (dissoc args :cmd)))
+
+
+(defn list
+  [args]
+  (migrations/list-migrations (dissoc args :cmd)))
 
 
 (defn run

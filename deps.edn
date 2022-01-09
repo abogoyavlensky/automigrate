@@ -6,16 +6,19 @@
         weavejester/dependency {:mvn/version "0.2.1"}
         differ/differ {:mvn/version "0.3.3"}
         slingshot/slingshot {:mvn/version "0.12.2"}}
+
+ :tools/usage {:ns-default automigrate.core}
+
  :aliases
  {:dev {:extra-paths ["dev"]
         :extra-deps {org.clojure/clojure {:mvn/version "1.10.3"}
-                     org.postgresql/postgresql {:mvn/version "42.3.1"}
                      org.clojure/tools.namespace {:mvn/version "1.2.0"}
                      hashp/hashp {:mvn/version "0.2.1"}}}
   :test {:extra-paths ["test"]
          :extra-deps {eftest/eftest {:mvn/version "0.5.9"}
                       cloverage/cloverage {:mvn/version "1.2.2"}
-                      circleci/bond {:mvn/version "0.6.0"}}
+                      circleci/bond {:mvn/version "0.6.0"}
+                      org.postgresql/postgresql {:mvn/version "42.3.1"}}
          :exec-fn     cloverage.coverage/run-project
          :exec-args {:test-ns-path ["test"]
                      :src-ns-path ["src"]
@@ -30,7 +33,15 @@
                                                    :git/sha "171d5f1"}}
           :ns-default build}
 
-  :migrations {:exec-fn automigrate.core/run
+  ; For testing -X option with local src
+  :migrations {:ns-default automigrate.core
                :exec-args {:models-file "resources/db/models.edn"
                            :migrations-dir "resources/db/migrations"
-                           :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}}}}
+                           :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}}
+
+  ; For checking -T option
+  :automigrate {:deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "0.0.1-SNAPSHOT"}}
+                :ns-default automigrate.core
+                :exec-args {:models-file "resources/db/models.edn"
+                            :migrations-dir "resources/db/migrations"
+                            :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}}}}

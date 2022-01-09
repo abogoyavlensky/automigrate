@@ -484,7 +484,6 @@ Migrating: ...
 
 - Should args `:models-file` and `:migrations-dir` be set by default?
 - Should it be possible to set arg `:jdbc-url` as an env var?
-- Should commands be separated by different functions instead of `:cmd` arg?
 - How to handle common configuration conveniently?
 - More consistent and proper way for printing messages for users.
 
