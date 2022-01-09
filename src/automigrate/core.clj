@@ -42,16 +42,16 @@
 
 
 (s/def ::cmd
-  #{:make-migration
+  #{:make
     :migrate
     :explain
-    :list-migrations})
+    :list})
 
 
 (defmulti run-args :cmd)
 
 
-(defmethod run-args :make-migration
+(defmethod run-args :make
   [_]
   (s/keys
     :req-un [::cmd
@@ -80,7 +80,7 @@
     :opt-un [::direction]))
 
 
-(defmethod run-args :list-migrations
+(defmethod run-args :list
   [_]
   (s/keys
     :req-un [::cmd
@@ -99,10 +99,10 @@
   (try+
     (let [args* (spec-util/conform ::args args)
           cmd-fn (case cmd
-                   :make-migration migrations/make-migration
+                   :make migrations/make-migration
                    :migrate migrations/migrate
                    :explain migrations/explain
-                   :list-migrations migrations/list-migrations)]
+                   :list migrations/list-migrations)]
       (cmd-fn (dissoc args* :cmd)))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))

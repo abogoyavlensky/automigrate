@@ -54,7 +54,7 @@
 
 
 (deftest test-migrate-single-migrations-for-basic-model-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :migrate
@@ -69,10 +69,10 @@
 
 
 (deftest test-migrate-migrations-with-adding-columns-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
@@ -99,10 +99,10 @@
 
 
 (deftest test-migrate-forward-to-number-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= (str "Created migration: test/automigrate/migrations/0003_auto_alter_column_id.edn\n"
@@ -110,7 +110,7 @@
            "  - alter column id in table feed\n"
            "  - alter column name in table feed\n")
         (with-out-str
-          (core/run {:cmd :make-migration
+          (core/run {:cmd :make
                      :models-file (str config/MODELS-DIR "feed_alter_column.edn")
                      :migrations-dir config/MIGRATIONS-DIR}))))
   (testing "test migrate forward to specific number"
@@ -157,13 +157,13 @@
 
 
 (deftest test-migrate-backward-to-number-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (core/run {:cmd :migrate
@@ -203,10 +203,10 @@
 
 
 (deftest test-migrate-migrations-with-alter-columns-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_alter_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :alter-column
@@ -239,10 +239,10 @@
 
 
 (deftest test-migrate-migrations-with-drop-columns-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_drop_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-column
@@ -264,10 +264,10 @@
 
 
 (deftest test-migrate-migrations-with-drop-table-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_add_column.edn")
              :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_drop_table.edn")
              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-table
@@ -812,7 +812,7 @@
 
 
 (deftest test-custom-migration-name-ok
-  (core/run {:cmd :make-migration
+  (core/run {:cmd :make
              :models-file (str config/MODELS-DIR "feed_basic.edn")
              :migrations-dir config/MIGRATIONS-DIR
              :name "some-custom-migration-name"})

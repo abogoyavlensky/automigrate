@@ -49,7 +49,7 @@ A config for development environment could look like following example.
 Then you could use it as:
 
 ```shell
-clojure -X:migrations :cmd :make-migration
+clojure -X:migrations :cmd :make
 ```
 
 ### Getting started
@@ -69,7 +69,7 @@ make migration for it and migrate db schema. Let's do ti step by step.
 
 #### Make migration
 ```shell
-$ clojure -X:migrations :cmd :make-migration
+$ clojure -X:migrations :cmd :make
 Created migration: resources/db/migrations/0001_auto_create_table_book.edn
 Actions:
   - create table book
@@ -100,7 +100,7 @@ and one entry in model `automigrated_migrations` with new migration `0001_auto_c
 
 To view status of existing migrations you could run:
 ```shell
-$ clojure -X:migrations :cmd :list-migrations
+$ clojure -X:migrations :cmd :list
 [✓] 0001_auto_create_table_book.edn
 ```
 
@@ -121,20 +121,20 @@ from `examples` dir of this repo.*
 
 ### CLI interface
 
-Available commands as `:cmd` argument: `make-migration`, `migrate`, `list-migrations`, `explain`. Let's see it in detail by section.
+Available commands as `:cmd` argument: `make`, `migrate`, `list`, `explain`. Let's see it in detail by section.
 
 :information_source: *For examples assume that args `:models-file`, `:migrations-dir` and `:jdbc-url` are set in deps.edn alias.*
 
 Common args for all commands:
 
-| Argument            | Description                                | Required?                                    | Possible values                               | Default value               |
-|---------------------|--------------------------------------------|----------------------------------------------|-----------------------------------------------|-----------------------------|
-| `:models-file`      | Path to models' file.                      | `true` (for `make-migration`)                | string path (example: `"path/to/models.edn"`) | *not provided*              |
-| `:migrations-dir`   | Path to store migrations' files.           | `true`                                       | string path (example: `"path/to/migrations"`) | *not provided*              |
-| `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (for `migrate` and `list-migrations`) |                                               |                             |
-| `:migrations-table` | Model name for storing applied migrations. | `false`                                      | string (example: `"migrations"`)              | `"automigrated_migrations"` |
+| Argument            | Description                                | Required?                         | Possible values                               | Default value               |
+|---------------------|--------------------------------------------|-----------------------------------|-----------------------------------------------|-----------------------------|
+| `:models-file`      | Path to models' file.                      | `true` (for `make`)               | string path (example: `"path/to/models.edn"`) | *not provided*              |
+| `:migrations-dir`   | Path to store migrations' files.           | `true`                            | string path (example: `"path/to/migrations"`) | *not provided*              |
+| `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (for `migrate` and `list`) |                                               |                             |
+| `:migrations-table` | Model name for storing applied migrations. | `false`                           | string (example: `"migrations"`)              | `"automigrated_migrations"` |
 
-#### make-migration
+#### make
 
 Create migration for new changes in models' file.
 
@@ -149,7 +149,7 @@ Create migration for new changes in models' file.
 
 Create migration automatically with auto-generated name:
 ```shell
-$ clojure -X:migrations :cmd :make-migration
+$ clojure -X:migrations :cmd :make
 Created migration: resources/db/migrations/0001_auto_create_table_book.edn
 Actions:
   ...
@@ -157,7 +157,7 @@ Actions:
 
 Create migration automatically with custom name:
 ```shell
-$ clojure -X:migrations :cmd :make-migration :name create_table_author
+$ clojure -X:migrations :cmd :make :name create_table_author
 Created migration: resources/db/migrations/0002_create_table_author.edn
 Actions:
   ...
@@ -165,13 +165,13 @@ Actions:
 
 Create empty sql migration with custom name:
 ```shell
-$ clojure -X:migrations :cmd :make-migration :type :empty-sql :name add_custom_trigger
+$ clojure -X:migrations :cmd :make :type :empty-sql :name add_custom_trigger
 Created migration: resources/db/migrations/0003_add_custom_trigger.sql
 ```
 
 Try to create migration without new changes in models:
 ```shell
-$ clojure -X:migrations :cmd :make-migration
+$ clojure -X:migrations :cmd :make
 There are no changes in models.
 ```
 
@@ -247,7 +247,7 @@ $ clojure -X:migrations :cmd :migrate :number 10
 Invalid target migration number.
 ```
 
-#### list-migrations
+#### list
 
 Print out list of existing migrations with statuses.
 
@@ -257,7 +257,7 @@ Print out list of existing migrations with statuses.
 
 View list of partially applied migrations:
 ```shell
-$ clojure -X:migrations :cmd :list-migrations
+$ clojure -X:migrations :cmd :list
 [✓] 0001_auto_create_table_book.edn
 [ ] 0002_create_table_author.edn
 [ ] 0003_add_custom_trigger.sql
@@ -404,7 +404,7 @@ You can add a custom SQL migration which contains a raw SQL for forward and back
 For that you could run command for making empty sql migration with custom name:
 
 ```shell
-$ clojure -X:migrations :cmd :make-migration :type :empty-sql :name make_all_accounts_active
+$ clojure -X:migrations :cmd :make :type :empty-sql :name make_all_accounts_active
 Created migration: resources/db/migrations/0003_make_all_accounts_active.sql
 ```
 

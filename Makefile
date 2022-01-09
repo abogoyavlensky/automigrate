@@ -98,7 +98,7 @@ stop:
 .PHONY: migrations  # Making migrations
 migrations:
 	@$(INFO) "Making migrations..."
-	@clojure -A:dev -X:migrations :cmd :make-migration $(GOALS)
+	@clojure -A:dev -X:migrations :cmd :make $(GOALS)
 
 
 .PHONY: migrate  # Migrating migrations
@@ -116,7 +116,7 @@ explain:
 .PHONY: list  # Print migration's list
 list:
 	@$(INFO) "Migrations found..."
-	@clojure -A:dev -X:migrations :cmd :list-migrations $(GOALS)
+	@clojure -A:dev -X:migrations :cmd :list $(GOALS)
 
 
 # Build and release
