@@ -15,7 +15,7 @@
 
 (s/def ::models-file string?)
 (s/def ::migrations-dir string?)
-(s/def ::jdbc-url string?)
+(s/def ::jdbc-url (s/conformer str))
 (s/def ::number int?)
 
 
@@ -42,16 +42,6 @@
     #{:forward :backward}))
 
 
-(s/def ::cmd
-  #{:make
-    :migrate
-    :explain
-    :list})
-
-
-(defmulti run-args :cmd)
-
-
 (s/def ::make-args
   (s/keys
     :req-un [::models-file
@@ -60,57 +50,33 @@
              ::name]))
 
 
-(defmethod run-args :make
-  [_]
+(s/def ::migrate-args
   (s/keys
-    :req-un [::cmd
-             ::models-file
-             ::migrations-dir]
-    :opt-un [::type
-             ::name]))
-  ;(merge ::make-args
-  ;  :req-un [::cmd]))
-
-
-(defmethod run-args :migrate
-  [_]
-  (s/keys
-    :req-un [::cmd
-             ::jdbc-url
+    :req-un [::jdbc-url
              ::migrations-dir]
     :opt-un [::number
              ::migrations-table]))
 
 
-(defmethod run-args :explain
-  [_]
+(s/def ::explain-args
   (s/keys
-    :req-un [::cmd
-             ::migrations-dir
+    :req-un [::migrations-dir
              ::number]
     :opt-un [::direction]))
 
 
-(defmethod run-args :list
-  [_]
+(s/def ::list-args
   (s/keys
-    :req-un [::cmd
-             ::jdbc-url
+    :req-un [::jdbc-url
              ::migrations-dir]
     :opt-un [::migrations-table]))
 
 
-(s/def ::args
-  (s/multi-spec run-args :cmd))
-
-
-; Public interface
-
-(defn make
-  [args]
+(defn- run-fn
+  [f args args-spec]
   (try+
-    (let [args* (spec-util/conform ::make-args args)]
-      (migrations/make-migration args*))
+    (let [args* (spec-util/conform args-spec args)]
+      (f args*))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
     (catch Object e
@@ -121,21 +87,29 @@
           (file-util/prn-err))))))
 
 
+; Public interface
+
+(defn make
+  [args]
+  (run-fn migrations/make-migration args ::make-args))
+
+
 (defn migrate
   [args]
-  (migrations/migrate (dissoc args :cmd)))
+  (run-fn migrations/migrate args ::migrate-args))
 
 
 (defn explain
   [args]
-  (migrations/explain (dissoc args :cmd)))
+  (run-fn migrations/explain args ::explain-args))
 
 
 (defn list
   [args]
-  (migrations/list-migrations (dissoc args :cmd)))
+  (run-fn migrations/list-migrations args ::list-args))
 
 
+; TODO: remove!
 (defn run
   "Main exec function with dispatcher for all commands."
   [{:keys [cmd] :as args}]

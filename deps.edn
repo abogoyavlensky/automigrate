@@ -13,12 +13,12 @@
  {:dev {:extra-paths ["dev"]
         :extra-deps {org.clojure/clojure {:mvn/version "1.10.3"}
                      org.clojure/tools.namespace {:mvn/version "1.2.0"}
-                     hashp/hashp {:mvn/version "0.2.1"}}}
+                     hashp/hashp {:mvn/version "0.2.1"}
+                     org.postgresql/postgresql {:mvn/version "42.3.1"}}}
   :test {:extra-paths ["test"]
          :extra-deps {eftest/eftest {:mvn/version "0.5.9"}
                       cloverage/cloverage {:mvn/version "1.2.2"}
-                      circleci/bond {:mvn/version "0.6.0"}
-                      org.postgresql/postgresql {:mvn/version "42.3.1"}}
+                      circleci/bond {:mvn/version "0.6.0"}}
          :exec-fn     cloverage.coverage/run-project
          :exec-args {:test-ns-path ["test"]
                      :src-ns-path ["src"]
@@ -33,15 +33,10 @@
                                                    :git/sha "171d5f1"}}
           :ns-default build}
 
-  ; For testing -X option with local src
   :migrations {:ns-default automigrate.core
                :exec-args {:models-file "resources/db/models.edn"
                            :migrations-dir "resources/db/migrations"
-                           :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}}
+                           :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}
 
-  ; For checking -T option
-  :automigrate {:deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "0.0.1-SNAPSHOT"}}
-                :ns-default automigrate.core
-                :exec-args {:models-file "resources/db/models.edn"
-                            :migrations-dir "resources/db/migrations"
-                            :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}}}}
+               ; Key `:deps` is here just for testing `-T` option locally, so it is ignored by `-X` option.
+               :deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "0.0.1-SNAPSHOT"}}}}}

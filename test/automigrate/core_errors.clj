@@ -16,55 +16,29 @@
 
 
 (deftest test-run-make-migration-args-error
-  (testing "check invalid command"
-    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
-      (core/run {:cmd :wrong-cmd
-                 :models-file (str config/MODELS-DIR "feed_basic.edn")
-                 :migrations-dir config/MIGRATIONS-DIR})
-      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= [{:message (str "Invalid command name.\n\n  {:cmd :wrong-cmd, "
-                            ":models-file \"test/automigrate/models/feed_basic.edn\", "
-                            ":migrations-dir \"test/automigrate/migrations\"}")
-                 :title "COMMAND ERROR"}]
-              (test-util/get-spec-error-data (constantly error)))))))
-
-  (testing "check missing command"
-    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
-      (core/run {:models-file (str config/MODELS-DIR "feed_basic.edn")
-                 :migrations-dir config/MIGRATIONS-DIR})
-      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= [{:message (str "Invalid command name.\n\n  {"
-                            ":models-file \"test/automigrate/models/feed_basic.edn\", "
-                            ":migrations-dir \"test/automigrate/migrations\"}")
-                 :title "COMMAND ERROR"}]
-              (test-util/get-spec-error-data (constantly error)))))))
-
   (testing "check missing model file path"
     (bond/with-stub! [[file-util/prn-err (constantly nil)]]
-      (core/run {:cmd :make
-                 :migrations-dir config/MIGRATIONS-DIR})
+      (core/make {:migrations-dir config/MIGRATIONS-DIR})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= [{:message (str "Missing model file path.\n\n  {:cmd :make, "
-                            ":migrations-dir \"test/automigrate/migrations\"}")
+        (is (= [{:message (str "Missing model file path.\n\n  "
+                            "{:migrations-dir \"test/automigrate/migrations\"}")
                  :title "COMMAND ERROR"}]
               (test-util/get-spec-error-data (constantly error)))))))
 
   (testing "check missing migrations dir path"
     (bond/with-stub! [[file-util/prn-err (constantly nil)]]
-      (core/run {:cmd :make
-                 :models-file (str config/MODELS-DIR "feed_basic.edn")})
+      (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= [{:message (str "Missing migrations dir path.\n\n  {:cmd :make, "
-                            ":models-file \"test/automigrate/models/feed_basic.edn\"}")
+        (is (= [{:message (str "Missing migrations dir path.\n\n  "
+                            "{:models-file \"test/automigrate/models/feed_basic.edn\"}")
                  :title "COMMAND ERROR"}]
               (test-util/get-spec-error-data (constantly error)))))))
 
   (testing "check wrong type of migration"
     (bond/with-stub! [[file-util/prn-err (constantly nil)]]
-      (core/run {:cmd :make
-                 :models-file (str config/MODELS-DIR "feed_basic.edn")
-                 :migrations-dir config/MIGRATIONS-DIR
-                 :type "txt"})
+      (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+                  :migrations-dir config/MIGRATIONS-DIR
+                  :type "txt"})
       (let [error (-> (bond/calls file-util/prn-err) first :args first)]
         (is (= [{:message "Invalid migration type.\n\n  :txt"
                  :title "COMMAND ERROR"}]
@@ -72,10 +46,9 @@
 
   (testing "check missing migration name"
     (bond/with-stub! [[errors/custom-error->error-report (constantly nil)]]
-      (core/run {:cmd :make
-                 :models-file (str config/MODELS-DIR "feed_basic.edn")
-                 :migrations-dir config/MIGRATIONS-DIR
-                 :type :empty-sql})
+      (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+                  :migrations-dir config/MIGRATIONS-DIR
+                  :type :empty-sql})
       (let [error (-> (bond/calls errors/custom-error->error-report) first :args first)]
         (is (= {:message "Missing migration name."}
               (dissoc (test-util/thrown-with-slingshot-data? [:type ::s/invalid] error) :type)))))))
@@ -83,67 +56,46 @@
 
 (deftest test-run-migrate-args-error
   (testing "check missing db connection"
-    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
-      (core/run {:cmd :migrate
-                 :migrations-dir config/MIGRATIONS-DIR})
-      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= [{:message (str "Missing db connection config.\n\n  {:cmd :migrate, "
-                            ":migrations-dir \"test/automigrate/migrations\"}")
-                 :title "COMMAND ERROR"}]
-              (test-util/get-spec-error-data (constantly error)))))))
+    (is (= (str "-- COMMAND ERROR -------------------------------------\n\n"
+             "Missing db connection config.\n\n  {"
+             ":migrations-dir \"test/automigrate/migrations\"}\n\n")
+          (with-out-str
+            (core/migrate {:migrations-dir config/MIGRATIONS-DIR})))))
 
   (testing "check invalid target migration number"
-    (core/run {:cmd :make
-               :models-file (str config/MODELS-DIR "feed_basic.edn")
-               :migrations-dir config/MIGRATIONS-DIR})
-    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
-      (core/run {:cmd :migrate
-                 :jdbc-url config/DATABASE-URL
-                 :migrations-dir config/MIGRATIONS-DIR
-                 :number 4})
-      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= {:message "-- ERROR -------------------------------------\n\nInvalid target migration number.\n"
-                :number 4
-                :type :automigrate.migrations/invalid-target-migration-number}
-              error))))))
+    (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+                :migrations-dir config/MIGRATIONS-DIR})
+    (is (= "-- ERROR -------------------------------------\n\nInvalid target migration number.\n\n"
+          (with-out-str
+            (core/migrate {:jdbc-url config/DATABASE-URL
+                           :migrations-dir config/MIGRATIONS-DIR
+                           :number 4}))))))
 
 
 (deftest test-run-explain-args-error
   (testing "check missing db connection"
-    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
-      (core/run {:cmd :explain
-                 :migrations-dir config/MIGRATIONS-DIR
-                 :number 1
-                 :direction :wrong})
-      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= [{:message "Invalid direction of migration.\n\n  :wrong"
-                 :title "COMMAND ERROR"}]
-              (test-util/get-spec-error-data (constantly error)))))))
+    (is (= (str "-- COMMAND ERROR -------------------------------------\n\n"
+             "Invalid direction of migration.\n\n  :wrong\n\n")
+          (with-out-str
+            (core/explain {:migrations-dir config/MIGRATIONS-DIR
+                           :number 1
+                           :direction :wrong})))))
 
   (testing "check missing migration by number"
-    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
-      (core/run {:cmd :explain
-                 :migrations-dir config/MIGRATIONS-DIR
-                 :number 10})
-      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= {:message (str "-- ERROR -------------------------------------\n\n"
-                           "Missing migration by number 10\n")
-                :number 10
-                :type :automigrate.migrations/no-migration-by-number}
-              error))))))
+    (is (= (str "-- ERROR -------------------------------------\n\n"
+             "Missing migration by number 10\n\n")
+          (with-out-str
+            (core/explain {:migrations-dir config/MIGRATIONS-DIR
+                           :number 10}))))))
 
 
 (deftest test-run-unexpected-error
   (testing "check fiction unexpected error"
     #_{:clj-kondo/ignore [:private-call]}
-    (bond/with-stub! [[file-util/prn-err (constantly nil)]
-                      [automigrate-migrations/get-detailed-migrations-to-migrate
+    (bond/with-stub! [[automigrate-migrations/get-detailed-migrations-to-migrate
                        (fn [& _] (throw (Exception. "Testing error message.")))]]
-      (core/run {:cmd :migrate
-                 :migrations-dir config/MIGRATIONS-DIR
-                 :jdbc-url config/DATABASE-URL})
-      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= {:message (str "-- UNEXPECTED ERROR -------------------------------------\n\n"
-                           "Testing error message.\n")
-                :title "UNEXPECTED ERROR"}
-              error))))))
+      (is (= (str "-- UNEXPECTED ERROR -------------------------------------\n\n"
+               "Testing error message.\n\n")
+            (with-out-str
+              (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                             :jdbc-url config/DATABASE-URL})))))))
