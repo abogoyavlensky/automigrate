@@ -145,211 +145,6 @@ from `examples` dir of this repo.*
 
 ## Documentation
 
-### CLI interface
-
-Available commands are: `make`, `migrate`, `list`, `explain`. Let's see them in detail by section.
-
-:information_source: *Assume that args `:models-file`, `:migrations-dir` and `:jdbc-url` supposed to be set in deps.edn alias.*
-
-Common args for all commands:
-
-| Argument            | Description                                | Required?                              | Possible values                                                                                  | Default value               |
-|---------------------|--------------------------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------|-----------------------------|
-| `:models-file`      | Path to models' file.                      | `true` (only for `make`)               | string path (example: `"path/to/models.edn"`)                                                    | *not provided*              |
-| `:migrations-dir`   | Path to store migrations' files.           | `true`                                 | string path (example: `"path/to/migrations"`)                                                    | *not provided*              |
-| `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (only for `migrate` and `list`) | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | *not provided*              |
-| `:migrations-table` | Model name for storing applied migrations. | `false`                                | string (example: `"migrations"`)                                                                 | `"automigrated_migrations"` |
-
-#### make
-
-Create migration for new changes in models' file. 
-It detects creating, updating and deleting of tables, columns and indexes.
-
-*Specific args:*
-
-| Argument          | Description                                              | Required?                                            | Possible values                               | Default value                                           |
-|-------------------|----------------------------------------------------------|------------------------------------------------------|-----------------------------------------------|---------------------------------------------------------|
-| `:type`           | Type of migration file.                                  | `false`                                              | `:empty-sql`                                  | *not provided*, migration will be created automatically |
-| `:name`           | Custom name for migration file separated by underscores. | `false` *(:warning: required for `:empty-sql` type)* | string (example: `"add_custom_trigger"`)      | *generated automatically by first migration action*     |
-
-##### Examples
-
-Create migration automatically with auto-generated name:
-```shell
-$ clojure -X:migrations :make
-Created migration: resources/db/migrations/0001_auto_create_table_book.edn
-Actions:
-  ...
-```
-
-Create migration automatically with custom name:
-```shell
-$ clojure -X:migrations make :name create_table_author
-Created migration: resources/db/migrations/0002_create_table_author.edn
-Actions:
-  ...
-```
-
-Create empty sql migration with custom name:
-```shell
-$ clojure -X:migrations make :type :empty-sql :name add_custom_trigger
-Created migration: resources/db/migrations/0003_add_custom_trigger.sql
-```
-
-Try to create migration without new changes in models:
-```shell
-$ clojure -X:migrations make
-There are no changes in models.
-```
-
-
-#### migrate
-
-Apply changes described in migration to database. 
-Tries to apply all unapplied migrations by number order if arg `:number` is not presented in command.
-Throws error for same migration number. 
-
-:warning: *Backward migration is not fully implemented yet for auto-migrations, but already works for custom SQL migrations.
-For auto-migrations it is possible to unapply migration, and delete appropriate entry from migrations table. 
-But database changes will not be unapplied for now.*
-
-*Specific args:*
-
-| Argument  | Description                                                                                                                                                                  | Required? | Possible values                                 | Default value                                    |
-|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------------------------------------------|--------------------------------------------------|
-| `:number` | Number of migration which should be a target point. In forward direction migration by number will by applied. In backward direction migration by number will not be applied. | `false`   | integer (example: `1` for migration `0001_...`) | *not provided*, last migration number by default |
-
-##### Examples
-
-Migrate forward all unapplied migrations:
-```shell
-$ clojure -X:migrations migrate
-Migrating: 0001_auto_create_table_book...
-Successfully migrated: 0001_auto_create_table_book
-Migrating: 0002_create_table_author...
-Successfully migrated: 0002_create_table_author
-Migrating: 0003_add_custom_trigger...
-Successfully migrated: 0003_add_custom_trigger
-```
-
-Migrate forward up to particular migration number (*included*):
-```shell
-$ clojure -X:migrations migrate :number 2
-Migrating: 0001_auto_create_table_book...
-Successfully migrated: 0001_auto_create_table_book
-Migrating: 0002_create_table_author...
-Successfully migrated: 0002_create_table_author
-```
-
-Migrate backward up to particular migration number (*excluded*):
-```shell
-$ clojure -X:migrations migrate :number 1
-Unapplying: 0002_create_table_author...
-WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
-Successfully unapplied: 0002_create_table_author
-```
-
-Migrate backward to initial state of database:
-```shell
-$ clojure -X:migrations migrate :number 0
-Unapplying: 0003_add_custom_trigger...
-Successfully unapplied: 0003_add_custom_trigger
-Unapplying: 0002_create_table_author...
-WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
-Successfully unapplied: 0002_create_table_author
-Unapplying: 0001_auto_create_table_book...
-WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
-Successfully unapplied: 0001_auto_create_table_book
-```
-
-Try to migrate already migrated migrations:
-```shell
-$ clojure -X:migrations migrate
-Nothing to migrate.
-```
-
-Try to migrate up to not existing migration:
-```shell
-$ clojure -X:migrations migrate :number 10
--- ERROR -------------------------------------
-
-Invalid target migration number.
-```
-
-#### list
-
-Print out list of existing migrations with statuses displayed as 
-signs before migration name:  
-- `[✓]` - applied; 
-- `[ ]` - not applied.
-
-*No specific args.*
-
-##### Examples:
-
-View list of partially applied migrations:
-```shell
-$ clojure -X:migrations list
-[✓] 0001_auto_create_table_book.edn
-[ ] 0002_create_table_author.edn
-[ ] 0003_add_custom_trigger.sql
-```
-
-#### explain
-
-Print out actual raw SQL for particular migration by number.
-
-*Specific args:*
-
-| Argument      | Description                                      | Required?    | Possible values                                 | Default value  |
-|---------------|--------------------------------------------------|--------------|-------------------------------------------------|----------------|
-| `:number`     | Number of migration which should be explained.   | `true`       | integer (example: `1` for migration `0001_...`) | *not provided* |
-| `:direction`  | Direction in which migration should be explained | `false`      | `:forward`, `:backward`                         | `:forward`     |
-
-##### Examples:
-
-View raw SQL for migration in forward direction:
-```shell
-$ clojure -X:migrations explain :number 1
-SQL for migration 0001_auto_create_table_book.edn:
-
-BEGIN;
-CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, description TEXT);
-COMMIT;
-```
-
-View raw SQL for migration in backward direction:
-```shell
-$ clojure -X:migrations explain :number 1 :direction :backward
-SQL for migration 0001_auto_create_table_book.edn:
-
-WARNING: backward migration isn't fully implemented yet.
-```
-
-#### help/doc
-
-You can print docstring for function in default core namespace of the lib by running clojure cli `help/doc` function.
-
-Print doc for all available functions:
-
-```shell
-$ clojure -X:deps:migrations help/doc :ns automigrate.core
-Public interface for lib's users.
-
--------------------------
-...
-```
-
-Print doc for particular function:
-
-```shell
-$ clojure -X:deps:migrations help/doc :ns automigrate.core :fn make
--------------------------
-automigrate.core/make
-...
-```
-
-
 ### Model definition
 
 Models represented as a map with model name as a keyword key and value described the model itself. 
@@ -450,6 +245,211 @@ Available options are presented in table:
 |--------------|----------------------------------------------------------------------|---------------------|
 | `:fields`    | Vector of fields as keywords. Index will be created for that fields. | [`:field-name` ...] |
 | `:unique`    | Set to `true` if index should be unique.                             | `true?`             |
+
+
+### CLI interface
+
+Available commands are: `make`, `migrate`, `list`, `explain`. Let's see them in detail by section.
+
+:information_source: *Assume that args `:models-file`, `:migrations-dir` and `:jdbc-url` supposed to be set in deps.edn alias.*
+
+Common args for all commands:
+
+| Argument            | Description                                | Required?                              | Possible values                                                                                  | Default value               |
+|---------------------|--------------------------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------|-----------------------------|
+| `:models-file`      | Path to models' file.                      | `true` (only for `make`)               | string path (example: `"path/to/models.edn"`)                                                    | *not provided*              |
+| `:migrations-dir`   | Path to store migrations' files.           | `true`                                 | string path (example: `"path/to/migrations"`)                                                    | *not provided*              |
+| `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (only for `migrate` and `list`) | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | *not provided*              |
+| `:migrations-table` | Model name for storing applied migrations. | `false`                                | string (example: `"migrations"`)                                                                 | `"automigrated_migrations"` |
+
+#### make
+
+Create migration for new changes in models' file.
+It detects creating, updating and deleting of tables, columns and indexes.
+
+*Specific args:*
+
+| Argument          | Description                                              | Required?                                            | Possible values                               | Default value                                           |
+|-------------------|----------------------------------------------------------|------------------------------------------------------|-----------------------------------------------|---------------------------------------------------------|
+| `:type`           | Type of migration file.                                  | `false`                                              | `:empty-sql`                                  | *not provided*, migration will be created automatically |
+| `:name`           | Custom name for migration file separated by underscores. | `false` *(:warning: required for `:empty-sql` type)* | string (example: `"add_custom_trigger"`)      | *generated automatically by first migration action*     |
+
+##### Examples
+
+Create migration automatically with auto-generated name:
+```shell
+$ clojure -X:migrations :make
+Created migration: resources/db/migrations/0001_auto_create_table_book.edn
+Actions:
+  ...
+```
+
+Create migration automatically with custom name:
+```shell
+$ clojure -X:migrations make :name create_table_author
+Created migration: resources/db/migrations/0002_create_table_author.edn
+Actions:
+  ...
+```
+
+Create empty sql migration with custom name:
+```shell
+$ clojure -X:migrations make :type :empty-sql :name add_custom_trigger
+Created migration: resources/db/migrations/0003_add_custom_trigger.sql
+```
+
+Try to create migration without new changes in models:
+```shell
+$ clojure -X:migrations make
+There are no changes in models.
+```
+
+
+#### migrate
+
+Apply changes described in migration to database.
+Tries to apply all unapplied migrations by number order if arg `:number` is not presented in command.
+Throws error for same migration number.
+
+:warning: *Backward migration is not fully implemented yet for auto-migrations, but already works for custom SQL migrations.
+For auto-migrations it is possible to unapply migration, and delete appropriate entry from migrations table.
+But database changes will not be unapplied for now.*
+
+*Specific args:*
+
+| Argument  | Description                                                                                                                                                                  | Required? | Possible values                                 | Default value                                    |
+|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------------------------------------------|--------------------------------------------------|
+| `:number` | Number of migration which should be a target point. In forward direction migration by number will by applied. In backward direction migration by number will not be applied. | `false`   | integer (example: `1` for migration `0001_...`) | *not provided*, last migration number by default |
+
+##### Examples
+
+Migrate forward all unapplied migrations:
+```shell
+$ clojure -X:migrations migrate
+Migrating: 0001_auto_create_table_book...
+Successfully migrated: 0001_auto_create_table_book
+Migrating: 0002_create_table_author...
+Successfully migrated: 0002_create_table_author
+Migrating: 0003_add_custom_trigger...
+Successfully migrated: 0003_add_custom_trigger
+```
+
+Migrate forward up to particular migration number (*included*):
+```shell
+$ clojure -X:migrations migrate :number 2
+Migrating: 0001_auto_create_table_book...
+Successfully migrated: 0001_auto_create_table_book
+Migrating: 0002_create_table_author...
+Successfully migrated: 0002_create_table_author
+```
+
+Migrate backward up to particular migration number (*excluded*):
+```shell
+$ clojure -X:migrations migrate :number 1
+Unapplying: 0002_create_table_author...
+WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
+Successfully unapplied: 0002_create_table_author
+```
+
+Migrate backward to initial state of database:
+```shell
+$ clojure -X:migrations migrate :number 0
+Unapplying: 0003_add_custom_trigger...
+Successfully unapplied: 0003_add_custom_trigger
+Unapplying: 0002_create_table_author...
+WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
+Successfully unapplied: 0002_create_table_author
+Unapplying: 0001_auto_create_table_book...
+WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
+Successfully unapplied: 0001_auto_create_table_book
+```
+
+Try to migrate already migrated migrations:
+```shell
+$ clojure -X:migrations migrate
+Nothing to migrate.
+```
+
+Try to migrate up to not existing migration:
+```shell
+$ clojure -X:migrations migrate :number 10
+-- ERROR -------------------------------------
+
+Invalid target migration number.
+```
+
+#### list
+
+Print out list of existing migrations with statuses displayed as
+signs before migration name:
+- `[✓]` - applied;
+- `[ ]` - not applied.
+
+*No specific args.*
+
+##### Examples:
+
+View list of partially applied migrations:
+```shell
+$ clojure -X:migrations list
+[✓] 0001_auto_create_table_book.edn
+[ ] 0002_create_table_author.edn
+[ ] 0003_add_custom_trigger.sql
+```
+
+#### explain
+
+Print out actual raw SQL for particular migration by number.
+
+*Specific args:*
+
+| Argument      | Description                                      | Required?    | Possible values                                 | Default value  |
+|---------------|--------------------------------------------------|--------------|-------------------------------------------------|----------------|
+| `:number`     | Number of migration which should be explained.   | `true`       | integer (example: `1` for migration `0001_...`) | *not provided* |
+| `:direction`  | Direction in which migration should be explained | `false`      | `:forward`, `:backward`                         | `:forward`     |
+
+##### Examples:
+
+View raw SQL for migration in forward direction:
+```shell
+$ clojure -X:migrations explain :number 1
+SQL for migration 0001_auto_create_table_book.edn:
+
+BEGIN;
+CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, description TEXT);
+COMMIT;
+```
+
+View raw SQL for migration in backward direction:
+```shell
+$ clojure -X:migrations explain :number 1 :direction :backward
+SQL for migration 0001_auto_create_table_book.edn:
+
+WARNING: backward migration isn't fully implemented yet.
+```
+
+#### help/doc
+
+You can print docstring for function in default core namespace of the lib by running clojure cli `help/doc` function.
+
+Print doc for all available functions:
+
+```shell
+$ clojure -X:deps:migrations help/doc :ns automigrate.core
+Public interface for lib's users.
+
+-------------------------
+...
+```
+
+Print doc for particular function:
+
+```shell
+$ clojure -X:deps:migrations help/doc :ns automigrate.core :fn make
+-------------------------
+automigrate.core/make
+...
+```
 
 
 ### Custom SQL migration 
