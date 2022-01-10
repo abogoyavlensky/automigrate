@@ -326,6 +326,29 @@ SQL for migration 0001_auto_create_table_book.edn:
 WARNING: backward migration isn't fully implemented yet.
 ```
 
+#### help/doc
+
+You can print docstring for function in default core namespace of the lib by running clojure cli `help/doc` function.
+
+Print doc for all available functions:
+
+```shell
+$ clojure -X:deps:migrations help/doc :ns automigrate.core
+Public interface for lib's users.
+
+-------------------------
+...
+```
+
+Print doc for particular function:
+
+```shell
+$ clojure -X:deps:migrations help/doc :ns automigrate.core :fn make
+-------------------------
+automigrate.core/make
+...
+```
+
 
 ### Model definition
 
