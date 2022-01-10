@@ -90,42 +90,47 @@
 ; Public interface
 
 (defn make
+  "Create new migration based on changes of models.
+
+  Available options:
+    - :models-file - path to models' file (required)
+    - :migrations-dir - path to dir for storing migrations (required)
+    - :name - custom name for migration (optional)
+    - :type - type of new migration, empty by default for auto-migration;
+              also available :empty-sql - for creating empty raw SQL migration; (optional)"
   [args]
   (run-fn migrations/make-migration args ::make-args))
 
 
 (defn migrate
+  "Run existing migrations and change database schema.
+
+  Available options:
+  - :jdbc-url - jdbc url of database connection (required)
+  - :migrations-dir - path to dir for storing migrations (required)
+  - :migrations-table - optional migrations' table name (optional)
+  - :number - integer number of target point migration (optional)"
   [args]
   (run-fn migrations/migrate args ::migrate-args))
 
 
 (defn explain
+  "Show raw SQL for migration by number
+
+  Available options:
+  - :migrations-dir - path to dir for storing migrations (required)
+  - :number - integer number of migration to explain (required)
+  - :direction - direction for SQL from migration (optional)"
   [args]
   (run-fn migrations/explain args ::explain-args))
 
 
 (defn list
+  "Show list of existing migrations with status.
+
+  Available options:
+  - :jdbc-url - jdbc url of database connection (required)
+  - :migrations-dir - path to dir for storing migrations (required)
+  - :migrations-table - optional migrations' table name (optional)"
   [args]
   (run-fn migrations/list-migrations args ::list-args))
-
-
-; TODO: remove!
-(defn run
-  "Main exec function with dispatcher for all commands."
-  [{:keys [cmd] :as args}]
-  (try+
-    (let [args* (spec-util/conform ::args args)
-          cmd-fn (case cmd
-                   :make migrations/make-migration
-                   :migrate migrations/migrate
-                   :explain migrations/explain
-                   :list migrations/list-migrations)]
-      (cmd-fn (dissoc args* :cmd)))
-    (catch [:type ::s/invalid] e
-      (file-util/prn-err e))
-    (catch Object e
-      (let [message (or (ex-message e) (str e))]
-        (-> {:title "UNEXPECTED ERROR"
-             :message message}
-          (errors/custom-error->error-report)
-          (file-util/prn-err))))))

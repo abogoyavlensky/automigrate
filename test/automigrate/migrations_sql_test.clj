@@ -17,16 +17,14 @@
            "Actions:\n"
            "  - create table feed\n")
         (with-out-str
-          (core/run {:cmd :make
-                     :models-file (str config/MODELS-DIR "feed_basic.edn")
-                     :migrations-dir config/MIGRATIONS-DIR}))))
+          (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+                      :migrations-dir config/MIGRATIONS-DIR}))))
   (is (= "Created migration: test/automigrate/migrations/0002_add_description_field.sql\n"
         (with-out-str
-          (core/run {:cmd :make
-                     :models-file (str config/MODELS-DIR "feed_basic.edn")
-                     :migrations-dir config/MIGRATIONS-DIR
-                     :type "empty-sql"
-                     :name "add-description-field"}))))
+          (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+                      :migrations-dir config/MIGRATIONS-DIR
+                      :type "empty-sql"
+                      :name "add-description-field"}))))
   (testing "check that sql migration has been made"
     (let [files (file-util/list-files config/MIGRATIONS-DIR)]
       (is (= 2 (count files)))
@@ -38,9 +36,8 @@
              "  - add column created_at in table feed\n"
              "  - add column name in table feed\n")
           (with-out-str
-            (core/run {:cmd :make
-                       :models-file (str config/MODELS-DIR "feed_add_column.edn")
-                       :migrations-dir config/MIGRATIONS-DIR}))))
+            (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+                        :migrations-dir config/MIGRATIONS-DIR}))))
     (let [files (file-util/list-files config/MIGRATIONS-DIR)]
       (is (= 3 (count files)))
       (is (= "0003_auto_add_column_created_at.edn"
@@ -48,23 +45,20 @@
 
 
 (deftest test-migrate-sql-migration-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR
-             :type "empty-sql"
-             :name "add-description-field"})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR
+              :type "empty-sql"
+              :name "add-description-field"})
   (spit (str config/MIGRATIONS-DIR "/0002_add_description_field.sql")
     (str "-- FORWARD\n"
       "ALTER TABLE feed ADD COLUMN description text;\n"
       "-- BACKWARD\n"
       "ALTER TABLE feed DROP COLUMN description;\n"))
   (testing "check forward migration"
-    (core/run {:cmd :migrate
-               :migrations-dir config/MIGRATIONS-DIR
-               :jdbc-url config/DATABASE-URL})
+    (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                   :jdbc-url config/DATABASE-URL})
     (is (= '({:id 1
               :name "0001_auto_create_table_feed"}
              {:id 2
@@ -79,10 +73,9 @@
             (first)
             :data_type))))
   (testing "check backward migration"
-    (core/run {:cmd :migrate
-               :migrations-dir config/MIGRATIONS-DIR
-               :jdbc-url config/DATABASE-URL
-               :number 1})
+    (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                   :jdbc-url config/DATABASE-URL
+                   :number 1})
     (is (= '({:id 1
               :name "0001_auto_create_table_feed"})
           (->> {:select [:*]
@@ -96,14 +89,12 @@
 
 
 (deftest test-explain-sql-migration-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR
-             :type "empty-sql"
-             :name "add-description-field"})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR
+              :type "empty-sql"
+              :name "add-description-field"})
   (spit (str config/MIGRATIONS-DIR "/0002_add_description_field.sql")
     (str "-- FORWARD\n"
       "ALTER TABLE feed ADD COLUMN description text;\n"
@@ -113,30 +104,26 @@
     (is (= (str "SQL for migration 0002_add_description_field.sql:\n\n\n"
              "ALTER TABLE feed ADD COLUMN description text;\n\n")
           (with-out-str
-            (core/run {:cmd :explain
-                       :migrations-dir config/MIGRATIONS-DIR
-                       :jdbc-url config/DATABASE-URL
-                       :number 2})))))
+            (core/explain {:migrations-dir config/MIGRATIONS-DIR
+                           :jdbc-url config/DATABASE-URL
+                           :number 2})))))
   (testing "explain backward migration"
     (is (= (str "SQL for migration 0002_add_description_field.sql:\n\n\n"
              "ALTER TABLE feed DROP COLUMN description;\n\n")
           (with-out-str
-            (core/run {:cmd :explain
-                       :migrations-dir config/MIGRATIONS-DIR
-                       :jdbc-url config/DATABASE-URL
-                       :number 2
-                       :direction "backward"}))))))
+            (core/explain {:migrations-dir config/MIGRATIONS-DIR
+                           :jdbc-url config/DATABASE-URL
+                           :number 2
+                           :direction "backward"}))))))
 
 
 (deftest test-list-migrations-with-sql-one-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR
-             :type "empty-sql"
-             :name "add-description-field"})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR
+              :type "empty-sql"
+              :name "add-description-field"})
   (testing "check that migrations table does not exist"
     (is (thrown? Exception
           (->> {:select [:name]
@@ -147,6 +134,5 @@
     (is (= (str "[ ] 0001_auto_create_table_feed.edn\n"
              "[ ] 0002_add_description_field.sql\n")
           (with-out-str
-            (core/run {:cmd :list
-                       :migrations-dir config/MIGRATIONS-DIR
-                       :jdbc-url config/DATABASE-URL}))))))
+            (core/list {:migrations-dir config/MIGRATIONS-DIR
+                        :jdbc-url config/DATABASE-URL}))))))

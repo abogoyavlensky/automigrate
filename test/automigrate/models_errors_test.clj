@@ -624,7 +624,6 @@
            "\n\n-- MODEL ERROR -------------------------------------\n\n"
            "Field :account/address has extra options.\n\n  {:primary-field 10}\n\n")
         (with-out-str
-          (core/run {:cmd :make
-                     :migrations-dir config/MIGRATIONS-DIR
-                     :models-file (str config/MODELS-DIR "feed_errors.edn")
-                     :title "COMMAND ERROR"})))))
+          (core/make {:migrations-dir config/MIGRATIONS-DIR
+                      :models-file (str config/MODELS-DIR "feed_errors.edn")
+                      :title "COMMAND ERROR"})))))
