@@ -517,7 +517,7 @@ In the future there could be more convenient options if it will be needed.*
 
 - [Django migrations](https://docs.djangoproject.com/en/4.0/topics/migrations/)
 
-### Heavily based on
+### Main deps
 - [Honey SQL](https://github.com/seancorfield/honeysql)
 - [Dependency](https://github.com/weavejester/dependency)
 - [Differ](https://github.com/robinheghan/differ)
