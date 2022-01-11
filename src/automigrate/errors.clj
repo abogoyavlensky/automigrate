@@ -106,7 +106,17 @@
     (str message "\n\n  " (pr-str value))))
 
 
-(defmulti ->error-title :main-spec)
+(def ^:private error-hierarchy
+  (-> (make-hierarchy)
+    (derive :automigrate.fields/field-with-type :automigrate.fields/field)
+    (derive :automigrate.core/make-args ::common-command-args-errors)
+    (derive :automigrate.core/migrate-args :automigrate.core/make-args)
+    (derive :automigrate.core/explain-args :automigrate.core/make-args)
+    (derive :automigrate.core/list-args :automigrate.core/make-args)))
+
+
+(defmulti ->error-title :main-spec
+  :hierarchy #'error-hierarchy)
 
 
 (defmethod ->error-title :default
@@ -129,14 +139,9 @@
   "MIGRATION ERROR")
 
 
-(defmethod ->error-title :automigrate.core/args
+(defmethod ->error-title ::common-command-args-errors
   [_]
   "COMMAND ERROR")
-
-
-(def ^:private error-hierarchy
-  (-> (make-hierarchy)
-    (derive :automigrate.fields/field-with-type :automigrate.fields/field)))
 
 
 (defmulti ->error-message last-spec
@@ -641,12 +646,10 @@
 
 ; Command arguments
 
-(defmethod ->error-message :automigrate.core/args
+(defmethod ->error-message ::common-command-args-errors
   [data]
   (let [reason (problem-reason data)]
     (condp = reason
-      "no method" (add-error-value "Invalid command name." (:val data))
-
       '(clojure.core/fn [%] (clojure.core/contains? % :models-file))
       (add-error-value "Missing model file path." (:val data))
 

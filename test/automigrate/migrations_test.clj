@@ -54,12 +54,10 @@
 
 
 (deftest test-migrate-single-migrations-for-basic-model-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :migrate
-             :migrations-dir config/MIGRATIONS-DIR
-             :jdbc-url config/DATABASE-URL})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                 :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"})
         (->> {:select [:*]
@@ -69,12 +67,10 @@
 
 
 (deftest test-migrate-migrations-with-adding-columns-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_add_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
             :field-name :created-at
             :model-name :feed
@@ -85,9 +81,8 @@
             :options {:type [:varchar 100] :null true}})
         (-> (str config/MIGRATIONS-DIR "/0002_auto_add_column_created_at.edn")
           (file-util/read-edn))))
-  (core/run {:cmd :migrate
-             :migrations-dir config/MIGRATIONS-DIR
-             :jdbc-url config/DATABASE-URL})
+  (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                 :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
@@ -99,26 +94,22 @@
 
 
 (deftest test-migrate-forward-to-number-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_add_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
   (is (= (str "Created migration: test/automigrate/migrations/0003_auto_alter_column_id.edn\n"
            "Actions:\n"
            "  - alter column id in table feed\n"
            "  - alter column name in table feed\n")
         (with-out-str
-          (core/run {:cmd :make
-                     :models-file (str config/MODELS-DIR "feed_alter_column.edn")
-                     :migrations-dir config/MIGRATIONS-DIR}))))
+          (core/make {:models-file (str config/MODELS-DIR "feed_alter_column.edn")
+                      :migrations-dir config/MIGRATIONS-DIR}))))
   (testing "test migrate forward to specific number"
-    (core/run {:cmd :migrate
-               :migrations-dir config/MIGRATIONS-DIR
-               :jdbc-url config/DATABASE-URL
-               :number 2
-               :migrations-table "custom-migrations_table"})
+    (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                   :jdbc-url config/DATABASE-URL
+                   :number 2
+                   :migrations-table "custom-migrations_table"})
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"}
           (->> {:select [:*]
@@ -129,11 +120,10 @@
   (testing "test nothing to migrate forward with current number"
     (is (= "Nothing to migrate.\n"
           (with-out-str
-            (core/run {:cmd :migrate
-                       :migrations-dir config/MIGRATIONS-DIR
-                       :jdbc-url config/DATABASE-URL
-                       :number 2
-                       :migrations-table "custom-migrations-table"}))))
+            (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                           :jdbc-url config/DATABASE-URL
+                           :number 2
+                           :migrations-table "custom-migrations-table"}))))
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"}
           (->> {:select [:*]
@@ -142,10 +132,9 @@
             (map :name)
             (set)))))
   (testing "test migrate forward all"
-    (core/run {:cmd :migrate
-               :migrations-dir config/MIGRATIONS-DIR
-               :jdbc-url config/DATABASE-URL
-               :migrations-table "custom-migrations-table"})
+    (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                   :jdbc-url config/DATABASE-URL
+                   :migrations-table "custom-migrations-table"})
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"
              "0003_auto_alter_column_id"}
@@ -157,18 +146,14 @@
 
 
 (deftest test-migrate-backward-to-number-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_add_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_alter_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :migrate
-             :migrations-dir config/MIGRATIONS-DIR
-             :jdbc-url config/DATABASE-URL})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_alter_column.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                 :jdbc-url config/DATABASE-URL})
   (is (= #{"0001_auto_create_table_feed"
            "0002_auto_add_column_created_at"
            "0003_auto_alter_column_id"}
@@ -178,10 +163,9 @@
           (map :name)
           (set))))
   (testing "test migrate backward to specific number"
-    (core/run {:cmd :migrate
-               :migrations-dir config/MIGRATIONS-DIR
-               :jdbc-url config/DATABASE-URL
-               :number 2})
+    (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                   :jdbc-url config/DATABASE-URL
+                   :number 2})
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at"}
           (->> {:select [:*]
@@ -190,10 +174,9 @@
             (map :name)
             (set)))))
   (testing "test unapply all migrations "
-    (core/run {:cmd :migrate
-               :migrations-dir config/MIGRATIONS-DIR
-               :jdbc-url config/DATABASE-URL
-               :number 0})
+    (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                   :jdbc-url config/DATABASE-URL
+                   :number 0})
     (is (= #{}
           (->> {:select [:*]
                 :from [db-util/MIGRATIONS-TABLE]}
@@ -203,12 +186,10 @@
 
 
 (deftest test-migrate-migrations-with-alter-columns-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_add_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_alter_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_alter_column.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :alter-column
             :changes {:primary-key {:from :EMPTY
                                     :to true}}
@@ -225,9 +206,8 @@
             :model-name :feed})
         (-> (str config/MIGRATIONS-DIR "/0002_auto_alter_column_id.edn")
           (file-util/read-edn))))
-  (core/run {:cmd :migrate
-             :migrations-dir config/MIGRATIONS-DIR
-             :jdbc-url config/DATABASE-URL})
+  (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                 :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
@@ -239,20 +219,17 @@
 
 
 (deftest test-migrate-migrations-with-drop-columns-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_add_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_drop_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_drop_column.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-column
             :field-name :name
             :model-name :feed})
         (-> (str config/MIGRATIONS-DIR "/0002_auto_drop_column_name.edn")
           (file-util/read-edn))))
-  (core/run {:cmd :migrate
-             :migrations-dir config/MIGRATIONS-DIR
-             :jdbc-url config/DATABASE-URL})
+  (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                 :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
@@ -264,19 +241,16 @@
 
 
 (deftest test-migrate-migrations-with-drop-table-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_add_column.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_drop_table.edn")
-             :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/make {:models-file (str config/MODELS-DIR "feed_drop_table.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-table
             :model-name :feed})
         (-> (str config/MIGRATIONS-DIR "/0002_auto_drop_table_feed.edn")
           (file-util/read-edn))))
-  (core/run {:cmd :migrate
-             :migrations-dir config/MIGRATIONS-DIR
-             :jdbc-url config/DATABASE-URL})
+  (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                 :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
@@ -812,10 +786,9 @@
 
 
 (deftest test-custom-migration-name-ok
-  (core/run {:cmd :make
-             :models-file (str config/MODELS-DIR "feed_basic.edn")
-             :migrations-dir config/MIGRATIONS-DIR
-             :name "some-custom-migration-name"})
+  (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :migrations-dir config/MIGRATIONS-DIR
+              :name "some-custom-migration-name"})
   (is (= '({:model-name :feed
             :fields {:id {:type :serial :null false}}
             :action :create-table})

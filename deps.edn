@@ -6,12 +6,15 @@
         weavejester/dependency {:mvn/version "0.2.1"}
         differ/differ {:mvn/version "0.3.3"}
         slingshot/slingshot {:mvn/version "0.12.2"}}
+
+ :tools/usage {:ns-default automigrate.core}
+
  :aliases
  {:dev {:extra-paths ["dev"]
         :extra-deps {org.clojure/clojure {:mvn/version "1.10.3"}
-                     org.postgresql/postgresql {:mvn/version "42.3.1"}
                      org.clojure/tools.namespace {:mvn/version "1.2.0"}
-                     hashp/hashp {:mvn/version "0.2.1"}}}
+                     hashp/hashp {:mvn/version "0.2.1"}
+                     org.postgresql/postgresql {:mvn/version "42.3.1"}}}
   :test {:extra-paths ["test"]
          :extra-deps {eftest/eftest {:mvn/version "0.5.9"}
                       cloverage/cloverage {:mvn/version "1.2.2"}
@@ -24,13 +27,18 @@
                                    :fail-fast? true}}}
 
   :check-deps {:extra-deps {com.github.liquidz/antq {:mvn/version "1.3.1"}}
-               :main-opts ["-m" "antq.core" "--force" "--exclude=io.github.seancorfield/build-clj"]}
+               :main-opts ["-m" "antq.core" "--force"
+                           "--exclude=io.github.seancorfield/build-clj"
+                           "--exclude=net.clojars.abogoyavlensky/automigrate"]}
 
   :build {:deps {io.github.seancorfield/build-clj {:git/tag "v0.6.6"
                                                    :git/sha "171d5f1"}}
           :ns-default build}
 
-  :migrations {:exec-fn automigrate.core/run
+  :migrations {:ns-default automigrate.core
                :exec-args {:models-file "resources/db/models.edn"
                            :migrations-dir "resources/db/migrations"
-                           :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}}}}
+                           :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}
+
+               ; Key `:deps` is here just for testing `-T` option locally, so it is ignored by `-X` option.
+               :deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "0.0.1-SNAPSHOT"}}}}}
