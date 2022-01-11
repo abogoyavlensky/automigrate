@@ -266,6 +266,7 @@ Common args for all commands:
 
 Create migration for new changes in models' file.
 It detects creating, updating and deleting of tables, columns and indexes.
+Each migration is wrapped by transaction by default.
 
 *Specific args:*
 
@@ -494,11 +495,6 @@ Migrating: 0003_make_all_accounts_active...
 Successfully migrated: 0003_make_all_accounts_active
 ```
 
-### Technical details
-
-- for now auto-migration is supported for: tables, columns and indexes;
-- each migration is wrapped by transaction.
-
 
 ### Use in production
 
@@ -516,6 +512,16 @@ Migrating: ...
 
 *The downside of that approach could be a lack of ability to use a common config for a project.
 In the future there could be more convenient options if it will be needed.* 
+
+## Inspired by
+
+- [Django migrations](https://docs.djangoproject.com/en/4.0/topics/migrations/)
+
+### Heavily based on
+- [Honey SQL](https://github.com/seancorfield/honeysql)
+- [Dependency](https://github.com/weavejester/dependency)
+- [Differ](https://github.com/robinheghan/differ)
+
 
 ## Roadmap draft
 
