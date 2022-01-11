@@ -1,4 +1,4 @@
-# automigrate
+# Automigrate
 
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 
