@@ -12,22 +12,24 @@
 
 
 (defn- throw-exception-for-spec!
-  [spec data]
-  (let [explain-data (s/explain-data spec data)
-        {:keys [formatted reports]} (spec-errors/explain-data->error-report explain-data)]
-    (throw+ {:type ::s/invalid
-             :data explain-data
-             :message formatted
-             :reports reports})))
+  ([spec data]
+   (throw-exception-for-spec! spec data nil))
+  ([spec data explained-data]
+   (let [explain-data (or explained-data (s/explain-data spec data))
+         {:keys [formatted reports]} (spec-errors/explain-data->error-report explain-data)]
+     (throw+ {:type ::s/invalid
+              :data explain-data
+              :message formatted
+              :reports reports}))))
 
 
 (defn valid?
   "Check if data valid for spec and return the data or throw explained exception."
   [spec data]
-  ; TODO: try to call validation once!
-  (if (s/valid? spec data)
-    data
-    (throw-exception-for-spec! spec data)))
+  (let [explained-data (s/explain-data spec data)]
+    (if (some? explained-data)
+      (throw-exception-for-spec! spec data explained-data)
+      data)))
 
 
 (defn conform

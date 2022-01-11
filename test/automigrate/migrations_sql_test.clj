@@ -131,7 +131,8 @@
                 :order-by [:created-at]}
             (db-util/exec! config/DATABASE-CONN)))))
   (testing "check list-migrations output"
-    (is (= (str "[ ] 0001_auto_create_table_feed.edn\n"
+    (is (= (str "Existing migrations:\n\n"
+             "[ ] 0001_auto_create_table_feed.edn\n"
              "[ ] 0002_add_description_field.sql\n")
           (with-out-str
             (core/list {:migrations-dir config/MIGRATIONS-DIR
