@@ -14,7 +14,7 @@
 
 
 (defn run-all-tests
-  "Reload changed namespaces."
+  "Run all tests."
   []
   (reset)
   (test/run-all-tests #"automigrate.*-test"))

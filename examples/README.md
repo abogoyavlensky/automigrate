@@ -44,7 +44,8 @@ Now you can open adminer UI in browser and check newly created tables by link: [
 *Fill all credentials as `demo`.*
 
 ### Next steps
-To see creating in action you can change any model or add new one and run 
+To see creating in action you can change any model or add new one as it described 
+in [documentation](https://github.com/abogoyavlensky/automigrate#model-definition) and run 
 `$ docker-compose run demo clojure -X:migrations make`.
 
 Or you could try different commands with different args from documentation section 
