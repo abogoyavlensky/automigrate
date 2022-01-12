@@ -547,6 +547,8 @@ In the future there could be more convenient options for configuration if it wil
 - Should it be possible to set arg `:jdbc-url` as an env var?
 - How to handle common configuration conveniently?
 - More consistent and proper way for printing messages for users.
+- Ability to separate models by multiple files.
+- Move transformations out of conformers.
 
 
 ## Development
