@@ -141,8 +141,8 @@ CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, des
 COMMIT;
 ```
 
-:information_source: *For a little more complex example please check [README.md](/examples/README.md) 
-and [models.edn](/examples/models.edn) from `examples` dir of this repo.* 
+:information_source: *For a little more complex example please check [models.edn](/examples/models.edn)
+and [README.md](/examples/README.md) from `examples` dir of this repo.* 
 
 ## Documentation
 
