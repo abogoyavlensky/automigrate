@@ -120,6 +120,11 @@ deploy-ci:
 	@clojure -T:build deploy :release? true
 
 
+.PHONY: next-changelog  # Generate draft of changelog for next release. Need to correct by hand!
+next-changelog:
+	@npx auto-changelog --output NEXT-CHANGELOG.md --template keepachangelog
+
+
 .PHONY: release  # Bump tag version and push it to remote rpeo
 release:
 	@$(INFO) "Deploying jar-file to Clojars..."

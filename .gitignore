@@ -23,3 +23,4 @@ test/automigrate/migrations/
 resources/
 examples/.cpcache/
 .lsp/
+NEXT-CHANGELOG.md
