@@ -1,4 +1,14 @@
 ({:action :add-column,
   :field-name :amount,
   :model-name :book,
-  :options {:null false, :default 0, :type :integer}})
+  :options {:null false, :default 0, :type :integer}}
+ {:action :alter-column,
+  :field-name :second-name,
+  :model-name :author,
+  :options {:type :text},
+  :changes {:type {:from [:varchar 256], :to :text}}}
+ {:action :alter-column,
+  :field-name :created-at,
+  :model-name :author,
+  :options {:default [:now], :null false, :type :timestamp},
+  :changes {:null {:from :EMPTY, :to false}}})

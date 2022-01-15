@@ -1,8 +1,9 @@
 {:author {:fields [[:id :serial {:unique true
                                  :primary-key true}]
                    [:first-name [:varchar 256]]
-                   [:second-name [:varchar 256]]
-                   [:created-at :timestamp {:default [:now]}]]
+                   [:second-name :text]
+                   [:created-at :timestamp {:default [:now]
+                                            :null false}]]
           :indexes [[:author-created-at-idx :btree {:fields [:created-at]}]]}
 
  :book [[:id :serial {:unique true

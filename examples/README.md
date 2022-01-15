@@ -1,4 +1,4 @@
-# Example for automigrated
+# Example for automigrate
 
 Run database and simple admin UI for viewing db schema:
 
