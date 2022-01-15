@@ -546,7 +546,7 @@ In the future there could be more convenient options for configuration if it wil
 - Should args `:models-file` and `:migrations-dir` are set by default?
 - Should it be possible to set arg `:jdbc-url` as an env var?
 - How to handle common configuration conveniently?
-- More consistent and proper way for printing messages for users.
+- More consistent and helpful messages for users.
 - Ability to separate models by multiple files.
 - Move transformations out of conformers.
 
