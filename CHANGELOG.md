@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Add ability to make migrations and migrate for changing table and column.
-- Add ability to drop column and table.
+- Add ability to drop table and column.
 - Add ability to create, alter and drop index.
 - Add ability to migrate to specific migration number.
 - Add ability to print list migrations with statuses.
