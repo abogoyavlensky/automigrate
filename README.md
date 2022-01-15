@@ -225,7 +225,7 @@ First element is a name of an index and must be a keyword.
 
 ##### Index types
 
-Second element is a index's type and must be a keyword of available index types:
+Second element is an index's type and must be a keyword of available index types:
 
 | Field type |
 |------------|
