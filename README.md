@@ -54,7 +54,7 @@ clojure -X:migrations make
 #### tools.deps -T option
 
 Alternatively you can use following alias with `-T` option (*from clojure tools cli version >= `1.10.3.933`*).
-The difference is that project's deps is not included for running migrations.  
+The difference is that project's deps is not included for running migrations.
 
 *deps.edn*
 ```clojure
