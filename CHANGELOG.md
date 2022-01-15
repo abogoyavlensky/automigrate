@@ -2,10 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+*The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)*
 
 *TODO: update actual relaese date!* 
-## [0.1.0] - 2022-01-06
+## 0.1.0 - 2022-01-06
 
 ### Added
 
@@ -17,5 +17,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Add ability to print raw SQL for migration.
 - Add ability to create, migrate and explain sql migration type.
 - Add ability to show error messages for users.
-
-[0.0.1]: https://github.com/abogoyavlensky/automigrate/releases/tag/v0.1.0
