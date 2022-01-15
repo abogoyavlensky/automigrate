@@ -1,4 +1,4 @@
-# Automigrate
+# automigrate
 
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 
@@ -11,9 +11,9 @@ and create database schema migrations based on changes of the models automatical
 - define db schema as **models** in edn **declaratively**;
 - **automatically migrate** db schema based on models' changes;
 - view raw SQL for any migration;
-- ability to add raw SQL migration for specific cases or data migrations;
+- have ability to add raw SQL migration for specific cases or data migrations;
 - migrate to any migration in forward and backward *[:construction: under development]* directions;
-- support for PostgreSQL *[:construction: others are under development]*;
+- use with PostgreSQL *[:construction: others are under development]*;
 
 ## State
 
