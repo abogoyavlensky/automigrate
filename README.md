@@ -265,7 +265,7 @@ Common args for all commands:
 | `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (only for `migrate` and `list`) | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | *not provided*             |
 | `:migrations-table` | Model name for storing applied migrations. | `false`                                | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"` |
 
-#### make
+#### `make`
 
 Create migration for new changes in models' file.
 It detects creating, updating and deleting of tables, columns and indexes.
@@ -309,7 +309,7 @@ There are no changes in models.
 ```
 
 
-#### migrate
+#### `migrate`
 
 Apply changes described in migration to database.
 Tries to apply all unapplied migrations by number order if arg `:number` is not presented in command.
@@ -382,7 +382,7 @@ $ clojure -X:migrations migrate :number 10
 Invalid target migration number.
 ```
 
-#### list
+#### `list`
 
 Print out list of existing migrations with statuses displayed as
 signs before migration name:
@@ -401,7 +401,7 @@ $ clojure -X:migrations list
 [ ] 0003_add_custom_trigger.sql
 ```
 
-#### explain
+#### `explain`
 
 Print out actual raw SQL for particular migration by number.
 
@@ -555,7 +555,7 @@ In the future there could be more convenient options for configuration if it wil
 
 ## Materials
 
-- blog post: [Announcing automigrate](https://bogoyavlensky.com/blog/announcing-automigrate/). 
+- Blog post: [Announcing automigrate](https://bogoyavlensky.com/blog/announcing-automigrate/). 
 
 ## Development
 
