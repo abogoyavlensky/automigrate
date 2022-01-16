@@ -117,6 +117,8 @@ And the migration at `resources/db/migrations/0001_auto_create_table_book.edn` w
 ```
 
 #### Migrate
+Existing migrations will be applied one by one in order of migrations numbers:
+
 ```shell
 $ clojure -X:migrations migrate
 Migrating: 0001_auto_create_table_book...
