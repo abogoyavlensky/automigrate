@@ -41,7 +41,7 @@ Creating examples_demo_run ... done
 
 Now you can open adminer UI in browser and check newly created tables by link: [http://localhost:8081/](http://localhost:8081/).
 
-*Fill all credentials as `demo`.*
+:information_source: *Fill all credentials as `demo`.*
 
 ### Next steps
 To see creating in action you can change any model or add new one as it described 
