@@ -516,15 +516,6 @@ Migrating: ...
 *The downside of that approach could be a lack of ability to use a common config for a project.
 In the future there could be more convenient options for configuration if it will be needed.* 
 
-## Inspired by
-
-- [Django migrations](https://docs.djangoproject.com/en/4.0/topics/migrations/)
-
-### Huge thanks to other projects
-- [Honey SQL](https://github.com/seancorfield/honeysql)
-- [Dependency](https://github.com/weavejester/dependency)
-- [Differ](https://github.com/robinheghan/differ)
-
 
 ## Roadmap draft
 
@@ -551,6 +542,20 @@ In the future there could be more convenient options for configuration if it wil
 - Ability to separate models by multiple files.
 - Move transformations out of conformers.
 
+
+## Inspired by
+
+- [Django migrations](https://docs.djangoproject.com/en/4.0/topics/migrations/)
+
+### Thanks to projects
+- [Honey SQL](https://github.com/seancorfield/honeysql)
+- [Dependency](https://github.com/weavejester/dependency)
+- [Differ](https://github.com/robinheghan/differ)
+
+
+## Materials
+
+- blog post: [Announcing automigrate](https://bogoyavlensky.com/blog/announcing-automigrate/). 
 
 ## Development
 
