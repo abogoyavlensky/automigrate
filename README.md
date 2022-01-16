@@ -201,6 +201,10 @@ Available field types are presented in following table:
 | `[:char <pos-int>]`    | second element is the length of value                               |
 | `[:float <pos-int>]`   | second element is the minimum acceptable precision in binary digits |
 
+:information_source: *There are fixed field types because `automigrate` 
+validates type of field and default value to have an error as early as possible 
+before running migration against database.*
+
 ##### Field options
 
 Options value is a map where key is name of the option and value is available option value. All options are optional.  
@@ -541,6 +545,8 @@ In the future there could be more convenient options for configuration if it wil
 - More consistent and helpful messages for users.
 - Ability to separate models by multiple files.
 - Move transformations out of conformers.
+- Probably, add option to disable field types validation to be able to use 
+the tool while not every type of database column is supported.
 
 
 ## Inspired by
