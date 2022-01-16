@@ -83,6 +83,7 @@ clojure -T:migrations make
 
 After configuration, you could create models.edn file with first model, 
 make migration for it and migrate db schema. Choose paths for migrations and models as you want.
+Model is a representation of database table described as an EDN structure.
 Let's do it step by step.
 
 #### Add model
@@ -103,6 +104,7 @@ Actions:
   - create table book
 ```
 
+Migration can contain multiple migration actions. 
 And the migration at `resources/db/migrations/0001_auto_create_table_book.edn` will look like:
 ```clojure
 ({:action :create-table,
