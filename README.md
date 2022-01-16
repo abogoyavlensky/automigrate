@@ -1,4 +1,4 @@
-# Automigrate
+# automigrate
 
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 
@@ -11,9 +11,9 @@ and create database schema migrations based on changes of the models automatical
 - define db schema as **models** in edn **declaratively**;
 - **automatically migrate** db schema based on models' changes;
 - view raw SQL for any migration;
-- ability to add raw SQL migration for specific cases or data migrations;
+- have ability to add raw SQL migration for specific cases or data migrations;
 - migrate to any migration in forward and backward *[:construction: under development]* directions;
-- support for PostgreSQL *[:construction: others are under development]*;
+- use with PostgreSQL *[:construction: others are under development]*;
 
 ## State
 
@@ -38,8 +38,8 @@ A config for development environment could look like following example.
            :migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<LATEST VERSION>"}
                                      org.postgresql/postgresql {:mvn/version "42.3.1"}}
                         :ns-default automigrate.core
-                        :exec-args {:models-file "src/resources/db/models.edn"
-                                    :migrations-dir "src/resources/db/migrations"
+                        :exec-args {:models-file "resources/db/models.edn"
+                                    :migrations-dir "resources/db/migrations"
                                     :jdbc-url "jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"}}}}
 ```
 
@@ -63,11 +63,12 @@ The difference is that project's deps is not included for running migrations.
            :migrations {:deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<LATEST VERSION>"}
                                org.postgresql/postgresql {:mvn/version "42.3.1"}}
                         :ns-default automigrate.core
-                        :exec-args {:models-file "src/resources/db/models.edn"
-                                    :migrations-dir "src/resources/db/migrations"
+                        :exec-args {:models-file "resources/db/models.edn"
+                                    :migrations-dir "resources/db/migrations"
                                     :jdbc-url "jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"}}}}
 ```
 
+You can choose any paths you want for `:models-file` and `:migrations-dir`. 
 Then you could use it as:
 
 ```shell
@@ -121,7 +122,7 @@ Successfully migrated: 0001_auto_create_table_book
 ```
 
 That's it, in db you could see newly created table called `book` with defined columns 
-and one entry in model `automigrated_migrations` with new migration `0001_auto_create_table_book`.
+and one entry in model `automigrate_migrations` with new migration `0001_auto_create_table_book`.
 
 #### List and explain migrations
 
@@ -257,12 +258,12 @@ Available commands are: `make`, `migrate`, `list`, `explain`. Let's see them in 
 
 Common args for all commands:
 
-| Argument            | Description                                | Required?                              | Possible values                                                                                  | Default value               |
-|---------------------|--------------------------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------|-----------------------------|
-| `:models-file`      | Path to models' file.                      | `true` (only for `make`)               | string path (example: `"path/to/models.edn"`)                                                    | *not provided*              |
-| `:migrations-dir`   | Path to store migrations' files.           | `true`                                 | string path (example: `"path/to/migrations"`)                                                    | *not provided*              |
-| `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (only for `migrate` and `list`) | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | *not provided*              |
-| `:migrations-table` | Model name for storing applied migrations. | `false`                                | string (example: `"migrations"`)                                                                 | `"automigrated_migrations"` |
+| Argument            | Description                                | Required?                              | Possible values                                                                                  | Default value              |
+|---------------------|--------------------------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------|----------------------------|
+| `:models-file`      | Path to models' file.                      | `true` (only for `make`)               | string path (example: `"path/to/models.edn"`)                                                    | *not provided*             |
+| `:migrations-dir`   | Path to store migrations' files.           | `true`                                 | string path (example: `"path/to/migrations"`)                                                    | *not provided*             |
+| `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (only for `migrate` and `list`) | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | *not provided*             |
+| `:migrations-table` | Model name for storing applied migrations. | `false`                                | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"` |
 
 #### make
 
