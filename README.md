@@ -44,7 +44,7 @@ A config for development environment could look like the following:
 ```
 
 :information_source: *You can move postgres driver to project's `:deps` section.
-You can choose any paths you want for `:models-file` and `:migrations-dir`. * 
+You can choose any paths you want for `:models-file` and `:migrations-dir`.* 
 
 Then you could use it as:
 
