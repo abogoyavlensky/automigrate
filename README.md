@@ -25,7 +25,7 @@ Breaking changes are possible.
 
 ### Installation
 
-**TODO:** add release label from Clojars!
+[![Clojars Project](https://img.shields.io/clojars/v/net.clojars.abogoyavlensky/automigrate.svg)](https://clojars.org/net.clojars.abogoyavlensky/automigrate)
 
 #### tools.deps -X option
 
@@ -594,6 +594,7 @@ make check-deps  # run checking new versions of deps in force mode
 
 ```shell
 make install-snapshot :patch  # build and install locally a new version of lib based on latest git tag and using semver
+make deploy-snapshot :patch  # build and deploy to Clojars next snapshot version from local machine
 make release :patch  # bump git tag version by semver rules and push to remote repo
 ```
 
