@@ -133,6 +133,8 @@ and one entry in table `automigrate_migrations` with new migration `0001_auto_cr
 To view status of existing migrations you can run:
 ```shell
 $ clojure -X:migrations list
+Existing migrations:
+
 [✓] 0001_auto_create_table_book.edn
 ```
 
@@ -412,6 +414,8 @@ boxes before migration name:
 View list of partially applied migrations:
 ```shell
 $ clojure -X:migrations list
+Existing migrations:
+
 [✓] 0001_auto_create_table_book.edn
 [ ] 0002_create_table_author.edn
 [ ] 0003_add_custom_trigger.sql

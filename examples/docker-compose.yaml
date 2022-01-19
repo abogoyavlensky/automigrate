@@ -18,7 +18,8 @@ services:
       ADMINER_DEFAULT_SERVER: db
 
   demo:
-    image: clojure:openjdk-11-tools-deps-1.10.3.1040-slim-buster
+    build:
+      context: .
     working_dir: /app
     links:
       - db

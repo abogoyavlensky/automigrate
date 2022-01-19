@@ -12,7 +12,11 @@ Check existing migrations:
 
 ```shell
 $ docker-compose run demo clojure -X:migrations list
+Building demo
+...
 Creating examples_demo_run ... done
+Existing migrations:
+
 [ ] 0001_auto_create_table_book.edn
 [ ] 0002_auto_create_table_author.edn
 [ ] 0003_auto_add_column_amount.edn
@@ -36,6 +40,8 @@ Check migration status again:
 ```shell
 $ docker-compose run demo clojure -X:migrations list
 Creating examples_demo_run ... done
+Existing migrations:
+
 [✓] 0001_auto_create_table_book.edn
 [✓] 0002_auto_create_table_author.edn
 [✓] 0003_auto_add_column_amount.edn
