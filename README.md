@@ -43,7 +43,8 @@ A config for development environment could look like the following:
                                     :jdbc-url "jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"}}}}
 ```
 
-:information_source: *Or you can move postgres driver to project's `:deps` section.* 
+:information_source: *You can move postgres driver to project's `:deps` section.
+You can choose any paths you want for `:models-file` and `:migrations-dir`. * 
 
 Then you could use it as:
 
@@ -68,7 +69,6 @@ The difference is that the project's `:deps` is not included for running migrati
                                     :jdbc-url "jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"}}}}
 ```
 
-You can choose any paths you want for `:models-file` and `:migrations-dir`. 
 You can then use it as:
 
 ```shell
@@ -77,7 +77,7 @@ clojure -T:migrations make
 
 #### Leiningen
 
-:construction: *Leiningen support is under development.*
+[:construction: *Leiningen support is under development.*]
 
 ### Getting started
 
@@ -104,7 +104,7 @@ Actions:
   - create table book
 ```
 
-Migration can contain multiple actions. 
+Migration can contain multiple actions. Every action is converted to a SQL query.
 The migration at `resources/db/migrations/0001_auto_create_table_book.edn` will look like:
 
 ```clojure
@@ -125,7 +125,7 @@ Migrating: 0001_auto_create_table_book...
 Successfully migrated: 0001_auto_create_table_book
 ```
 
-That's it. In db you can see a newly created table called `book` with defined columns 
+That's it. In the database you can see a newly created table called `book` with defined columns 
 and one entry in table `automigrate_migrations` with new migration `0001_auto_create_table_book`.
 
 #### List and explain migrations
@@ -146,6 +146,8 @@ BEGIN;
 CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, description TEXT);
 COMMIT;
 ```
+
+All SQL queries of the migration are wrapped by a transaction.
 
 :information_source: *For a slightly more complex example please check [models.edn](/examples/models.edn)
 and [README.md](/examples/README.md) from the `examples` dir of this repo.* 
@@ -216,15 +218,15 @@ before running migration against database.*
 Options value is a map where key is the name of the option and value is the available option value.
 Available options are presented in the table below:
 
-| Field option   | Description                                                                                   | Value                                                                                                        |
-|----------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| `:null`        | Set to `false` for non-nullable field. Field is nullable by default if the option is not set. | `boolean?`                                                                                                   |
-| `:primary-key` | Set to `true` for making primary key field.                                                   | `true?`                                                                                                      |
-| `:unique`      | Set to `true` to add unique constraint for a field.                                           | `true?`                                                                                                      |
-| `:default`     | Default value for a field.                                                                    | `boolean?`, `integer?`, `float?`, `string?`, `nil?`, or fn defined as `[:keyword <integer? float? string?>]` |
-| `:foreign-key` | Set to namespaced keyword to point to a primary key field from another model.                 | `:another-model/field-name`                                                                                  |
-| `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                           |
-| `:on-update`   | Specify update action for `:foreign-key`.                                                     |                                                                                                              |
+| Field option   | Description                                                                                   | Required? | Value                                                                                                        |
+|----------------|-----------------------------------------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------------------|
+| `:null`        | Set to `false` for non-nullable field. Field is nullable by default if the option is not set. | `false`   | `boolean?`                                                                                                   |
+| `:primary-key` | Set to `true` for making primary key field.                                                   | `false`   | `true?`                                                                                                      |
+| `:unique`      | Set to `true` to add unique constraint for a field.                                           | `false`   | `true?`                                                                                                      |
+| `:default`     | Default value for a field.                                                                    | `false`   | `boolean?`, `integer?`, `float?`, `string?`, `nil?`, or fn defined as `[:keyword <integer? float? string?>]` |
+| `:foreign-key` | Set to namespaced keyword to point to a primary key field from another model.                 | `false`   | `:another-model/field-name`                                                                                  |
+| `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                           |
+| `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   |                                                                                                              |
 
 
 #### Indexes
@@ -254,10 +256,10 @@ The option `:fields` is required, others are optional (*for now there is just `:
 Available options are presented in the table below:
 
 
-| Field option | Description                                                           | Value               |
-|--------------|-----------------------------------------------------------------------|---------------------|
-| `:fields`    | Vector of fields as keywords. Index will be created for those fields. | [`:field-name` ...] |
-| `:unique`    | Set to `true` if index should be unique.                              | `true?`             |
+| Field option | Description                                                           | Required? | Value               |
+|--------------|-----------------------------------------------------------------------|-----------|---------------------|
+| `:fields`    | Vector of fields as keywords. Index will be created for those fields. | `true`    | [`:field-name` ...] |
+| `:unique`    | Set to `true` if index should be unique.                              | `false`   | `true?`             |
 
 
 ### CLI interface
@@ -517,8 +519,8 @@ Successfully migrated: 0003_make_all_accounts_active
 
 ### Use in production
 
-:warning: *The lib is not yet ready for production use. 
-But it is really appreciated if you try it out for you personal projects! :wink:*
+:warning: *The library is not yet ready for production use. 
+But it is really appreciated if you try it out! :wink:*
 
 For now, there is just a single way to configure db connection url as a `:jdbc-url` arg for a command.
 The idea here is that you could override default dev `:jdbc-url` value from `deps.edn` by running `migrate`
