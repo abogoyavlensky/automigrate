@@ -2,22 +2,22 @@
 
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 
-Database auto-migration tool for Clojure. Define models as plain edn data structures, 
-and create database schema migrations based on changes of the models automatically.
+Database auto-migration tool for Clojure. Define models as plain EDN data structures 
+and create database schema migrations automatically based on changes to the models.
 
 
 ## Features
 
-- define db schema as **models** in edn **declaratively**;
-- **automatically migrate** db schema based on models' changes;
+- define db schema as **models** in EDN **declaratively**;
+- **automatically migrate** db schema based on model changes;
 - view raw SQL for any migration;
-- have ability to add raw SQL migration for specific cases or data migrations;
+- ability to add raw SQL migration for specific cases or data migrations;
 - migrate to any migration in forward and backward *[:construction: under development]* directions;
 - use with PostgreSQL *[:construction: others are under development]*;
 
 ## State
 
-Project is in **alpha** state till the `1.0.0` version, and it is not ready for production use for now. 
+Project is in **alpha** state till the `1.0.0` version and is not yet ready for production use. 
 Breaking changes are possible.
 
 
@@ -25,11 +25,11 @@ Breaking changes are possible.
 
 ### Installation
 
-**TODO:** add release label from Clojars! 
-
-A config for development environment could look like following example.
+**TODO:** add release label from Clojars!
 
 #### tools.deps -X option
+
+A config for development environment could look like the following:
 
 *deps.edn*
 ```clojure
@@ -43,7 +43,8 @@ A config for development environment could look like following example.
                                     :jdbc-url "jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"}}}}
 ```
 
-:information_source: *Or you can move postgres driver to project's `:deps` section.* 
+:information_source: *You can move postgres driver to project's `:deps` section.
+You can choose any paths you want for `:models-file` and `:migrations-dir`. * 
 
 Then you could use it as:
 
@@ -53,8 +54,8 @@ clojure -X:migrations make
 
 #### tools.deps -T option
 
-Alternatively you can use following alias with `-T` option (*from clojure tools cli version >= `1.10.3.933`*).
-The difference is that project's deps is not included for running migrations.
+Alternatively you can use the following alias with `-T` option (*from clojure tools cli version >= `1.10.3.933`*).
+The difference is that the project's `:deps` is not included for running migrations.
 
 *deps.edn*
 ```clojure
@@ -68,8 +69,7 @@ The difference is that project's deps is not included for running migrations.
                                     :jdbc-url "jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"}}}}
 ```
 
-You can choose any paths you want for `:models-file` and `:migrations-dir`. 
-Then you could use it as:
+You can then use it as:
 
 ```shell
 clojure -T:migrations make
@@ -77,12 +77,13 @@ clojure -T:migrations make
 
 #### Leiningen
 
-:construction: *Leiningen support is under development.*
+[:construction: *Leiningen support is under development.*]
 
 ### Getting started
 
-After configuration, you could create models.edn file with first model, 
-make migration for it and migrate db schema. Choose paths for migrations and models as you want.
+After configuration, you are able to create `models.edn` file with first model, 
+make migration for it and migrate db schema. Paths for migrations and models can be chosen as you want.
+A model is the representation of a database table which is described in EDN structure.
 Let's do it step by step.
 
 #### Add model
@@ -103,7 +104,9 @@ Actions:
   - create table book
 ```
 
-And the migration at `resources/db/migrations/0001_auto_create_table_book.edn` will look like:
+Migration can contain multiple actions. Every action is converted to a SQL query.
+The migration at `resources/db/migrations/0001_auto_create_table_book.edn` will look like:
+
 ```clojure
 ({:action :create-table,
   :model-name :book,
@@ -111,28 +114,30 @@ And the migration at `resources/db/migrations/0001_auto_create_table_book.edn` w
   {:id {:unique true, :primary-key true, :type :serial},
    :name {:null false, :type [:varchar 256]},
    :description {:type :text}}})
-
 ```
 
 #### Migrate
+Existing migrations will be applied one by one in order of migration number:
+
 ```shell
 $ clojure -X:migrations migrate
 Migrating: 0001_auto_create_table_book...
 Successfully migrated: 0001_auto_create_table_book
 ```
 
-That's it, in db you could see newly created table called `book` with defined columns 
-and one entry in model `automigrate_migrations` with new migration `0001_auto_create_table_book`.
+That's it. In the database you can see a newly created table called `book` with defined columns 
+and one entry in table `automigrate_migrations` with new migration `0001_auto_create_table_book`.
 
 #### List and explain migrations
 
-To view status of existing migrations you could run:
+To view status of existing migrations you can run:
 ```shell
 $ clojure -X:migrations list
 [✓] 0001_auto_create_table_book.edn
 ```
 
-To view raw SQL for existing migration you could run command `explain` with appropriate number: 
+To view raw SQL for existing migration you can run command `explain` with appropriate number: 
+
 ```shell
 $ clojure -X:migrations explain :number 1
 SQL for migration 0001_auto_create_table_book.edn:
@@ -142,16 +147,18 @@ CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, des
 COMMIT;
 ```
 
-:information_source: *For a little more complex example please check [models.edn](/examples/models.edn)
-and [README.md](/examples/README.md) from `examples` dir of this repo.* 
+All SQL queries of the migration are wrapped by a transaction.
+
+:information_source: *For a slightly more complex example please check [models.edn](/examples/models.edn)
+and [README.md](/examples/README.md) from the `examples` dir of this repo.* 
 
 ## Documentation
 
 ### Model definition
 
-Models represented as a map with model name as a keyword key and value described the model itself. 
-Model's definition could be a vector of vectors in simple case to define just fields.
-As we saw in previous example:
+Models are represented as a map with the model name as a keyword key and the value describing the model itself.
+A model's definition could be a vector of vectors in the simple case of just defining fields.
+As we saw in the previous example:
 
 ```clojure
 {:book [[:id :serial {:unique true
@@ -160,8 +167,9 @@ As we saw in previous example:
         [:description :text]]}
 ```
 
-Or it could be a map with two keys `:fields` and (*optional*) `:indexes`. Each one is a vector of vectors too. 
-Same model could be described as a map:
+Or it could be a map with two keys `:fields` and (*optional*) `:indexes`. Each of these is also a vector of vectors. 
+The same model from above could be described as a map:
+
 ```clojure
 {:book {:fields [[:id :serial {:unique true
                                :primary-key true}]
@@ -172,13 +180,13 @@ Same model could be described as a map:
 #### Fields
 
 Each field is a vector of three elements: `[:field-name :field-type {:some-option :option-value}]`. 
-Third element is optional, but name and type are required.
+The third element is optional, but name and type are required.
 
-First element is a name of a field and must be a keyword.
+The first element is the name of a field and must be a keyword.
 
 ##### Field types
-Second element could be a keyword or a vector of keyword and integer. 
-Available field types are presented in following table:
+The second element could be a keyword or a vector of keyword and integer. 
+Available field types are presented in the following table:
 
 | Field type             | Description                                                         |
 |------------------------|---------------------------------------------------------------------|
@@ -201,20 +209,24 @@ Available field types are presented in following table:
 | `[:char <pos-int>]`    | second element is the length of value                               |
 | `[:float <pos-int>]`   | second element is the minimum acceptable precision in binary digits |
 
+:information_source: *There are fixed field types because `automigrate` 
+validates type of field and default value to have errors as early as possible 
+before running migration against database.*
+
 ##### Field options
 
-Options value is a map where key is name of the option and value is available option value. All options are optional.  
-Available options are presented in table:
+Options value is a map where key is the name of the option and value is the available option value.
+Available options are presented in the table below:
 
-| Field option   | Description                                                                                | Value                                                                                                        |
-|----------------|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| `:null`        | Set to `false` for not nullable field. Field nullable by default If the option is not set. | `boolean?`                                                                                                   |
-| `:primary-key` | Set to `true` for making primary key field.                                                | `true?`                                                                                                      |
-| `:unique`      | Set to `true` to add unique constraint for a field.                                        | `true?`                                                                                                      |
-| `:default`     | Default value for a field.                                                                 | `boolean?`, `integer?`, `float?`, `string?`, `nil?`, or fn defined as `[:keyword <integer? float? string?>]` |
-| `:foreign-key` | Set to namespaced keyword to point a primary key field from another model.                 | `:another-model/field-name`                                                                                  |
-| `:on-delete`   | Specify delete action for `:foreign-key`.                                                  | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                           |
-| `:on-update`   | Specify update action for `:foreign-key`.                                                  |                                                                                                              |
+| Field option   | Description                                                                                   | Required? | Value                                                                                                        |
+|----------------|-----------------------------------------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------------------|
+| `:null`        | Set to `false` for non-nullable field. Field is nullable by default if the option is not set. | `false`   | `boolean?`                                                                                                   |
+| `:primary-key` | Set to `true` for making primary key field.                                                   | `false`   | `true?`                                                                                                      |
+| `:unique`      | Set to `true` to add unique constraint for a field.                                           | `false`   | `true?`                                                                                                      |
+| `:default`     | Default value for a field.                                                                    | `false`   | `boolean?`, `integer?`, `float?`, `string?`, `nil?`, or fn defined as `[:keyword <integer? float? string?>]` |
+| `:foreign-key` | Set to namespaced keyword to point to a primary key field from another model.                 | `false`   | `:another-model/field-name`                                                                                  |
+| `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                           |
+| `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   |                                                                                                              |
 
 
 #### Indexes
@@ -222,11 +234,11 @@ Available options are presented in table:
 Each index is a vector of three elements: `[:name-of-index :type-of-index {:fields [:field-from-model-to-index] :unique boolean?}]`
 Name, type and `:fields` in options are required.
 
-First element is a name of an index and must be a keyword.
+The first element is the name of an index and must be a keyword.
 
 ##### Index types
 
-Second element is an index's type and must be a keyword of available index types:
+The second element is an index type and must be a keyword of available index types:
 
 | Field type |
 |------------|
@@ -239,36 +251,36 @@ Second element is an index's type and must be a keyword of available index types
 
 ##### Index options
 
-Options value is a map where key is name of the option and value is available option value. 
-Option `:fields` is required others are optional (*for now there is just `:unique` is optional*).  
-Available options are presented in table:
+The options value is a map where key is the name of the option and value is the available option value.
+The option `:fields` is required, others are optional (*for now there is just `:unique` is optional*).  
+Available options are presented in the table below:
 
 
-| Field option | Description                                                          | Value               |
-|--------------|----------------------------------------------------------------------|---------------------|
-| `:fields`    | Vector of fields as keywords. Index will be created for that fields. | [`:field-name` ...] |
-| `:unique`    | Set to `true` if index should be unique.                             | `true?`             |
+| Field option | Description                                                           | Required? | Value               |
+|--------------|-----------------------------------------------------------------------|-----------|---------------------|
+| `:fields`    | Vector of fields as keywords. Index will be created for those fields. | `true`    | [`:field-name` ...] |
+| `:unique`    | Set to `true` if index should be unique.                              | `false`   | `true?`             |
 
 
 ### CLI interface
 
 Available commands are: `make`, `migrate`, `list`, `explain`. Let's see them in detail by section.
 
-:information_source: *Assume that args `:models-file`, `:migrations-dir` and `:jdbc-url` supposed to be set in deps.edn alias.*
+:information_source: *Assume that args `:models-file`, `:migrations-dir` and `:jdbc-url` are supposed to be set in deps.edn alias.*
 
 Common args for all commands:
 
 | Argument            | Description                                | Required?                              | Possible values                                                                                  | Default value              |
 |---------------------|--------------------------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------|----------------------------|
-| `:models-file`      | Path to models' file.                      | `true` (only for `make`)               | string path (example: `"path/to/models.edn"`)                                                    | *not provided*             |
-| `:migrations-dir`   | Path to store migrations' files.           | `true`                                 | string path (example: `"path/to/migrations"`)                                                    | *not provided*             |
+| `:models-file`      | Path to models file.                       | `true` (only for `make`)               | string path (example: `"path/to/models.edn"`)                                                    | *not provided*             |
+| `:migrations-dir`   | Path to store migrations dir.              | `true`                                 | string path (example: `"path/to/migrations"`)                                                    | *not provided*             |
 | `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (only for `migrate` and `list`) | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | *not provided*             |
 | `:migrations-table` | Model name for storing applied migrations. | `false`                                | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"` |
 
-#### make
+#### `make`
 
-Create migration for new changes in models' file.
-It detects creating, updating and deleting of tables, columns and indexes.
+Create migration for new changes in models file.
+It detects the creating, updating and deleting of tables, columns and indexes.
 Each migration is wrapped by transaction by default.
 
 *Specific args:*
@@ -281,6 +293,7 @@ Each migration is wrapped by transaction by default.
 ##### Examples
 
 Create migration automatically with auto-generated name:
+
 ```shell
 $ clojure -X:migrations :make
 Created migration: resources/db/migrations/0001_auto_create_table_book.edn
@@ -289,6 +302,7 @@ Actions:
 ```
 
 Create migration automatically with custom name:
+
 ```shell
 $ clojure -X:migrations make :name create_table_author
 Created migration: resources/db/migrations/0002_create_table_author.edn
@@ -297,33 +311,35 @@ Actions:
 ```
 
 Create empty sql migration with custom name:
+
 ```shell
 $ clojure -X:migrations make :type :empty-sql :name add_custom_trigger
 Created migration: resources/db/migrations/0003_add_custom_trigger.sql
 ```
 
 Try to create migration without new changes in models:
+
 ```shell
 $ clojure -X:migrations make
 There are no changes in models.
 ```
 
 
-#### migrate
+#### `migrate`
 
-Apply changes described in migration to database.
-Tries to apply all unapplied migrations by number order if arg `:number` is not presented in command.
+Applies changes described in migration to database.
+Applies all unapplied migrations by number order if arg `:number` is not presented in command.
 Throws error for same migration number.
 
-:warning: *Backward migration is not fully implemented yet for auto-migrations, but already works for custom SQL migrations.
-For auto-migrations it is possible to unapply migration, and delete appropriate entry from migrations table.
+:warning: *Backward migration is not yet fully implemented for auto-migrations, but already works for custom SQL migrations.
+For auto-migrations, it is possible to unapply migration and to delete appropriate entry from migrations table.
 But database changes will not be unapplied for now.*
 
 *Specific args:*
 
-| Argument  | Description                                                                                                                                                                  | Required? | Possible values                                 | Default value                                    |
-|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------------------------------------------|--------------------------------------------------|
-| `:number` | Number of migration which should be a target point. In forward direction migration by number will by applied. In backward direction migration by number will not be applied. | `false`   | integer (example: `1` for migration `0001_...`) | *not provided*, last migration number by default |
+| Argument  | Description                                                                                                                                                                    | Required? | Possible values                                 | Default value                                    |
+|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------------------------------------------|--------------------------------------------------|
+| `:number` | Number of migration which should be a target point. In forward direction, migration by number will by applied. In backward direction, migration by number will not be applied. | `false`   | integer (example: `1` for migration `0001_...`) | *not provided*, last migration number by default |
 
 ##### Examples
 
@@ -382,10 +398,10 @@ $ clojure -X:migrations migrate :number 10
 Invalid target migration number.
 ```
 
-#### list
+#### `list`
 
 Print out list of existing migrations with statuses displayed as
-signs before migration name:
+boxes before migration name:
 - `[✓]` - applied;
 - `[ ]` - not applied.
 
@@ -401,16 +417,16 @@ $ clojure -X:migrations list
 [ ] 0003_add_custom_trigger.sql
 ```
 
-#### explain
+#### `explain`
 
 Print out actual raw SQL for particular migration by number.
 
 *Specific args:*
 
-| Argument      | Description                                      | Required?    | Possible values                                 | Default value  |
-|---------------|--------------------------------------------------|--------------|-------------------------------------------------|----------------|
-| `:number`     | Number of migration which should be explained.   | `true`       | integer (example: `1` for migration `0001_...`) | *not provided* |
-| `:direction`  | Direction in which migration should be explained | `false`      | `:forward`, `:backward`                         | `:forward`     |
+| Argument      | Description                                       | Required?    | Possible values                                 | Default value  |
+|---------------|---------------------------------------------------|--------------|-------------------------------------------------|----------------|
+| `:number`     | Number of migration which should be explained.    | `true`       | integer (example: `1` for migration `0001_...`) | *not provided* |
+| `:direction`  | Direction in which migration should be explained. | `false`      | `:forward`, `:backward`                         | `:forward`     |
 
 ##### Examples:
 
@@ -434,7 +450,7 @@ WARNING: backward migration isn't fully implemented yet.
 
 #### help/doc
 
-You can print docstring for function in default the namespace of the lib by running clojure cli `help/doc` function.
+You can print docstring for function in the default namespace of the lib by running clojure cli `help/doc` function.
 
 Print doc for all available functions:
 
@@ -458,17 +474,18 @@ automigrate.core/make
 
 ### Custom SQL migration 
 
-There are some specific cases which is not supported by auto-migrations for a while. 
-Or there are cases when you need to add simple data migration.
-You can add a custom SQL migration which contains a raw SQL for forward and backward direction separately in single sql-file.
-For that you could run command for making empty sql migration with custom name:
+There are some specific cases which are not yet supported by auto-migrations. 
+There are cases when you need to add simple data migration.
+You can add a custom SQL migration which contains raw SQL for forward and backward directions separately in single SQL-file.
+For that you can run the following command for making empty SQL migration with custom name:
 
 ```shell
 $ clojure -X:migrations make :type :empty-sql :name make_all_accounts_active
 Created migration: resources/db/migrations/0003_make_all_accounts_active.sql
 ```
 
-Newly created file will look like:
+The newly created file will look like:
+
 ```sql
 -- FORWARD
 
@@ -477,7 +494,8 @@ Newly created file will look like:
 
 ```
 
-You could fill it with two block of queries for forward and backward migration. For example:
+You can fill it with two block of queries for forward and backward migration. For example:
+
 ```sql
 -- FORWARD
 
@@ -501,12 +519,12 @@ Successfully migrated: 0003_make_all_accounts_active
 
 ### Use in production
 
-:warning: *For now the lib is not ready for production use. 
-But it is really appreciated if you try it for you personal projects! :wink:*
+:warning: *The library is not yet ready for production use. 
+But it is really appreciated if you try it out! :wink:*
 
-For now, there is just single way to configure db connection url as a `:jdbc-url` arg for a command.
+For now, there is just a single way to configure db connection url as a `:jdbc-url` arg for a command.
 The idea here is that you could override default dev `:jdbc-url` value from `deps.edn` by running `migrate`
-command with env var inlined, using bash-script, makefile or whatever you want:
+command with env var using bash-script, makefile or whatever you want:
 
 ```shell
 $ clojure -X:migrations migrate :jdbc-url $DATABASE_URL 
@@ -514,16 +532,7 @@ Migrating: ...
 ```
 
 *The downside of that approach could be a lack of ability to use a common config for a project.
-In the future there could be more convenient options for configuration if it will be needed.* 
-
-## Inspired by
-
-- [Django migrations](https://docs.djangoproject.com/en/4.0/topics/migrations/)
-
-### Huge thanks to other projects
-- [Honey SQL](https://github.com/seancorfield/honeysql)
-- [Dependency](https://github.com/weavejester/dependency)
-- [Differ](https://github.com/robinheghan/differ)
+In the future there could be more convenient options for configuration if needed.* 
 
 
 ## Roadmap draft
@@ -550,7 +559,23 @@ In the future there could be more convenient options for configuration if it wil
 - More consistent and helpful messages for users.
 - Ability to separate models by multiple files.
 - Move transformations out of conformers.
+- Most likely add option to disable field types validation in order to be able to use 
+the tool while not every type of database column is supported.
 
+
+## Inspired by
+
+- [Django migrations](https://docs.djangoproject.com/en/4.0/topics/migrations/)
+
+### Thanks to projects
+- [Honey SQL](https://github.com/seancorfield/honeysql)
+- [Dependency](https://github.com/weavejester/dependency)
+- [Differ](https://github.com/robinheghan/differ)
+
+
+## Materials
+
+- Blog post: [Announcing automigrate](https://bogoyavlensky.com/blog/announcing-automigrate/). 
 
 ## Development
 

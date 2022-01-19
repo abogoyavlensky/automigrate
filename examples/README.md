@@ -1,6 +1,8 @@
 # Example for automigrate
 
-Run database and simple admin UI for viewing db schema:
+This example shows a couple of models and several migrations for it. 
+
+Run the database and a simple admin UI for viewing the db schema:
 
 ```shell
 $ docker-compose up -d db adminer
@@ -29,7 +31,7 @@ Migrating: 0003_auto_add_column_amount...
 Successfully migrated: 0003_auto_add_column_amount
 ```
 
-Check migrations' status again:
+Check migration status again:
 
 ```shell
 $ docker-compose run demo clojure -X:migrations list
@@ -39,12 +41,12 @@ Creating examples_demo_run ... done
 [✓] 0003_auto_add_column_amount.edn
 ```
 
-Now you can open adminer UI in browser and check newly created tables by link: [http://localhost:8081/](http://localhost:8081/).
+Now you can open the adminer UI in browser and check newly created tables by link: [http://localhost:8081/](http://localhost:8081/).
 
-*Fill all credentials as `demo`.*
+:information_source: *Choose `System` as `PostgreSQL` and fill all credentials as `demo`.*
 
 ### Next steps
-To see creating in action you can change any model or add new one as it described 
+To see auto-migration in action you can change any model or add new one as it described 
 in [documentation](https://github.com/abogoyavlensky/automigrate#model-definition) and run 
 `$ docker-compose run demo clojure -X:migrations make`.
 
