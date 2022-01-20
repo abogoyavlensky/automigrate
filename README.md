@@ -602,9 +602,6 @@ make deploy-snapshot :patch  # build and deploy to Clojars next snapshot version
 make release :patch  # bump git tag version by semver rules and push to remote repo
 ```
 
-*In CI there is the [GitHub action](/.github/workflows/release.yaml) 
-which publish any new git tag as new version of the lib to Clojars.*
-
 
 ## License
 
