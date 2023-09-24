@@ -134,6 +134,7 @@
 (s/def ::default-bool boolean?)
 (s/def ::default-str string?)
 (s/def ::default-nil nil?)
+(s/def ::default-dec decimal?)
 
 
 (s/def ::default-fn (s/cat
@@ -163,6 +164,9 @@
   [_]
   ::default-str)
 
+(defmethod default-option BigDecimal
+  [_]
+  ::default-dec)
 
 (defmethod default-option nil
   [_]
@@ -280,6 +284,15 @@
 (defmethod validate-default-and-type :float
   [{:keys [default]}]
   (or (float? default) (nil? default)))
+
+
+(defmethod validate-default-and-type :decimal
+  [{:keys [default]}]
+  (or (string? default)
+    (decimal? default)
+    (int? default)
+    (float? default)
+    (nil? default)))
 
 
 (defmethod validate-default-and-type :default

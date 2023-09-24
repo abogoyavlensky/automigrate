@@ -918,15 +918,34 @@
         changed-models {:feed
                         {:fields [[:id :serial {:primary-key true}]
                                   [:name [:varchar 100]]
-                                  [:amount [:decimal 10 2] {:default 9.99}]]}}
+                                  [:amount [:decimal 10 2] {:default "9.99"}]
+                                  [:balance :decimal {:default 7.77M}]
+                                  [:tx [:decimal 6] {:default 6.4}]]}}
         expected-actions '({:action :add-column
+                            :field-name :tx
+                            :model-name :feed
+                            :options {:type [:decimal 6]
+                                      :default 6.4}}
+                           {:action :add-column
                             :field-name :amount
                             :model-name :feed
                             :options {:type [:decimal 10 2]
-                                      :default 9.99}})
+                                      :default "9.99"}}
+                           {:action :add-column
+                            :field-name :balance
+                            :model-name :feed
+                            :options {:type :decimal
+                                      :default 7.77M}})
         expected-q-edn '({:alter-table :feed
-                          :add-column (:amount [:decimal 10 2] [:default 9.99])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT 9.99"])]
+                          :add-column (:tx [:decimal 6] [:default 6.4])}
+                         {:alter-table :feed
+                          :add-column (:amount [:decimal 10 2] [:default "9.99"])}
+                         {:alter-table :feed
+                          :add-column (:balance :decimal [:default 7.77M])})
+        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
+                             ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
+                             ["ALTER TABLE feed ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
+
     (test-make-and-migrate-ok!
       existing-actions
       changed-models
@@ -954,6 +973,15 @@
                :numeric_scale nil
                :table_name "feed"}
               {:character_maximum_length nil
+               :column_default "6.4"
+               :column_name "tx"
+               :data_type "numeric"
+               :is_identity "NO"
+               :is_nullable "YES"
+               :numeric_precision 6
+               :numeric_scale 0
+               :table_name "feed"}
+              {:character_maximum_length nil
                :column_default "9.99"
                :column_name "amount"
                :data_type "numeric"
@@ -961,6 +989,15 @@
                :is_nullable "YES"
                :numeric_precision 10
                :numeric_scale 2
+               :table_name "feed"}
+              {:character_maximum_length nil
+               :column_default "7.77"
+               :column_name "balance"
+               :data_type "numeric"
+               :is_identity "NO"
+               :is_nullable "YES"
+               :numeric_precision nil
+               :numeric_scale nil
                :table_name "feed"}]
              (db-util/exec!
                db
@@ -994,4 +1031,3 @@
                 :join [[:pg-class :t] [:= :t.oid :c.conrelid]]
                 :where [:= :t.relname "feed"]
                 :order-by [:c.oid]}))))))
-
