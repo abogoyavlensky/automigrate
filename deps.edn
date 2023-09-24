@@ -18,7 +18,8 @@
   :test {:extra-paths ["test"]
          :extra-deps {eftest/eftest {:mvn/version "0.5.9"}
                       cloverage/cloverage {:mvn/version "1.2.2"}
-                      circleci/bond {:mvn/version "0.6.0"}}
+                      circleci/bond {:mvn/version "0.6.0"}
+                      org.clojure/test.check {:mvn/version "1.1.1"}}
          :exec-fn     cloverage.coverage/run-project
          :exec-args {:test-ns-path ["test"]
                      :src-ns-path ["src"]

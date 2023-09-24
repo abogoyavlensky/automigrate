@@ -838,3 +838,47 @@
       expected-actions
       expected-q-edn
       expected-q-sql)))
+
+(deftest test-make-and-migrate-add-decimal-field-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:name {:type [:varchar 100]}}})
+        changed-models {:feed
+                        {:fields [[:name [:varchar 100]]
+                                  [:amount [:decimal 10 2]]]}}
+        expected-actions '({:action :add-column
+                            :field-name :amount
+                            :model-name :feed
+                            :options {:type [:decimal 10 2]}})
+        expected-q-edn '({:alter-table :feed
+                          :add-column (:amount [:decimal 10 2])})
+        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2)"])]
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)))
+
+(deftest test-make-and-migrate-alter-numeric-field-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:name {:type [:varchar 100]}
+                                     :amount {:type [:numeric 10 2]}}})
+        changed-models {:feed
+                        {:fields [[:name [:varchar 100]]
+                                  [:amount [:numeric 10]]]}}
+        expected-actions '({:action :alter-column
+                            :field-name :amount
+                            :model-name :feed
+                            :options {:type [:numeric 10]}
+                            :changes {:type {:from [:numeric 10 2]
+                                             :to [:numeric 10]}}})
+        expected-q-edn '({:alter-table (:feed {:alter-column [:amount :type [:numeric 10]]})})
+        expected-q-sql (list ["ALTER TABLE feed ALTER COLUMN amount TYPE NUMERIC(10)"])]
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)))

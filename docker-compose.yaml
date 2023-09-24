@@ -15,13 +15,6 @@ services:
       POSTGRES_USER: automigrate
       POSTGRES_PASSWORD: automigrate
 
-  adminer:
-    image: adminer
-    ports:
-      - 8080:8080
-    environment:
-      ADMINER_DEFAULT_SERVER: db
-
   # Database for testing
 
   test-postgres:

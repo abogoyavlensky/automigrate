@@ -190,26 +190,28 @@ The first element is the name of a field and must be a keyword.
 The second element could be a keyword or a vector of keyword and integer. 
 Available field types are presented in the following table:
 
-| Field type             | Description                                                         |
-|------------------------|---------------------------------------------------------------------|
-| `:integer`             |                                                                     |
-| `:smallint`            |                                                                     |
-| `:bigint`              |                                                                     |
-| `:float`               |                                                                     |
-| `:real`                |                                                                     |
-| `:serial`              | auto-incremented integer field                                      |
-| `:uuid`                |                                                                     |
-| `:boolean`             |                                                                     |
-| `:text`                |                                                                     |
-| `:timestamp`           |                                                                     |
-| `:date`                |                                                                     |
-| `:time`                |                                                                     |
-| `:point`               |                                                                     |
-| `:json`                |                                                                     |
-| `:jsonb`               |                                                                     |
-| `[:varchar <pos-int>]` | second element is the length of value                               |
-| `[:char <pos-int>]`    | second element is the length of value                               |
-| `[:float <pos-int>]`   | second element is the minimum acceptable precision in binary digits |
+| Field type                     | Description                                                         |
+|--------------------------------|---------------------------------------------------------------------|
+| `:integer`                     |                                                                     |
+| `:smallint`                    |                                                                     |
+| `:bigint`                      |                                                                     |
+| `:float`                       |                                                                     |
+| `:real`                        |                                                                     |
+| `:serial`                      | auto-incremented integer field                                      |
+| `:uuid`                        |                                                                     |
+| `:boolean`                     |                                                                     |
+| `:text`                        |                                                                     |
+| `:timestamp`                   |                                                                     |
+| `:timestamp-with-time-zone`    |                                                                     |
+| `:timestamp-without-time-zone` |                                                                     |
+| `:date`                        |                                                                     |
+| `:time`                        |                                                                     |
+| `:point`                       |                                                                     |
+| `:json`                        |                                                                     |
+| `:jsonb`                       |                                                                     |
+| `[:varchar <pos-int>]`         | second element is the length of value                               |
+| `[:char <pos-int>]`            | second element is the length of value                               |
+| `[:float <pos-int>]`           | second element is the minimum acceptable precision in binary digits |
 
 :information_source: *There are fixed field types because `automigrate` 
 validates type of field and default value to have errors as early as possible 
