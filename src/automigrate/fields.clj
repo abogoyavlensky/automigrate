@@ -164,9 +164,11 @@
   [_]
   ::default-str)
 
+
 (defmethod default-option BigDecimal
   [_]
   ::default-dec)
+
 
 (defmethod default-option nil
   [_]
@@ -290,6 +292,7 @@
   (fn [value]
     (and (string? value)
       (number? (read-string value)))))
+
 
 (defmethod validate-default-and-type :decimal
   [{:keys [default]}]
