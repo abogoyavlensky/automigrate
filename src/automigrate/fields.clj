@@ -286,9 +286,14 @@
   (or (float? default) (nil? default)))
 
 
+(s/def ::numeric-str
+  (fn [value]
+    (and (string? value)
+      (number? (read-string value)))))
+
 (defmethod validate-default-and-type :decimal
   [{:keys [default]}]
-  (or (string? default)
+  (or (s/valid? ::numeric-str default)
     (decimal? default)
     (int? default)
     (float? default)
