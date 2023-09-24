@@ -733,7 +733,30 @@
         expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
                                 "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) "
                                 "REFERENCES ACCOUNT(ID) ON DELETE SET NULL")])]
-    (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
+    (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)
+    (testing "test constraints [another option to test constraints]"
+      (is (= [{:colname "id"
+               :constraint_name "account_pkey"
+               :constraint_type "PRIMARY KEY"
+               :table_name "account"}
+              {:colname "id"
+               :constraint_name "feed_account_fkey"
+               :constraint_type "FOREIGN KEY"
+               :table_name "feed"}]
+             (db-util/exec!
+               config/DATABASE-CONN
+               {:select [:tc.constraint_name
+                         :tc.constraint_type
+                         :tc.table_name
+                         [:ccu.column_name :colname]]
+                :from [[:information_schema.table_constraints :tc]]
+                :join [[:information_schema.key_column_usage :kcu]
+                       [:= :tc.constraint_name :kcu.constraint_name]
+
+                       [:information_schema.constraint_column_usage :ccu]
+                       [:= :ccu.constraint_name :tc.constraint_name]]
+                :where [:in :ccu.table_name ["feed" "account"]]
+                :order-by [:tc.constraint_name]}))))))
 
 
 (deftest test-make-and-migrate-remove-fk-option-on-field-ok
@@ -882,3 +905,91 @@
       expected-actions
       expected-q-edn
       expected-q-sql)))
+
+(deftest test-make-and-migrate-add-decimal-field-with-default-value-ok
+  (let [db config/DATABASE-CONN
+        existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:id {:type :serial
+                                          :primary-key true}
+                                     :name {:type [:varchar 100]}}})
+        changed-models {:feed
+                        {:fields [[:id :serial {:primary-key true}]
+                                  [:name [:varchar 100]]
+                                  [:amount [:decimal 10 2] {:default 9.99}]]}}
+        expected-actions '({:action :add-column
+                            :field-name :amount
+                            :model-name :feed
+                            :options {:type [:decimal 10 2]
+                                      :default 9.99}})
+        expected-q-edn '({:alter-table :feed
+                          :add-column (:amount [:decimal 10 2] [:default 9.99])})
+        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT 9.99"])]
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "test actual db schema after applying the migration"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('feed_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :is_identity "NO"
+               :is_nullable "NO"
+               :numeric_precision 32
+               :numeric_scale 0
+               :table_name "feed"}
+              {:character_maximum_length 100
+               :column_default nil
+               :column_name "name"
+               :data_type "character varying"
+               :is_identity "NO"
+               :is_nullable "YES"
+               :numeric_precision nil
+               :numeric_scale nil
+               :table_name "feed"}
+              {:character_maximum_length nil
+               :column_default "9.99"
+               :column_name "amount"
+               :data_type "numeric"
+               :is_identity "NO"
+               :is_nullable "YES"
+               :numeric_precision 10
+               :numeric_scale 2
+               :table_name "feed"}]
+             (db-util/exec!
+               db
+               {:select [:table-name :data-type :column-name :column-default
+                         :is-nullable :is-identity :numeric-precision
+                         :numeric-scale :character-maximum-length]
+                :from [:information-schema.columns]
+                :where [:= :table-name "feed"]
+                :order-by [:ordinal-position]}))))
+
+    (testing "test indexes"
+      (is (= [{:indexdef "CREATE UNIQUE INDEX feed_pkey ON public.feed USING btree (id)"
+               :indexname "feed_pkey"
+               :schemaname "public"
+               :tablename "feed"
+               :tablespace nil}]
+             (db-util/exec!
+               db
+               {:select [:*]
+                :from [:pg-indexes]
+                :where [:= :tablename "feed"]
+                :order-by [:indexname]}))))
+
+    (testing "test constraints"
+      (is (= [{:conname "feed_pkey"
+               :contype "p"}]
+             (db-util/exec!
+               db
+               {:select [:c.conname :c.contype]
+                :from [[:pg-constraint :c]]
+                :join [[:pg-class :t] [:= :t.oid :c.conrelid]]
+                :where [:= :t.relname "feed"]
+                :order-by [:c.oid]}))))))
+
