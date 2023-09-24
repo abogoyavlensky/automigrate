@@ -348,14 +348,14 @@
               "DROP CONSTRAINT account_pkey")
             "ALTER TABLE feed DROP COLUMN url"
             "DROP TABLE IF EXISTS feed"
-            "CREATE TABLE feed (account SERIAL REFERENCES ACCOUNT(ID))"
+            "CREATE TABLE feed (account SERIAL REFERENCES account(id))"
             "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
             (str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey,"
-              " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) REFERENCES ACCOUNT(ID)")
-            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"
+              " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES account(id)")
+            "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
             "DROP INDEX feed_name_idx"
             "DROP INDEX feed_name_idx"
-            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"
+            "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
             "COMMIT;"]
           (-> (bond/calls file-util/safe-println)
             (last)
@@ -460,7 +460,6 @@
 
 (deftest test-make-and-migrate-create-index-on-new-model-ok
   (let [existing-actions '()]
-    #_{:clj-kondo/ignore [:private-call]}
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly {:feed
@@ -492,7 +491,7 @@
                 queries)))
         (testing "test converting actions to sql"
           (is (= '(["CREATE TABLE feed (id SERIAL NOT NULL, name TEXT)"]
-                   ["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(NAME)"])
+                   ["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
                 (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
@@ -534,7 +533,7 @@
                     [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
                 queries)))
         (testing "test converting actions to sql"
-          (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(NAME)"])
+          (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
                 (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
@@ -624,7 +623,7 @@
                 queries)))
         (testing "test converting actions to sql"
           (is (= '((["DROP INDEX feed_name_id_idx"]
-                    ["CREATE INDEX feed_name_id_idx ON FEED USING BTREE(NAME)"]))
+                    ["CREATE INDEX feed_name_id_idx ON FEED USING BTREE(name)"]))
                 (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
@@ -691,7 +690,7 @@
                                         [:raw "on delete"]
                                         [:raw "cascade"]),
                           :alter-table :feed})
-        expected-q-sql '(["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES ACCOUNT(ID) ON DELETE CASCADE"])]
+        expected-q-sql '(["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
     (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
 
 
@@ -731,8 +730,8 @@
                                                             [:raw "on delete"]
                                                             [:raw "set null"])})})
         expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
-                                "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) "
-                                "REFERENCES ACCOUNT(ID) ON DELETE SET NULL")])]
+                                "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
+                                "REFERENCES account(id) on delete set null")])]
     (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)
     (testing "test constraints [another option to test constraints]"
       (is (= [{:colname "id"
