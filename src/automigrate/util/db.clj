@@ -13,13 +13,6 @@
 
 ; Additional sql clauses
 
-(honey/register-clause! :alter-column
-  (fn [k spec]
-    ; TODO: try to check second place of :type, :set, :drop
-    (#'honey/format-add-item k spec))
-  :rename-column)
-
-
 (honey/register-clause! :drop-constraint
   (fn [k spec]
     (#'honey/format-selector k spec))
