@@ -862,6 +862,7 @@
       expected-q-edn
       expected-q-sql)))
 
+
 (deftest test-make-and-migrate-add-decimal-field-ok
   (let [existing-actions '({:action :create-table
                             :model-name :feed
@@ -882,6 +883,7 @@
       expected-actions
       expected-q-edn
       expected-q-sql)))
+
 
 (deftest test-make-and-migrate-alter-numeric-field-ok
   (let [existing-actions '({:action :create-table
@@ -905,6 +907,7 @@
       expected-actions
       expected-q-edn
       expected-q-sql)))
+
 
 (deftest test-make-and-migrate-add-decimal-field-with-default-value-ok
   (let [db config/DATABASE-CONN

@@ -21,6 +21,7 @@
 
 (s/def ::float-type (s/tuple #{:float} pos-int?))
 
+
 (s/def ::decimal
   (s/and
     (s/cat
@@ -31,6 +32,7 @@
       (fn [value]
         (->> (vector (:type value) (:precision value) (:scale value))
              (filterv #(not (nil? %))))))))
+
 
 (s/def ::keyword-type
   ; TODO: switch available fields according to db dialect!
@@ -60,6 +62,7 @@
   (cond
     (keyword? value) :keyword
     (vector? value) (first value)))
+
 
 (defmulti field-type field-type-dispatch)
 

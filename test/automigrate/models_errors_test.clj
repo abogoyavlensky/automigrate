@@ -628,6 +628,7 @@
                       :models-file (str config/MODELS-DIR "feed_errors.edn")
                       :title "COMMAND ERROR"})))))
 
+
 (deftest test-spec-field-vec-invalid-decimal-field-type-error
   (testing "check valid decimal type"
     (let [data {:foo [[:amount :decimal]]}]

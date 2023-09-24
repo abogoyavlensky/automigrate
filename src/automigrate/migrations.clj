@@ -213,6 +213,7 @@
     to-add
     to-drop))
 
+
 (defn- assoc-option-to-add
   [old-field changes option-key new-option-value]
   (let [old-option-value (if (contains? old-field option-key)
@@ -678,8 +679,8 @@
 
 
 (defmethod exec-action! [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
-  [_])
   ; TODO: implement backward migration!
+  [_])
 
 
 (defmethod exec-action! [SQL-MIGRATION-EXT FORWARD-DIRECTION]

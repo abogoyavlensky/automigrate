@@ -25,6 +25,7 @@
               :options {:type [:varchar 100], :null true}})
           (#'migrations/make-migration* "" [])))))
 
+
 (deftest test-make-migration*-add-column-decimal-ok
                   ; read pre-existing migration for creating a model with just the id field
   (bond/with-stub [[schema/load-migrations-from-files (constantly
@@ -51,6 +52,7 @@
               :options {:type [:decimal 10] :default 47.23}})
             (#'migrations/make-migration* "" [])))))
 
+
 (deftest test-make-migration*-add-column-restore-ok
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
@@ -70,6 +72,7 @@
                                                      [:created_at :timestamp {:default [:now]}]]})]]
     (is (not (seq (#'migrations/make-migration* "" []))))))
 
+
 (deftest test-make-migration*-add-column-restore-decimal-ok
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
@@ -83,6 +86,7 @@
                                  [[:id :serial {:null false}]
                                   [:amount [:decimal 10 2] {:null false}]]})]]
     (is (= [] (#'migrations/make-migration* "" [])))))
+
 
 (deftest test-make-migration*-alter-column-decimal-ok
   (bond/with-stub [[schema/load-migrations-from-files
@@ -104,6 +108,7 @@
                  :options {:null false
                            :type [:decimal 10]}})
               (#'migrations/make-migration* "" [])))))
+
 
 (deftest test-make-migration*-alter-column-restore-ok
   (bond/with-stub [[schema/load-migrations-from-files (constantly
