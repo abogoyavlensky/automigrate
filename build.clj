@@ -91,7 +91,7 @@
         new-version (cond-> latest-version
                       (some? bump) (bump-version bump)
                       (true? snapshot?) (add-snapshot))]
-    _ (prn (format "New version: %s" latest-version))
+    _ (prn (format "New version: %s" new-version))
     new-version))
 
 
@@ -118,7 +118,8 @@
   (-> opts
     (assoc
       :lib lib
-      :version (version (select-keys opts [:snapshot? :release? :bump])))
+      :version (version (select-keys opts [:snapshot? :release? :bump]))
+      :src-pom "template/pom.xml")
     (build-clj/clean)
     (build-clj/jar)))
 
