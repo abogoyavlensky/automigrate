@@ -34,12 +34,14 @@
 
 
 (s/def ::snapshot? boolean?)
+(s/def ::release? boolean?)
 (s/def ::bump #{:major :minor :patch})
 
 
 (s/def ::version-args
   (s/keys
     :opt-un [::snapshot?
+             ::release?
              ::bump]))
 
 
@@ -113,7 +115,7 @@
   (-> opts
     (assoc
       :lib lib
-      :version (version (select-keys opts [:snapshot? :bump])))
+      :version (version (select-keys opts [:snapshot? :release? :bump])))
     (build-clj/clean)
     (build-clj/jar)))
 
@@ -135,7 +137,7 @@
 
 
 (defn release
-  "Bump latest git tag version, create and push new git tag with next version."
+  "Bump the latest git tag version, create and push new git tag with next version."
   [opts]
   (-> opts
     (assoc

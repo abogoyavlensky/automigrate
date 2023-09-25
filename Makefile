@@ -125,7 +125,7 @@ next-changelog:
 	@npx auto-changelog --output NEXT-CHANGELOG.md --template keepachangelog
 
 
-.PHONY: release  # Bump tag version and push it to remote rpeo
+.PHONY: release  # Bump tag version and push it to remote repo
 release:
 	@$(INFO) "Deploying jar-file to Clojars..."
 	@clojure -T:build release :bump $(GOALS)

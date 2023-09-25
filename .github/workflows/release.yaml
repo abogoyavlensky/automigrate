@@ -1,0 +1,20 @@
+name: Release
+
+
+on:
+  push:
+    tags:
+      - "*"
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build jar-file and deploy to Clojars
+        run: docker-compose run --rm build bash -c "make deploy-ci"
+        env:
+          CLOJARS_PASSWORD: ${{secrets.CLOJARS_PASSWORD}}
+          CLOJARS_USERNAME: ${{secrets.CLOJARS_USERNAME}}
