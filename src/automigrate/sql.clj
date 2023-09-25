@@ -232,6 +232,21 @@
      :changes-to-drop (disj changes-to-drop :on-delete :on-update)}))
 
 
+(defn- sql-changes-for-fk
+  [{:keys [model-name field-name field-value action-changes]}]
+  (let [from-value-empty? (= :EMPTY (get-in action-changes [:foreign-key :from]))
+        drop-constraint {:drop-constraint
+                         [[:raw "IF EXISTS"]
+                          (foreign-key-index-name model-name field-name)]}
+        add-constraint {:add-constraint
+                        (concat [(foreign-key-index-name model-name field-name)
+                                 [:foreign-key field-name]]
+                          field-value)}]
+    (cond-> []
+      (not from-value-empty?) (conj drop-constraint)
+      true (conj add-constraint))))
+
+
 (s/def ::alter-column->sql
   (s/conformer
     (fn [action]
@@ -246,13 +261,10 @@
                         :default {:alter-column [field-name :set value]}
                         :unique {:add-index [:unique nil field-name]}
                         :primary-key {:add-index [:primary-key field-name]}
-                        ; TODO: drop constraint if foreign-key has been changed key itself!
-                        ; Don't drop if foreign-key was empty!
-                        :foreign-key [{:drop-constraint [[:raw "IF EXISTS"] (foreign-key-index-name model-name field-name)]}
-                                      {:add-constraint
-                                       (concat [(foreign-key-index-name model-name field-name)
-                                                [:foreign-key field-name]]
-                                         value)}]))
+                        :foreign-key (sql-changes-for-fk {:model-name model-name
+                                                          :field-name field-name
+                                                          :field-value value
+                                                          :action-changes (:changes action)})))
 
             dropped (for [option changes-to-drop
                           :let [field-name (:field-name action)

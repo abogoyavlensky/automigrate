@@ -350,7 +350,7 @@
             "DROP TABLE IF EXISTS feed"
             "CREATE TABLE feed (account SERIAL REFERENCES account(id))"
             "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
-            (str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey,"
+            (str "ALTER TABLE feed"
               " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES account(id)")
             "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
             "DROP INDEX feed_name_idx"
@@ -1031,3 +1031,161 @@
                :join [[:pg-class :t] [:= :t.oid :c.conrelid]]
                :where [:= :t.relname "feed"]
                :order-by [:c.oid]}))))))
+
+
+(deftest test-make-and-migrate-add-char-field-with-default-value-ok
+  (let [db config/DATABASE-CONN
+        existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:id {:type :serial
+                                          :primary-key true}}})
+        changed-models {:feed
+                        {:fields [[:id :serial {:primary-key true}]
+                                  [:name [:varchar 10] {:default "test"}]]}}
+        expected-actions '({:action :add-column
+                            :field-name :name
+                            :model-name :feed
+                            :options {:type [:varchar 10]
+                                      :default "test"}})
+        expected-q-edn '({:alter-table :feed
+                          :add-column (:name [:varchar 10] [:default "test"])})
+        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
+
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "test actual db schema after applying the migration"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('feed_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :is_nullable "NO"
+               :table_name "feed"}
+              {:character_maximum_length 10
+               :column_default "'test'::character varying"
+               :column_name "name"
+               :data_type "character varying"
+               :is_nullable "YES"
+               :table_name "feed"}]
+            (db-util/exec!
+              db
+              {:select [:table-name :data-type :column-name :column-default
+                        :is-nullable :character-maximum-length]
+               :from [:information-schema.columns]
+               :where [:= :table-name "feed"]
+               :order-by [:ordinal-position]}))))))
+
+
+(deftest test-make-and-migrate-alter-fk-if-fk-was-empty-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:id {:type :serial}
+                                     :account {:type :integer}}}
+                           {:action :create-table
+                            :model-name :customer
+                            :fields {:id {:type :serial
+                                          :unique true}}})
+
+        changed-models {:customer
+                        {:fields [[:id :serial {:unique true}]]}
+
+                        :feed
+                        {:fields [[:id :serial]
+                                  [:account :integer {:foreign-key :customer/id}]]}}
+        expected-actions '({:action :alter-column
+                            :field-name :account
+                            :model-name :feed
+                            :options {:type :integer
+                                      :foreign-key :customer/id}
+                            :changes {:foreign-key {:from :EMPTY
+                                                    :to :customer/id}}})
+        expected-q-edn '({:alter-table
+                          (:feed
+                            {:add-constraint (:feed-account-fkey
+                                               [:foreign-key :account]
+                                               (:references :customer :id))})})
+        expected-q-sql (list [(str "ALTER TABLE feed"
+                                " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
+
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "test constraints"
+      (is (= [{:colname "id"
+               :constraint_name "customer_id_key"
+               :constraint_type "UNIQUE"
+               :table_name "customer"}
+              {:colname "id"
+               :constraint_name "feed_account_fkey"
+               :constraint_type "FOREIGN KEY"
+               :table_name "feed"}]
+            (db-util/exec!
+              config/DATABASE-CONN
+              {:select [:tc.constraint_name
+                        :tc.constraint_type
+                        :tc.table_name
+                        [:ccu.column_name :colname]]
+               :from [[:information_schema.table_constraints :tc]]
+               :join [[:information_schema.key_column_usage :kcu]
+                      [:= :tc.constraint_name :kcu.constraint_name]
+
+                      [:information_schema.constraint_column_usage :ccu]
+                      [:= :ccu.constraint_name :tc.constraint_name]]
+               :where [:in :ccu.table_name ["feed" "customer"]]
+               :order-by [:tc.constraint_name]}))))))
+
+
+(deftest test-make-and-migrate-alter-fk-drop-constraint-on-key-change-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial
+                                          :unique true}}}
+                           {:action :create-table
+                            :model-name :feed
+                            :fields {:id {:type :serial}
+                                     :account {:type :integer
+                                               :foreign-key :account/id}}}
+                           {:action :create-table
+                            :model-name :customer
+                            :fields {:id {:type :serial
+                                          :unique true}}})
+
+        changed-models {:account
+                        {:fields [[:id :serial {:unique true}]]}
+
+                        :customer
+                        {:fields [[:id :serial {:unique true}]]}
+
+                        :feed
+                        {:fields [[:id :serial]
+                                  [:account :integer {:foreign-key :customer/id}]]}}
+        expected-actions '({:action :alter-column
+                            :field-name :account
+                            :model-name :feed
+                            :options {:type :integer
+                                      :foreign-key :customer/id}
+                            :changes {:foreign-key {:from :account/id
+                                                    :to :customer/id}}})
+        expected-q-edn '({:alter-table
+                          (:feed
+                            {:drop-constraint [[:raw "IF EXISTS"] :feed-account-fkey]}
+                            {:add-constraint (:feed-account-fkey
+                                               [:foreign-key :account]
+                                               (:references :customer :id))})})
+        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey"
+                                ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
+
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)))
