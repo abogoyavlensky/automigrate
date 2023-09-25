@@ -234,8 +234,8 @@
 (defn- get-changes
   [old-options options-to-add options-to-drop]
   (as-> {} $
-        (reduce-kv (partial assoc-option-to-add old-options) $ options-to-add)
-        (reduce (partial assoc-option-to-drop old-options) $ options-to-drop)))
+    (reduce-kv (partial assoc-option-to-add old-options) $ options-to-add)
+    (reduce (partial assoc-option-to-drop old-options) $ options-to-drop)))
 
 
 (defn- get-options-to-add
@@ -354,8 +354,8 @@
   (let [deps (action-dependencies next-action)
         parent-actions (filter (partial parent-action? deps) actions)]
     (as-> graph g
-          (dep/depend g next-action DEFAULT-ROOT-NODE)
-          (reduce #(dep/depend %1 next-action %2) g parent-actions))))
+      (dep/depend g next-action DEFAULT-ROOT-NODE)
+      (reduce #(dep/depend %1 next-action %2) g parent-actions))))
 
 
 (defn- compare-actions
@@ -804,7 +804,7 @@
     (set (already-migrated db migrations-table))
     (catch [:type ::no-migrations-table]
       ; There is no migrated migrations if table doesn't exist.
-           [])))
+      [])))
 
 
 (defn list-migrations

@@ -27,7 +27,7 @@
 
 
 (deftest test-make-migration*-add-column-decimal-ok
-                  ; read pre-existing migration for creating a model with just the id field
+  ; read pre-existing migration for creating a model with just the id field
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
                                                             :model-name :feed,
@@ -50,7 +50,7 @@
               :field-name :balance
               :model-name :feed
               :options {:type [:decimal 10] :default 47.23}})
-            (#'migrations/make-migration* "" [])))))
+          (#'migrations/make-migration* "" [])))))
 
 
 (deftest test-make-migration*-add-column-restore-ok
@@ -100,14 +100,14 @@
                     (constantly {:feed
                                  [[:id :serial {:null false}]
                                   [:amount [:decimal 10] {:null false}]]})]]
-       (is (= '({:action :alter-column
-                 :changes {:type {:from [:decimal 10 2]
-                                  :to [:decimal 10]}}
-                 :field-name :amount
-                 :model-name :feed
-                 :options {:null false
-                           :type [:decimal 10]}})
-              (#'migrations/make-migration* "" [])))))
+    (is (= '({:action :alter-column
+              :changes {:type {:from [:decimal 10 2]
+                               :to [:decimal 10]}}
+              :field-name :amount
+              :model-name :feed
+              :options {:null false
+                        :type [:decimal 10]}})
+          (#'migrations/make-migration* "" [])))))
 
 
 (deftest test-make-migration*-alter-column-restore-ok

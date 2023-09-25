@@ -31,7 +31,7 @@
     (s/conformer
       (fn [value]
         (->> (vector (:type value) (:precision value) (:scale value))
-             (filterv #(not (nil? %))))))))
+          (filterv #(not (nil? %))))))))
 
 
 (s/def ::keyword-type
