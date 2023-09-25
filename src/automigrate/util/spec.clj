@@ -5,6 +5,21 @@
             [automigrate.errors :as spec-errors]))
 
 
+(defn assert!
+  "Check value against spec, throw detailed exception if it failed otherwise return true.
+
+  Based on clojure.spec.alpha/assert*:
+  https://github.com/clojure/spec.alpha/blob/13bf36628eb02904155d0bf0d140f591783c51af/src/main/clojure/clojure/spec/alpha.clj#L1966-L1975"
+  [spec value]
+  (if (s/valid? spec value)
+    true
+    (let [ed (merge (assoc (s/explain-data* spec [] [] [] value)
+                      ::s/failure :assertion-failed))]
+      (throw (ex-info
+               (str "Spec assertion failed\n" (with-out-str (s/explain-out ed)))
+               ed)))))
+
+
 (defn tagged->value
   "Convert tagged value to vector or identity without a tag."
   [tagged]
@@ -43,7 +58,7 @@
 
 (defn specs->dict
   [specs]
-  {:pre [(s/assert (s/coll-of qualified-keyword?) specs)]}
+  {:pre [(assert! (s/coll-of qualified-keyword?) specs)]}
   (reduce #(assoc %1 (-> %2 name keyword) %2) {} specs))
 
 

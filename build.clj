@@ -6,7 +6,7 @@
             [clojure.string :as str]))
 
 
-; Enable asserts for spec in function's pre and post conditions
+; Enable asserts for spec
 (s/check-asserts true)
 
 
@@ -80,7 +80,7 @@
 
   Optionally you could bump any part of version or add snapshot suffix."
   [{:keys [snapshot? bump release?] :as version-args}]
-  {:pre [(s/assert ::version-args version-args)]}
+  {:pre [(s/valid? ::version-args version-args)]}
   (let [latest-version (if (true? release?)
                          (latest-git-tag-name)
                          (latest-git-tag-name-across-all-branches))]
