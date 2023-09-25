@@ -10,10 +10,10 @@ All notable changes to this project will be documented in this file.
 
 - Add numeric/decimal type of field.
 
-
 ### Fixed
 
-- Do not capitalize string `:default` option. Fixed by upgrading honeysql. 
+- Do not capitalize string `:default` option. Fixed by upgrading honeysql.
+- Do not drop fk constraint if field didn't have fk option. 
 
 ### Changed
 
