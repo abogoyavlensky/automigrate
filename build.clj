@@ -85,11 +85,14 @@
   {:pre [(s/valid? ::version-args version-args)]}
   (let [latest-version (if (true? release?)
                          (latest-git-tag-name)
-                         (latest-git-tag-name-across-all-branches))]
-    (s/assert ::version (split-git-tag latest-version))
-    (cond-> latest-version
-      (some? bump) (bump-version bump)
-      (true? snapshot?) (add-snapshot))))
+                         (latest-git-tag-name-across-all-branches))
+        _ (s/assert ::version (split-git-tag latest-version))
+        _ (prn (format "Latest version: %s" latest-version))
+        new-version (cond-> latest-version
+                      (some? bump) (bump-version bump)
+                      (true? snapshot?) (add-snapshot))]
+    _ (prn (format "New version: %s" latest-version))
+    new-version))
 
 
 (defn- create-git-tag
