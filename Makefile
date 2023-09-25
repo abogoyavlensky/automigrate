@@ -46,13 +46,13 @@ fmt:
 .PHONY: lint  # Linting code
 lint:
 	@$(INFO) "Linting project..."
-	@clj-kondo --config .clj-kondo/config-ci.edn --lint $(DIRS)
+	@clj-kondo --parallel --dependencies --copy-configs --lint $(DIRS)
 
 
 .PHONY: lint-init  # Linting code with libraries
 lint-init:
 	@$(INFO) "Linting project's classpath..."
-	@clj-kondo --config .clj-kondo/config-ci.edn --lint $(shell clj -Spath)
+	@clj-kondo --parallel --lint $(shell clj -Spath)
 
 
 .PHONY: check-deps  # Check deps versions

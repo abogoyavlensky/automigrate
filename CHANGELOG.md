@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Do not capitalize string `:default` option. Fixed by upgrading honeysql.
-- Do not drop fk constraint if field didn't have fk option. 
+- Do not drop fk constraint if fk option for field was empty. 
 
 ### Changed
 

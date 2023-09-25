@@ -232,7 +232,7 @@
      :changes-to-drop (disj changes-to-drop :on-delete :on-update)}))
 
 
-(defn- changes-for-fk
+(defn- sql-changes-for-fk
   [{:keys [model-name field-name field-value action-changes]}]
   (let [from-value-empty? (= :EMPTY (get-in action-changes [:foreign-key :from]))
         drop-constraint {:drop-constraint
@@ -261,12 +261,10 @@
                         :default {:alter-column [field-name :set value]}
                         :unique {:add-index [:unique nil field-name]}
                         :primary-key {:add-index [:primary-key field-name]}
-                        ; TODO: drop constraint if foreign-key has been changed key itself!
-                        ; Don't drop if foreign-key was empty!
-                        :foreign-key (changes-for-fk {:model-name model-name
-                                                      :field-name field-name
-                                                      :field-value value
-                                                      :action-changes (:changes action)})))
+                        :foreign-key (sql-changes-for-fk {:model-name model-name
+                                                          :field-name field-name
+                                                          :field-value value
+                                                          :action-changes (:changes action)})))
 
             dropped (for [option changes-to-drop
                           :let [field-name (:field-name action)

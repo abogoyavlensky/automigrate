@@ -1,4 +1,5 @@
-{:linters {:single-key-in {:level :warning}
+{:linters {:skip-comments true
+           :single-key-in {:level :warning}
            :shadowed-var {:level :warning}
            :private-call {:level :off}
            :refer-all {:exclude [clojure.test

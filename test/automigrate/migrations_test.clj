@@ -1079,9 +1079,9 @@
                :where [:= :table-name "feed"]
                :order-by [:ordinal-position]}))))))
 
+
 (deftest test-make-and-migrate-alter-fk-if-fk-was-empty-ok
-  (let [db config/DATABASE-CONN
-        existing-actions '({:action :create-table
+  (let [existing-actions '({:action :create-table
                             :model-name :feed
                             :fields {:id {:type :serial}
                                      :account {:type :integer}}}
@@ -1109,7 +1109,7 @@
                                                [:foreign-key :account]
                                                (:references :customer :id))})})
         expected-q-sql (list [(str "ALTER TABLE feed"
-                                   " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
+                                " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
     (test-make-and-migrate-ok!
       existing-actions
@@ -1127,24 +1127,24 @@
                :constraint_name "feed_account_fkey"
                :constraint_type "FOREIGN KEY"
                :table_name "feed"}]
-             (db-util/exec!
-               config/DATABASE-CONN
-               {:select [:tc.constraint_name
-                         :tc.constraint_type
-                         :tc.table_name
-                         [:ccu.column_name :colname]]
-                :from [[:information_schema.table_constraints :tc]]
-                :join [[:information_schema.key_column_usage :kcu]
-                       [:= :tc.constraint_name :kcu.constraint_name]
+            (db-util/exec!
+              config/DATABASE-CONN
+              {:select [:tc.constraint_name
+                        :tc.constraint_type
+                        :tc.table_name
+                        [:ccu.column_name :colname]]
+               :from [[:information_schema.table_constraints :tc]]
+               :join [[:information_schema.key_column_usage :kcu]
+                      [:= :tc.constraint_name :kcu.constraint_name]
 
-                       [:information_schema.constraint_column_usage :ccu]
-                       [:= :ccu.constraint_name :tc.constraint_name]]
-                :where [:in :ccu.table_name ["feed" "customer"]]
-                :order-by [:tc.constraint_name]}))))))
+                      [:information_schema.constraint_column_usage :ccu]
+                      [:= :ccu.constraint_name :tc.constraint_name]]
+               :where [:in :ccu.table_name ["feed" "customer"]]
+               :order-by [:tc.constraint_name]}))))))
+
 
 (deftest test-make-and-migrate-alter-fk-drop-constraint-on-key-change-ok
-  (let [db config/DATABASE-CONN
-        existing-actions '({:action :create-table
+  (let [existing-actions '({:action :create-table
                             :model-name :account
                             :fields {:id {:type :serial
                                           :unique true}}}
@@ -1181,7 +1181,7 @@
                                                [:foreign-key :account]
                                                (:references :customer :id))})})
         expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey"
-                                   ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
+                                ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
     (test-make-and-migrate-ok!
       existing-actions
