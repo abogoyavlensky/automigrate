@@ -1,10 +1,14 @@
 {:rules
  {:indentation
-  ^:replace {:indents
-             {#"^:?require$" [[:block 0]]
-              #"^:?import$" [[:block 0]]
-              #"^:?use$" [[:block 0]]
-              #"^[^ \[]" [[:inner 0]]}}
+  {:indents ^:replace {#"^:?require$" [[:block 0]]
+                       #"^:?import$" [[:block 0]]
+                       #"^:?use$" [[:block 0]]
+                       #"^[^ \[]" [[:inner 0]]}}
+  :whitespace {:remove-surrounding? true
+               :remove-trailing? true
+               :insert-missing? true}
+  :eof-newline {:enabled? true}
+  :functions {:enabled? true}
   :vars {:enabled? false}
   :namespaces {:enabled? false}
   :comments {:enabled? false}}}

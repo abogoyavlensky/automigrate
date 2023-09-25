@@ -742,20 +742,20 @@
                :constraint_name "feed_account_fkey"
                :constraint_type "FOREIGN KEY"
                :table_name "feed"}]
-             (db-util/exec!
-               config/DATABASE-CONN
-               {:select [:tc.constraint_name
-                         :tc.constraint_type
-                         :tc.table_name
-                         [:ccu.column_name :colname]]
-                :from [[:information_schema.table_constraints :tc]]
-                :join [[:information_schema.key_column_usage :kcu]
-                       [:= :tc.constraint_name :kcu.constraint_name]
+            (db-util/exec!
+              config/DATABASE-CONN
+              {:select [:tc.constraint_name
+                        :tc.constraint_type
+                        :tc.table_name
+                        [:ccu.column_name :colname]]
+               :from [[:information_schema.table_constraints :tc]]
+               :join [[:information_schema.key_column_usage :kcu]
+                      [:= :tc.constraint_name :kcu.constraint_name]
 
-                       [:information_schema.constraint_column_usage :ccu]
-                       [:= :ccu.constraint_name :tc.constraint_name]]
-                :where [:in :ccu.table_name ["feed" "account"]]
-                :order-by [:tc.constraint_name]}))))))
+                      [:information_schema.constraint_column_usage :ccu]
+                      [:= :ccu.constraint_name :tc.constraint_name]]
+               :where [:in :ccu.table_name ["feed" "account"]]
+               :order-by [:tc.constraint_name]}))))))
 
 
 (deftest test-make-and-migrate-remove-fk-option-on-field-ok
@@ -943,8 +943,8 @@
                          {:alter-table :feed
                           :add-column (:balance :decimal [:default 7.77M])})
         expected-q-sql (list ["ALTER TABLE feed ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
-                             ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
-                             ["ALTER TABLE feed ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
+                         ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
+                         ["ALTER TABLE feed ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
 
     (test-make-and-migrate-ok!
       existing-actions
@@ -999,14 +999,14 @@
                :numeric_precision nil
                :numeric_scale nil
                :table_name "feed"}]
-             (db-util/exec!
-               db
-               {:select [:table-name :data-type :column-name :column-default
-                         :is-nullable :is-identity :numeric-precision
-                         :numeric-scale :character-maximum-length]
-                :from [:information-schema.columns]
-                :where [:= :table-name "feed"]
-                :order-by [:ordinal-position]}))))
+            (db-util/exec!
+              db
+              {:select [:table-name :data-type :column-name :column-default
+                        :is-nullable :is-identity :numeric-precision
+                        :numeric-scale :character-maximum-length]
+               :from [:information-schema.columns]
+               :where [:= :table-name "feed"]
+               :order-by [:ordinal-position]}))))
 
     (testing "test indexes"
       (is (= [{:indexdef "CREATE UNIQUE INDEX feed_pkey ON public.feed USING btree (id)"
@@ -1014,20 +1014,20 @@
                :schemaname "public"
                :tablename "feed"
                :tablespace nil}]
-             (db-util/exec!
-               db
-               {:select [:*]
-                :from [:pg-indexes]
-                :where [:= :tablename "feed"]
-                :order-by [:indexname]}))))
+            (db-util/exec!
+              db
+              {:select [:*]
+               :from [:pg-indexes]
+               :where [:= :tablename "feed"]
+               :order-by [:indexname]}))))
 
     (testing "test constraints"
       (is (= [{:conname "feed_pkey"
                :contype "p"}]
-             (db-util/exec!
-               db
-               {:select [:c.conname :c.contype]
-                :from [[:pg-constraint :c]]
-                :join [[:pg-class :t] [:= :t.oid :c.conrelid]]
-                :where [:= :t.relname "feed"]
-                :order-by [:c.oid]}))))))
+            (db-util/exec!
+              db
+              {:select [:c.conname :c.contype]
+               :from [[:pg-constraint :c]]
+               :join [[:pg-class :t] [:= :t.oid :c.conrelid]]
+               :where [:= :t.relname "feed"]
+               :order-by [:c.oid]}))))))
