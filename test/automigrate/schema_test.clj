@@ -7,7 +7,6 @@
 
 
 (deftest test-make-migration*-add-column-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
                                                             :model-name :feed,
@@ -27,8 +26,34 @@
           (#'migrations/make-migration* "" [])))))
 
 
+(deftest test-make-migration*-add-column-decimal-ok
+                  ; read pre-existing migration for creating a model with just the id field
+  (bond/with-stub [[schema/load-migrations-from-files (constantly
+                                                        '(({:action :create-table,
+                                                            :model-name :feed,
+                                                            :fields {:id {:type :serial, :null false}}})))]
+                   ; read the same model with new decimal fields with different params
+                   [file-util/read-edn (constantly {:feed
+                                                    {:fields [[:id :serial {:null false}]
+                                                              [:amount [:decimal 10 2] {:null true}]
+                                                              [:balance [:decimal 10] {:default 47.23}]
+                                                              [:tx :decimal]]}})]]
+    (is (= '({:action :add-column
+              :field-name :tx
+              :model-name :feed
+              :options {:type :decimal}}
+             {:action :add-column
+              :field-name :amount
+              :model-name :feed
+              :options {:type [:decimal 10 2] :null true}}
+             {:action :add-column
+              :field-name :balance
+              :model-name :feed
+              :options {:type [:decimal 10] :default 47.23}})
+            (#'migrations/make-migration* "" [])))))
+
+
 (deftest test-make-migration*-add-column-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files (constantly
                                                         '(({:action :create-table,
                                                             :model-name :feed,
@@ -48,10 +73,46 @@
     (is (not (seq (#'migrations/make-migration* "" []))))))
 
 
+(deftest test-make-migration*-add-column-restore-decimal-ok
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly
+                      '(({:action :create-table
+                          :model-name :feed
+                          :fields {:id {:type :serial :null false}
+                                   :amount {:type [:decimal 10 2] :null false}}})))]
+
+                   [file-util/read-edn
+                    (constantly {:feed
+                                 [[:id :serial {:null false}]
+                                  [:amount [:decimal 10 2] {:null false}]]})]]
+    (is (= [] (#'migrations/make-migration* "" [])))))
+
+
+(deftest test-make-migration*-alter-column-decimal-ok
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly
+                      '(({:action :create-table
+                          :model-name :feed
+                          :fields {:id {:type :serial :null false}
+                                   :amount {:type [:decimal 10 2] :null false}}})))]
+
+                   [file-util/read-edn
+                    (constantly {:feed
+                                 [[:id :serial {:null false}]
+                                  [:amount [:decimal 10] {:null false}]]})]]
+       (is (= '({:action :alter-column
+                 :changes {:type {:from [:decimal 10 2]
+                                  :to [:decimal 10]}}
+                 :field-name :amount
+                 :model-name :feed
+                 :options {:null false
+                           :type [:decimal 10]}})
+              (#'migrations/make-migration* "" [])))))
+
+
 (deftest test-make-migration*-alter-column-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files (constantly
-                                                        '(({:action :create-table,
+                                                        '(({:action :create-table
                                                             :model-name :feed,
                                                             :fields {:id {:type :serial, :null false}}})
                                                           ({:action :add-column,

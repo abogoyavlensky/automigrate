@@ -457,6 +457,15 @@
         value))))
 
 
+(defmethod ->error-message :automigrate.fields/decimal
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (:val data)]
+    (add-error-value
+      (format "Invalid definition decimal/numeric type of field %s." fq-field-name)
+      value)))
+
+
 (defmethod ->error-message :automigrate.fields/field-name
   [data]
   (let [model-name (get-model-name data)]

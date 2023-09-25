@@ -348,14 +348,14 @@
               "DROP CONSTRAINT account_pkey")
             "ALTER TABLE feed DROP COLUMN url"
             "DROP TABLE IF EXISTS feed"
-            "CREATE TABLE feed (account SERIAL REFERENCES ACCOUNT(ID))"
+            "CREATE TABLE feed (account SERIAL REFERENCES account(id))"
             "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
             (str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey,"
-              " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) REFERENCES ACCOUNT(ID)")
-            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"
+              " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES account(id)")
+            "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
             "DROP INDEX feed_name_idx"
             "DROP INDEX feed_name_idx"
-            "CREATE INDEX feed_name_idx ON FEED USING BTREE(NAME)"
+            "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
             "COMMIT;"]
           (-> (bond/calls file-util/safe-println)
             (last)
@@ -460,7 +460,6 @@
 
 (deftest test-make-and-migrate-create-index-on-new-model-ok
   (let [existing-actions '()]
-    #_{:clj-kondo/ignore [:private-call]}
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly {:feed
@@ -492,7 +491,7 @@
                 queries)))
         (testing "test converting actions to sql"
           (is (= '(["CREATE TABLE feed (id SERIAL NOT NULL, name TEXT)"]
-                   ["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(NAME)"])
+                   ["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
                 (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
@@ -534,7 +533,7 @@
                     [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
                 queries)))
         (testing "test converting actions to sql"
-          (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(NAME)"])
+          (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
                 (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
@@ -624,7 +623,7 @@
                 queries)))
         (testing "test converting actions to sql"
           (is (= '((["DROP INDEX feed_name_id_idx"]
-                    ["CREATE INDEX feed_name_id_idx ON FEED USING BTREE(NAME)"]))
+                    ["CREATE INDEX feed_name_id_idx ON FEED USING BTREE(name)"]))
                 (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
@@ -691,7 +690,7 @@
                                         [:raw "on delete"]
                                         [:raw "cascade"]),
                           :alter-table :feed})
-        expected-q-sql '(["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES ACCOUNT(ID) ON DELETE CASCADE"])]
+        expected-q-sql '(["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
     (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
 
 
@@ -731,9 +730,32 @@
                                                             [:raw "on delete"]
                                                             [:raw "set null"])})})
         expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
-                                "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(ACCOUNT) "
-                                "REFERENCES ACCOUNT(ID) ON DELETE SET NULL")])]
-    (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
+                                "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
+                                "REFERENCES account(id) on delete set null")])]
+    (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)
+    (testing "test constraints [another option to test constraints]"
+      (is (= [{:colname "id"
+               :constraint_name "account_pkey"
+               :constraint_type "PRIMARY KEY"
+               :table_name "account"}
+              {:colname "id"
+               :constraint_name "feed_account_fkey"
+               :constraint_type "FOREIGN KEY"
+               :table_name "feed"}]
+             (db-util/exec!
+               config/DATABASE-CONN
+               {:select [:tc.constraint_name
+                         :tc.constraint_type
+                         :tc.table_name
+                         [:ccu.column_name :colname]]
+                :from [[:information_schema.table_constraints :tc]]
+                :join [[:information_schema.key_column_usage :kcu]
+                       [:= :tc.constraint_name :kcu.constraint_name]
+
+                       [:information_schema.constraint_column_usage :ccu]
+                       [:= :ccu.constraint_name :tc.constraint_name]]
+                :where [:in :ccu.table_name ["feed" "account"]]
+                :order-by [:tc.constraint_name]}))))))
 
 
 (deftest test-make-and-migrate-remove-fk-option-on-field-ok
@@ -838,3 +860,174 @@
       expected-actions
       expected-q-edn
       expected-q-sql)))
+
+
+(deftest test-make-and-migrate-add-decimal-field-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:name {:type [:varchar 100]}}})
+        changed-models {:feed
+                        {:fields [[:name [:varchar 100]]
+                                  [:amount [:decimal 10 2]]]}}
+        expected-actions '({:action :add-column
+                            :field-name :amount
+                            :model-name :feed
+                            :options {:type [:decimal 10 2]}})
+        expected-q-edn '({:alter-table :feed
+                          :add-column (:amount [:decimal 10 2])})
+        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2)"])]
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)))
+
+
+(deftest test-make-and-migrate-alter-numeric-field-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:name {:type [:varchar 100]}
+                                     :amount {:type [:numeric 10 2]}}})
+        changed-models {:feed
+                        {:fields [[:name [:varchar 100]]
+                                  [:amount [:numeric 10]]]}}
+        expected-actions '({:action :alter-column
+                            :field-name :amount
+                            :model-name :feed
+                            :options {:type [:numeric 10]}
+                            :changes {:type {:from [:numeric 10 2]
+                                             :to [:numeric 10]}}})
+        expected-q-edn '({:alter-table (:feed {:alter-column [:amount :type [:numeric 10]]})})
+        expected-q-sql (list ["ALTER TABLE feed ALTER COLUMN amount TYPE NUMERIC(10)"])]
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)))
+
+
+(deftest test-make-and-migrate-add-decimal-field-with-default-value-ok
+  (let [db config/DATABASE-CONN
+        existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:id {:type :serial
+                                          :primary-key true}
+                                     :name {:type [:varchar 100]}}})
+        changed-models {:feed
+                        {:fields [[:id :serial {:primary-key true}]
+                                  [:name [:varchar 100]]
+                                  [:amount [:decimal 10 2] {:default "9.99"}]
+                                  [:balance :decimal {:default 7.77M}]
+                                  [:tx [:decimal 6] {:default 6.4}]]}}
+        expected-actions '({:action :add-column
+                            :field-name :tx
+                            :model-name :feed
+                            :options {:type [:decimal 6]
+                                      :default 6.4}}
+                           {:action :add-column
+                            :field-name :amount
+                            :model-name :feed
+                            :options {:type [:decimal 10 2]
+                                      :default "9.99"}}
+                           {:action :add-column
+                            :field-name :balance
+                            :model-name :feed
+                            :options {:type :decimal
+                                      :default 7.77M}})
+        expected-q-edn '({:alter-table :feed
+                          :add-column (:tx [:decimal 6] [:default 6.4])}
+                         {:alter-table :feed
+                          :add-column (:amount [:decimal 10 2] [:default "9.99"])}
+                         {:alter-table :feed
+                          :add-column (:balance :decimal [:default 7.77M])})
+        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
+                             ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
+                             ["ALTER TABLE feed ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
+
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "test actual db schema after applying the migration"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('feed_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :is_identity "NO"
+               :is_nullable "NO"
+               :numeric_precision 32
+               :numeric_scale 0
+               :table_name "feed"}
+              {:character_maximum_length 100
+               :column_default nil
+               :column_name "name"
+               :data_type "character varying"
+               :is_identity "NO"
+               :is_nullable "YES"
+               :numeric_precision nil
+               :numeric_scale nil
+               :table_name "feed"}
+              {:character_maximum_length nil
+               :column_default "6.4"
+               :column_name "tx"
+               :data_type "numeric"
+               :is_identity "NO"
+               :is_nullable "YES"
+               :numeric_precision 6
+               :numeric_scale 0
+               :table_name "feed"}
+              {:character_maximum_length nil
+               :column_default "9.99"
+               :column_name "amount"
+               :data_type "numeric"
+               :is_identity "NO"
+               :is_nullable "YES"
+               :numeric_precision 10
+               :numeric_scale 2
+               :table_name "feed"}
+              {:character_maximum_length nil
+               :column_default "7.77"
+               :column_name "balance"
+               :data_type "numeric"
+               :is_identity "NO"
+               :is_nullable "YES"
+               :numeric_precision nil
+               :numeric_scale nil
+               :table_name "feed"}]
+             (db-util/exec!
+               db
+               {:select [:table-name :data-type :column-name :column-default
+                         :is-nullable :is-identity :numeric-precision
+                         :numeric-scale :character-maximum-length]
+                :from [:information-schema.columns]
+                :where [:= :table-name "feed"]
+                :order-by [:ordinal-position]}))))
+
+    (testing "test indexes"
+      (is (= [{:indexdef "CREATE UNIQUE INDEX feed_pkey ON public.feed USING btree (id)"
+               :indexname "feed_pkey"
+               :schemaname "public"
+               :tablename "feed"
+               :tablespace nil}]
+             (db-util/exec!
+               db
+               {:select [:*]
+                :from [:pg-indexes]
+                :where [:= :tablename "feed"]
+                :order-by [:indexname]}))))
+
+    (testing "test constraints"
+      (is (= [{:conname "feed_pkey"
+               :contype "p"}]
+             (db-util/exec!
+               db
+               {:select [:c.conname :c.contype]
+                :from [[:pg-constraint :c]]
+                :join [[:pg-class :t] [:= :t.oid :c.conrelid]]
+                :where [:= :t.relname "feed"]
+                :order-by [:c.oid]}))))))

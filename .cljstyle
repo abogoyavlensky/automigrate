@@ -1,9 +1,10 @@
 {:rules
  {:indentation
-  {:indents
-   {#"^:?require$" [[:block 0]],
-    #"^:?import$" [[:block 0]],
-    #"^:?use$" [[:block 0]],
-    #"^[^ \[]" [[:inner 0]]}},
-  :vars {:enabled? false},
-  :namespaces {:enabled? false}}}
+  ^:replace {:indents
+             {#"^:?require$" [[:block 0]]
+              #"^:?import$" [[:block 0]]
+              #"^:?use$" [[:block 0]]
+              #"^[^ \[]" [[:inner 0]]}}
+  :vars {:enabled? false}
+  :namespaces {:enabled? false}
+  :comments {:enabled? false}}}

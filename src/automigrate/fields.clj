@@ -22,6 +22,18 @@
 (s/def ::float-type (s/tuple #{:float} pos-int?))
 
 
+(s/def ::decimal
+  (s/and
+    (s/cat
+      :type #{:decimal :numeric}
+      :precision pos-int?
+      :scale (s/? int?))
+    (s/conformer
+      (fn [value]
+        (->> (vector (:type value) (:precision value) (:scale value))
+             (filterv #(not (nil? %))))))))
+
+
 (s/def ::keyword-type
   ; TODO: switch available fields according to db dialect!
   (s/and
@@ -31,6 +43,8 @@
       :bigint
       :float
       :real
+      :decimal
+      :numeric
       :serial
       :uuid
       :boolean
@@ -44,13 +58,10 @@
 
 
 (defn- field-type-dispatch
-  [v]
+  [value]
   (cond
-    (keyword? v) :keyword
-    (and (vector? v)
-      (contains? #{:char :varchar} (first v))) :char
-    (and (vector? v)
-      (contains? #{:float} (first v))) :float))
+    (keyword? value) :keyword
+    (vector? value) (first value)))
 
 
 (defmulti field-type field-type-dispatch)
@@ -66,9 +77,24 @@
   ::char-type)
 
 
+(defmethod field-type :varchar
+  [_]
+  ::char-type)
+
+
 (defmethod field-type :float
   [_]
   ::float-type)
+
+
+(defmethod field-type :decimal
+  [_]
+  ::decimal)
+
+
+(defmethod field-type :numeric
+  [_]
+  ::decimal)
 
 
 (s/def ::type (s/multi-spec field-type field-type-dispatch))
@@ -82,6 +108,7 @@
     (derive :text :string)
     (derive :varchar :string)
     (derive :char :string)
+    (derive :numeric :decimal)
     (derive :date :timestamp)
     (derive :time :timestamp)
     (derive :uuid :string)
@@ -107,6 +134,7 @@
 (s/def ::default-bool boolean?)
 (s/def ::default-str string?)
 (s/def ::default-nil nil?)
+(s/def ::default-dec decimal?)
 
 
 (s/def ::default-fn (s/cat
@@ -135,6 +163,11 @@
 (defmethod default-option String
   [_]
   ::default-str)
+
+
+(defmethod default-option BigDecimal
+  [_]
+  ::default-dec)
 
 
 (defmethod default-option nil
@@ -253,6 +286,21 @@
 (defmethod validate-default-and-type :float
   [{:keys [default]}]
   (or (float? default) (nil? default)))
+
+
+(s/def ::numeric-str
+  (fn [value]
+    (and (string? value)
+      (number? (read-string value)))))
+
+
+(defmethod validate-default-and-type :decimal
+  [{:keys [default]}]
+  (or (s/valid? ::numeric-str default)
+    (decimal? default)
+    (int? default)
+    (float? default)
+    (nil? default)))
 
 
 (defmethod validate-default-and-type :default

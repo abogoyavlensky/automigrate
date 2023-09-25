@@ -9,6 +9,7 @@
             [automigrate.errors :as errors])
   (:refer-clojure :exclude [list]))
 
+
 ; Enable asserts for spec in function's pre and post conditions
 (s/check-asserts true)
 

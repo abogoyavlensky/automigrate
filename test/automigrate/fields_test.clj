@@ -68,6 +68,7 @@
     (is (true?
           (s/valid? ::fields/validate-default-and-type {:type :timestamp
                                                         :default [:now]}))))
+
   (testing "check default is int and type float ok"
     (is (true?
           (s/valid? ::fields/validate-default-and-type {:type :float
@@ -79,6 +80,31 @@
   (testing "check default is int and type float as nil ok"
     (is (true?
           (s/valid? ::fields/validate-default-and-type {:type :float
+                                                        :default nil}))))
+
+  (testing "check default is numeric str and type decimal ok"
+    (is (true?
+          (s/valid? ::fields/validate-default-and-type {:type :decimal
+                                                        :default "10.32"}))))
+  (testing "check default is non numeric str and type decimal ok"
+    (is (false?
+          (s/valid? ::fields/validate-default-and-type {:type :decimal
+                                                        :default "wrong"}))))
+  (testing "check default is bigdec and type decimal ok"
+    (is (true?
+          (s/valid? ::fields/validate-default-and-type {:type :decimal
+                                                        :default 10.32M}))))
+  (testing "check default is int and type decimal ok"
+    (is (true?
+          (s/valid? ::fields/validate-default-and-type {:type :decimal
+                                                        :default 10}))))
+  (testing "check default is float and type decimal ok"
+    (is (true?
+          (s/valid? ::fields/validate-default-and-type {:type :decimal
+                                                        :default 10.3}))))
+  (testing "check default is int and type decimal as nil ok"
+    (is (true?
+          (s/valid? ::fields/validate-default-and-type {:type :decimal
                                                         :default nil})))))
 
 

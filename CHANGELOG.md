@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 *The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)*
 
+## 0.1.1 - UNRELEASED
+
+### Added
+
+- Add numeric/decimal type of field.
+
+### Changed
+
+- Upgrade dependencies: honeysql 2.4.1066, next.jdbc 1.3.883
+
 ## 0.1.0 - 2022-01-20
 
 ### Added

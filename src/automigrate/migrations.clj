@@ -198,6 +198,22 @@
     (set/difference #{:type})))
 
 
+(defn- options-added
+  "Get field options with deletion changes.
+  Example:
+  - old: `{:type [:decimal 10 2]}`
+  - new: `{:type [:decimal 10]}`"
+  [{:keys [to-add to-drop new-field]}]
+  (reduce-kv
+    (fn [m k v]
+      (cond-> m
+        ; Check diff value from differ not 0, then add new value for option
+        ; to be able to see it in `:changes` key of migration action.
+        (not= DROPPED-ENTITY-VALUE v) (assoc k (get new-field k))))
+    to-add
+    to-drop))
+
+
 (defn- assoc-option-to-add
   [old-field changes option-key new-option-value]
   (let [old-option-value (if (contains? old-field option-key)
@@ -268,7 +284,10 @@
                :model-name model-name
                :options field-options-new
                :changes (get-changes field-options-old
-                          options-to-add
+                          (options-added
+                            {:to-add options-to-add
+                             :to-drop options-to-drop
+                             :new-field field-options-new})
                           (options-dropped options-to-drop))}))))
 
 
@@ -660,8 +679,8 @@
 
 
 (defmethod exec-action! [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
-  [_])
   ; TODO: implement backward migration!
+  [_])
 
 
 (defmethod exec-action! [SQL-MIGRATION-EXT FORWARD-DIRECTION]

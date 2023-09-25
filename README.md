@@ -190,26 +190,36 @@ The first element is the name of a field and must be a keyword.
 The second element could be a keyword or a vector of keyword and integer. 
 Available field types are presented in the following table:
 
-| Field type             | Description                                                         |
-|------------------------|---------------------------------------------------------------------|
-| `:integer`             |                                                                     |
-| `:smallint`            |                                                                     |
-| `:bigint`              |                                                                     |
-| `:float`               |                                                                     |
-| `:real`                |                                                                     |
-| `:serial`              | auto-incremented integer field                                      |
-| `:uuid`                |                                                                     |
-| `:boolean`             |                                                                     |
-| `:text`                |                                                                     |
-| `:timestamp`           |                                                                     |
-| `:date`                |                                                                     |
-| `:time`                |                                                                     |
-| `:point`               |                                                                     |
-| `:json`                |                                                                     |
-| `:jsonb`               |                                                                     |
-| `[:varchar <pos-int>]` | second element is the length of value                               |
-| `[:char <pos-int>]`    | second element is the length of value                               |
-| `[:float <pos-int>]`   | second element is the minimum acceptable precision in binary digits |
+| Field type                                | Description                                                                                                                                                                |
+|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `:integer`                                |                                                                                                                                                                            |
+| `:smallint`                               |                                                                                                                                                                            |
+| `:bigint`                                 |                                                                                                                                                                            |
+| `:float`                                  |                                                                                                                                                                            |
+| `:real`                                   |                                                                                                                                                                            |
+| `:serial`                                 | auto-incremented integer field                                                                                                                                             |
+| `:numeric or [:numeric <pos-int>? <int>]` | Numeric type with optional precision and scale params. Default value could be set as numeric string, bigdec, float, int and nil: `"10.22"`, `10.22M`, `10`, `10.22`, `nil` |
+| `:decimal or [:decimal <pos-int>? <int>]` | Numeric type with optional precision and scale params. Same as `:numeric`.                                                                                                 |
+| `:uuid`                                   |                                                                                                                                                                            |
+| `:boolean`                                |                                                                                                                                                                            |
+| `:text`                                   |                                                                                                                                                                            |
+| `:timestamp`                              |                                                                                                                                                                            |
+| `:timestamp-with-time-zone`               |                                                                                                                                                                            |
+| `:timestamp-without-time-zone`            |                                                                                                                                                                            |
+| `:date`                                   |                                                                                                                                                                            |
+| `:time`                                   |                                                                                                                                                                            |
+| `:point`                                  |                                                                                                                                                                            |
+| `:json`                                   |                                                                                                                                                                            |
+| `:jsonb`                                  |                                                                                                                                                                            |
+| `[:varchar <pos-int>]`                    | second element is the length of value                                                                                                                                      |
+| `[:char <pos-int>]`                       | second element is the length of value                                                                                                                                      |
+| `:float or [:float <pos-int>]`            | second element is the minimum acceptable precision in binary digits                                                                                                        |
+
+
+###### Notes
+
+- _`<...>?` - param is optional._
+- _`or` - an alternative definition of type._
 
 :information_source: *There are fixed field types because `automigrate` 
 validates type of field and default value to have errors as early as possible 
@@ -220,15 +230,15 @@ before running migration against database.*
 Options value is a map where key is the name of the option and value is the available option value.
 Available options are presented in the table below:
 
-| Field option   | Description                                                                                   | Required? | Value                                                                                                        |
-|----------------|-----------------------------------------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------------------|
-| `:null`        | Set to `false` for non-nullable field. Field is nullable by default if the option is not set. | `false`   | `boolean?`                                                                                                   |
-| `:primary-key` | Set to `true` for making primary key field.                                                   | `false`   | `true?`                                                                                                      |
-| `:unique`      | Set to `true` to add unique constraint for a field.                                           | `false`   | `true?`                                                                                                      |
-| `:default`     | Default value for a field.                                                                    | `false`   | `boolean?`, `integer?`, `float?`, `string?`, `nil?`, or fn defined as `[:keyword <integer? float? string?>]` |
-| `:foreign-key` | Set to namespaced keyword to point to a primary key field from another model.                 | `false`   | `:another-model/field-name`                                                                                  |
-| `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                           |
-| `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   |                                                                                                              |
+| Field option   | Description                                                                                   | Required? | Value                                                                                                                          |
+|----------------|-----------------------------------------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------------------------------------|
+| `:null`        | Set to `false` for non-nullable field. Field is nullable by default if the option is not set. | `false`   | `boolean?`                                                                                                                     |
+| `:primary-key` | Set to `true` for making primary key field.                                                   | `false`   | `true?`                                                                                                                        |
+| `:unique`      | Set to `true` to add unique constraint for a field.                                           | `false`   | `true?`                                                                                                                        |
+| `:default`     | Default value for a field.                                                                    | `false`   | `boolean?`, `integer?`, `float?`, `decimal?`, `string?`, `nil?`, or fn defined as `[:keyword <integer? or float? or string?>]` |
+| `:foreign-key` | Set to namespaced keyword to point to a primary key field from another model.                 | `false`   | `:another-model/field-name`                                                                                                    |
+| `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
+| `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   |                                                                                                                                |
 
 
 #### Indexes

@@ -627,3 +627,20 @@
           (core/make {:migrations-dir config/MIGRATIONS-DIR
                       :models-file (str config/MODELS-DIR "feed_errors.edn")
                       :title "COMMAND ERROR"})))))
+
+
+(deftest test-spec-field-vec-invalid-decimal-field-type-error
+  (testing "check valid decimal type"
+    (let [data {:foo [[:amount :decimal]]}]
+      (is (= []
+             (test-util/get-spec-error-data #(models/->internal-models data)))))
+
+    (let [data {:foo {:fields [[:amount [:decimal 10 2]]]}}]
+      (is (= []
+             (test-util/get-spec-error-data #(models/->internal-models data))))))
+
+  (testing "check invalid decimal type as vector"
+    (let [data {:foo [[:amount [:decimal]]]}]
+      (is (= [{:message "Invalid definition decimal/numeric type of field :foo/amount."
+               :title "MODEL ERROR"}]
+             (test-util/get-spec-error-data #(models/->internal-models data)))))))
