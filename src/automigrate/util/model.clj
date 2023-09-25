@@ -57,7 +57,7 @@
   ([changes]
    (changes-to-add changes OPTION-KEY-FORWARD))
   ([changes option-key]
-   {:pre [(s/assert ::option-key option-key)]}
+   {:pre [(spec-util/assert! ::option-key option-key)]}
    (reduce-kv (partial remove-empty-option option-key) {} changes)))
 
 
@@ -65,7 +65,7 @@
   ([changes]
    (changes-to-drop changes OPTION-KEY-FORWARD))
   ([changes option-key]
-   {:pre [(s/assert ::option-key option-key)]}
+   {:pre [(spec-util/assert! ::option-key option-key)]}
    (->> changes
      (filter #(= EMPTY-OPTION (get (val %) option-key)))
      (map key)
@@ -92,7 +92,7 @@
 
 (defn generate-changes
   [option-specs]
-  {:pre [(s/assert (s/coll-of qualified-keyword?) option-specs)]}
+  {:pre [(spec-util/assert! (s/coll-of qualified-keyword?) option-specs)]}
   (reduce #(assoc %1
              (kw->name %2)
              (option-states %2))

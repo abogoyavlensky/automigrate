@@ -570,8 +570,8 @@
 (defn- get-migration-by-number
   "Return migration file name by number."
   [migration-names number]
-  {:pre [(s/assert (s/coll-of string?) migration-names)
-         (s/assert integer? number)]}
+  {:pre [(spec-util/assert! (s/coll-of string?) migration-names)
+         (spec-util/assert! integer? number)]}
   (->> migration-names
     (filter #(= number (get-migration-number %)))
     (first)))
