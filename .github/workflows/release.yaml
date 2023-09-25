@@ -1,0 +1,40 @@
+name: Release
+
+
+on:
+  push:
+    tags:
+      - "*"
+
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint
+        run: docker-compose run --rm check bash -c "make deps && make lint-init > /dev/null 2>&1 || true && make lint"
+
+      - name: Fmt
+        run: docker-compose run --rm check make fmt-check
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        run: docker-compose run --rm test bash -c "make deps && make test"
+
+# TODO: uncomment for auto-deploy to Clojars from CI
+#  deploy:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Build jar-file and deploy to Clojars
+#        run: docker-compose run --rm build bash -c "make deploy-ci"
+#        env:
+#          CLOJARS_PASSWORD: ${{secrets.CLOJARS_PASSWORD}}
+#          CLOJARS_USERNAME: ${{secrets.CLOJARS_USERNAME}}

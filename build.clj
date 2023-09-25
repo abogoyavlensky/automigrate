@@ -34,12 +34,14 @@
 
 
 (s/def ::snapshot? boolean?)
+(s/def ::release? boolean?)
 (s/def ::bump #{:major :minor :patch})
 
 
 (s/def ::version-args
   (s/keys
     :opt-un [::snapshot?
+             ::release?
              ::bump]))
 
 
@@ -83,11 +85,14 @@
   {:pre [(s/valid? ::version-args version-args)]}
   (let [latest-version (if (true? release?)
                          (latest-git-tag-name)
-                         (latest-git-tag-name-across-all-branches))]
-    (s/assert ::version (split-git-tag latest-version))
-    (cond-> latest-version
-      (some? bump) (bump-version bump)
-      (true? snapshot?) (add-snapshot))))
+                         (latest-git-tag-name-across-all-branches))
+        _ (s/assert ::version (split-git-tag latest-version))
+        _ (prn (format "Latest version: %s" latest-version))
+        new-version (cond-> latest-version
+                      (some? bump) (bump-version bump)
+                      (true? snapshot?) (add-snapshot))]
+    _ (prn (format "New version: %s" latest-version))
+    new-version))
 
 
 (defn- create-git-tag
@@ -113,7 +118,7 @@
   (-> opts
     (assoc
       :lib lib
-      :version (version (select-keys opts [:snapshot? :bump])))
+      :version (version (select-keys opts [:snapshot? :release? :bump])))
     (build-clj/clean)
     (build-clj/jar)))
 
@@ -135,7 +140,7 @@
 
 
 (defn release
-  "Bump latest git tag version, create and push new git tag with next version."
+  "Bump the latest git tag version, create and push new git tag with next version."
   [opts]
   (-> opts
     (assoc

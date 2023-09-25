@@ -29,7 +29,7 @@ services:
   # For testing in CI
 
   test:
-    image: abogoyavlensky/clojure-openjdk11-build:0.1.3
+    image: abogoyavlensky/clojure-temurin17-build:0.1.1
     depends_on:
       - test-postgres
     environment:
@@ -40,7 +40,7 @@ services:
   # Build jar-file in CI
 
   build:
-    image: abogoyavlensky/clojure-openjdk11-build:0.1.3
+    image: abogoyavlensky/clojure-temurin17-build:0.1.1
     environment:
       - CLOJARS_PASSWORD
       - CLOJARS_USERNAME
