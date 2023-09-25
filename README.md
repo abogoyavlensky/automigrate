@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 
-Database auto-migration tool for Clojure. Define models as plain EDN data structures 
+Database auto-migrations tool for Clojure. Define models as plain EDN data structures 
 and create database schema migrations automatically based on changes to the models.
 
 
