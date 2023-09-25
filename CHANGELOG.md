@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
 
 - Add numeric/decimal type of field.
 
+
+### Fixed
+
+- Do not capitalize string `:default` option. Fixed by upgrading honeysql. 
+
 ### Changed
 
 - Upgrade dependencies: honeysql 2.4.1066, next.jdbc 1.3.883

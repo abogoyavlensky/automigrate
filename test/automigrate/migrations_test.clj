@@ -1031,3 +1031,50 @@
                :join [[:pg-class :t] [:= :t.oid :c.conrelid]]
                :where [:= :t.relname "feed"]
                :order-by [:c.oid]}))))))
+
+
+(deftest test-make-and-migrate-add-char-field-with-default-value-ok
+  (let [db config/DATABASE-CONN
+        existing-actions '({:action :create-table
+                            :model-name :feed
+                            :fields {:id {:type :serial
+                                          :primary-key true}}})
+        changed-models {:feed
+                        {:fields [[:id :serial {:primary-key true}]
+                                  [:name [:varchar 10] {:default "test"}]]}}
+        expected-actions '({:action :add-column
+                            :field-name :name
+                            :model-name :feed
+                            :options {:type [:varchar 10]
+                                      :default "test"}})
+        expected-q-edn '({:alter-table :feed
+                          :add-column (:name [:varchar 10] [:default "test"])})
+        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
+
+    (test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "test actual db schema after applying the migration"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('feed_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :is_nullable "NO"
+               :table_name "feed"}
+              {:character_maximum_length 10
+               :column_default "'test'::character varying"
+               :column_name "name"
+               :data_type "character varying"
+               :is_nullable "YES"
+               :table_name "feed"}]
+            (db-util/exec!
+              db
+              {:select [:table-name :data-type :column-name :column-default
+                        :is-nullable :character-maximum-length]
+               :from [:information-schema.columns]
+               :where [:= :table-name "feed"]
+               :order-by [:ordinal-position]}))))))
