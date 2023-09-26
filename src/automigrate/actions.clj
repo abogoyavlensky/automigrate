@@ -1,7 +1,7 @@
 (ns automigrate.actions
   (:require [clojure.spec.alpha :as s]
             [spec-dict :as d]
-            [automigrate.models :as models]
+            [automigrate.indexes :as indexes]
             [automigrate.fields :as fields]
             [automigrate.util.model :as model-util]
             [automigrate.util.spec :as spec-util]))
@@ -96,7 +96,7 @@
 
 
 (s/def :automigrate.actions.indexes/options
-  ::models/index)
+  ::indexes/index)
 
 
 (defmethod action CREATE-INDEX-ACTION

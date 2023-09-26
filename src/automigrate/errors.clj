@@ -244,7 +244,7 @@
       (format "Indexes definition error in model %s." model-name))))
 
 
-(defmethod ->error-message :automigrate.models/index-vec
+(defmethod ->error-message :automigrate.indexes/index-vec
   [data]
   (let [model-name (get-model-name data)]
     (if (= "Extra input" (:reason data))
@@ -257,7 +257,7 @@
         (:val data)))))
 
 
-(defmethod ->error-message :automigrate.models.index/fields
+(defmethod ->error-message :automigrate.indexes/fields
   [data]
   (let [model-name (get-model-name data)
         fq-index-name (get-fq-index-name data)]
@@ -268,7 +268,7 @@
       (:val data))))
 
 
-(defmethod ->error-message :automigrate.models/index-vec-options
+(defmethod ->error-message :automigrate.indexes/index-vec-options
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (condp = (:pred data)
@@ -278,19 +278,19 @@
       (format "Invalid definition of the index %s." fq-index-name))))
 
 
-(defmethod ->error-message :automigrate.models/index-vec-options-strict-keys
+(defmethod ->error-message :automigrate.indexes/index-vec-options-strict-keys
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (format "Options of index %s have extra keys." fq-index-name)))
 
 
-(defmethod ->error-message :automigrate.models.index/unique
+(defmethod ->error-message :automigrate.indexes/unique
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (format "Option :unique of index %s should satisfy: `true?`." fq-index-name)))
 
 
-(defmethod ->error-message :automigrate.models/index-name
+(defmethod ->error-message :automigrate.indexes/index-name
   [data]
   (let [model-name (get-model-name data)]
     (if (= "Insufficient input" (:reason data))
@@ -300,7 +300,7 @@
         (:val data)))))
 
 
-(defmethod ->error-message :automigrate.models.index/type
+(defmethod ->error-message :automigrate.indexes/type
   [data]
   (let [fq-index-name (get-fq-index-name data)
         value (:val data)]

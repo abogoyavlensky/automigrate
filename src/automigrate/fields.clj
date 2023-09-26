@@ -1,4 +1,5 @@
 (ns automigrate.fields
+  "All possible field types with spec validation."
   (:require [clojure.spec.alpha :as s]
             [automigrate.util.spec :as spec-util])
   (:import (clojure.lang PersistentVector)))

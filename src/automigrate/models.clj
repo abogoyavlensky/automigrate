@@ -5,59 +5,15 @@
             [clojure.set :as set]
             [automigrate.util.model :as model-util]
             [automigrate.util.spec :as spec-util]
-            [automigrate.fields :as fields])
+            [automigrate.fields :as fields]
+            [automigrate.indexes :as indexes])
   (:import (clojure.lang PersistentVector PersistentArrayMap)))
-
-
-(s/def :automigrate.models.index/type
-  #{:btree :gin :gist :spgist :brin :hash})
-
-
-(s/def :automigrate.models.index/fields
-  (s/coll-of keyword? :min-count 1 :kind vector? :distinct true))
-
-
-(s/def :automigrate.models.index/unique true?)
-
-
-(s/def ::index
-  (s/keys
-    :req-un [:automigrate.models.index/type
-             :automigrate.models.index/fields]
-    :opt-un [:automigrate.models.index/unique]))
-
-
-(s/def ::index-vec-options
-  (s/keys
-    :req-un [:automigrate.models.index/fields]
-    :opt-un [:automigrate.models.index/unique]))
-
-
-(s/def ::index-vec-options-strict-keys
-  (spec-util/validate-strict-keys ::index-vec-options))
-
-
-(s/def ::index-name keyword?)
-
-
-(s/def ::index-vec
-  (s/cat
-    :name ::index-name
-    :type :automigrate.models.index/type
-    :options (s/and
-               ::index-vec-options
-               ::index-vec-options-strict-keys)))
-
-
-(s/def ::indexes
-  (s/map-of keyword? ::index :min-count 1 :distinct true))
 
 
 (s/def ::model
   (s/keys
     :req-un [::fields/fields]
-    ; TODO: move indexes to separated file
-    :opt-un [::indexes]))
+    :opt-un [::indexes/indexes]))
 
 
 (defn- item-vec->map
@@ -211,7 +167,7 @@
 
 
 (s/def :automigrate.models.indexes-vec/indexes
-  (s/coll-of ::index-vec :min-count 1 :kind vector? :distinct true))
+  (s/coll-of ::indexes/index-vec :min-count 1 :kind vector? :distinct true))
 
 
 (s/def ::public-model-as-vec
