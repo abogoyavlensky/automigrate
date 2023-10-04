@@ -84,3 +84,54 @@
                 :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
                 :where [:= :t.typname "account_role"]}))))))
 
+(deftest test-make-and-migrate-drop-type-enum-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial}}}
+                           {:action :create-type
+                            :model-name :account
+                            :type-name :account-role
+                            :options {:type :enum
+                                      :choices ["admin" "customer"]}})
+        changed-models {:account
+                        {:fields [[:id :serial]]}}
+        expected-actions '({:action :drop-type
+                            :model-name :account
+                            :type-name :account-role})
+        expected-q-edn '({:drop-type [:account-role]})
+        expected-q-sql (list ["DROP TYPE account_role"])]
+
+    (test-util/test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "check type has been dropped in db"
+      (is (= []
+             (db-util/exec!
+               config/DATABASE-CONN
+               {:select [:t.typname :t.typtype :e.enumlabel]
+                :from [[:pg_type :t]]
+                :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
+                :where [:= :t.typname "account_role"]}))))))
+
+(deftest test-make-migration*-drop-type-enum-restore-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial}}}
+                           {:action :create-type
+                            :model-name :account
+                            :type-name :account-role
+                            :options {:type :enum
+                                      :choices ["admin" "customer"]}}
+                           {:action :drop-type
+                            :model-name :account
+                            :type-name :account-role})
+        existing-models {:account
+                         {:fields [[:id :serial]]}}]
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly existing-actions)]
+                     [file-util/read-edn (constantly existing-models)]]
+      (is (= [] (#'migrations/make-migration* "" []))))))

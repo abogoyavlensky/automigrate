@@ -150,6 +150,13 @@
              ::model-name
              :automigrate.actions.types/options]))
 
+(defmethod action DROP-TYPE-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::type-name
+             ::model-name]))
+
 (s/def ::->migration (s/multi-spec action :action))
 
 

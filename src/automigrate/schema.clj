@@ -86,6 +86,17 @@
   (assoc-in schema [(:model-name action) :types (:type-name action)]
     (:options action)))
 
+(defmethod apply-action-to-schema actions/DROP-TYPE-ACTION
+  [schema action]
+  (let [action-name (:model-name action)
+        result (map-util/dissoc-in
+                 schema
+                 [action-name :types]
+                 (:type-name action))]
+    (if (seq (get-in result [action-name :types]))
+      result
+      (map-util/dissoc-in result [action-name] :types))))
+
 
 (defn- actions->internal-models
   [actions]

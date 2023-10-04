@@ -399,6 +399,23 @@
     ::create-type->sql))
 
 
+(s/def ::drop-type->sql
+  (s/conformer
+    (fn [value]
+      ; TODO: try to remove vector
+      {:drop-type [(:type-name value)]})))
+
+
+(defmethod action->sql actions/DROP-TYPE-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::actions/action
+               ::actions/type-name
+               ::actions/model-name])
+    ::drop-type->sql))
+
+
 (s/def ::->sql (s/multi-spec action->sql :action))
 
 

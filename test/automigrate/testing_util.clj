@@ -36,7 +36,7 @@
                          :where [:= :typtype "e"]}
                      (db-util/exec! db)
                      (mapv (comp keyword :typname)))]
-    (doseq [type-name enum-types]
+    (when (seq enum-types)
       (db-util/exec! db {:drop-type enum-types}))))
 
 (defn with-drop-tables
