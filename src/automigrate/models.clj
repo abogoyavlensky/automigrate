@@ -6,14 +6,16 @@
             [automigrate.util.model :as model-util]
             [automigrate.util.spec :as spec-util]
             [automigrate.fields :as fields]
-            [automigrate.indexes :as indexes])
+            [automigrate.indexes :as indexes]
+            [automigrate.types :as types])
   (:import (clojure.lang PersistentVector PersistentArrayMap)))
 
 
 (s/def ::model
   (s/keys
     :req-un [::fields/fields]
-    :opt-un [::indexes/indexes]))
+    :opt-un [::indexes/indexes
+             ::types/types]))
 
 
 (defn- item-vec->map
@@ -53,11 +55,21 @@
     ::item-vec->map
     ::map-kw->kebab-case))
 
+(s/def ::validate-types-duplication
+  (fn [types]
+    (model-util/has-duplicates? (map :name types))))
+
+(s/def :automigrate.models.types->internal/types
+  (s/and
+    ::validate-types-duplication
+    ::item-vec->map
+    ::map-kw->kebab-case))
 
 (s/def ::model->internal
   (s/keys
     :req-un [:automigrate.models.fields->internal/fields]
-    :opt-un [:automigrate.models.indexes->internal/indexes]))
+    :opt-un [:automigrate.models.indexes->internal/indexes
+             :automigrate.models.types->internal/types]))
 
 
 (defn- check-referenced-model-exists?
@@ -154,12 +166,18 @@
           missing-fields (set/difference index-fields model-fields)]
       (empty? missing-fields))))
 
+(s/def ::validate-types-duplication-across-models
+  (fn [models]
+    (->> (vals models)
+         (mapcat (comp keys :types))
+         (model-util/has-duplicates?))))
 
 (s/def ::internal-models
   (s/and
     (s/map-of keyword? ::model)
     validate-foreign-key
-    ::validate-indexes-duplication-across-models))
+    ::validate-indexes-duplication-across-models
+    ::validate-types-duplication-across-models))
 
 
 (s/def :automigrate.models.fields-vec/fields
@@ -169,6 +187,8 @@
 (s/def :automigrate.models.indexes-vec/indexes
   (s/coll-of ::indexes/index-vec :min-count 1 :kind vector? :distinct true))
 
+(s/def :automigrate.models.types-vec/types
+  (s/coll-of ::types/type-vec :min-count 1 :kind vector? :distinct true))
 
 (s/def ::public-model-as-vec
   :automigrate.models.fields-vec/fields)
@@ -177,7 +197,8 @@
 (s/def ::public-model-as-map
   (s/keys
     :req-un [:automigrate.models.fields-vec/fields]
-    :opt-un [:automigrate.models.indexes-vec/indexes]))
+    :opt-un [:automigrate.models.indexes-vec/indexes
+             :automigrate.models.types-vec/types]))
 
 
 (s/def ::public-model-as-map-strict-keys
@@ -228,3 +249,11 @@
   "Transform public models from file to internal representation."
   [models]
   (spec-util/conform ::->internal-models models))
+
+(comment
+  (let [models {:account {:types [[:account-role :enum {:choices ["admin" "customer"]}]]
+                          :fields [[:id :serial {:unique true}]]}
+                :feed {:types [[:status :enum {:choices ["admin" "customer"]}]]
+                       :fields [[:id :serial {:unique true}]]}}]
+    (->> models
+      (spec-util/conform ::->internal-models))))

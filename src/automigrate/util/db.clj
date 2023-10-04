@@ -39,6 +39,17 @@
     (#'honey/format-add-item k spec))
   :add-index)
 
+(honey/register-clause! :create-type
+  ; TODO: update with more precise formatter
+  (fn [k spec]
+    (#'honey/format-add-item k spec))
+  :create-unique-index)
+
+(honey/register-clause! :drop-type
+  ; TODO: update with more precise formatter
+  (fn [k spec]
+    (#'honey/format-add-item k spec))
+  :create-type)
 
 ; Public
 

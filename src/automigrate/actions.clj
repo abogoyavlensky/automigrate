@@ -3,18 +3,28 @@
             [spec-dict :as d]
             [automigrate.indexes :as indexes]
             [automigrate.fields :as fields]
+            [automigrate.types :as types]
             [automigrate.util.model :as model-util]
             [automigrate.util.spec :as spec-util]))
 
-
+; Tables
 (def CREATE-TABLE-ACTION :create-table)
 (def DROP-TABLE-ACTION :drop-table)
+
+; Columns
 (def ADD-COLUMN-ACTION :add-column)
 (def ALTER-COLUMN-ACTION :alter-column)
 (def DROP-COLUMN-ACTION :drop-column)
+
+; Indexes
 (def CREATE-INDEX-ACTION :create-index)
 (def DROP-INDEX-ACTION :drop-index)
 (def ALTER-INDEX-ACTION :alter-index)
+
+; Types
+(def CREATE-TYPE-ACTION :create-type)
+(def DROP-TYPE-ACTION :drop-type)
+(def ALTER-TYPE-ACTION :alter-type)
 
 
 (s/def ::action #{CREATE-TABLE-ACTION
@@ -24,12 +34,16 @@
                   DROP-COLUMN-ACTION
                   CREATE-INDEX-ACTION
                   DROP-INDEX-ACTION
-                  ALTER-INDEX-ACTION})
+                  ALTER-INDEX-ACTION
+                  CREATE-TYPE-ACTION
+                  DROP-TYPE-ACTION
+                  ALTER-TYPE-ACTION})
 
 
 (s/def ::model-name keyword?)
 (s/def ::field-name keyword?)
 (s/def ::index-name keyword?)
+(s/def ::type-name keyword?)
 
 
 (defmulti action :action)
@@ -125,6 +139,17 @@
              :automigrate.actions.indexes/options]))
 
 
+(s/def :automigrate.actions.types/options
+  ::types/type)
+
+(defmethod action CREATE-TYPE-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::type-name
+             ::model-name
+             :automigrate.actions.types/options]))
+
 (s/def ::->migration (s/multi-spec action :action))
 
 
@@ -137,6 +162,6 @@
   (spec-util/conform ::->migrations actions))
 
 
-(defn validate-actions
+(defn validate-actions!
   [actions]
   (spec-util/valid? ::->migrations actions))

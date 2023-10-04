@@ -339,22 +339,3 @@
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly existing-models)]]
       (is (not (seq (#'migrations/make-migration* "" [])))))))
-
-; TODO: uncomment!
-;(deftest test-make-migration*-add-enum-type-ok
-;  (let [existing-actions '({:action :create-table
-;                            :model-name :account
-;                            :fields {:id {:type :serial}}})
-;        existing-models {:account
-;                         {:fields [[:id :serial]]
-;                          :enums [[:account-role "admin" "customer"]]}}]
-;    (bond/with-stub [[schema/load-migrations-from-files
-;                      (constantly existing-actions)]
-;                     [file-util/read-edn (constantly existing-models)]]
-;      (is (= '({:action :create-type-enum
-;                :model-name :account
-;                :enum-name :account-role
-;                :options {:choices ["admin" "customer"]}
-;                :changes {:choices {:from :EMPTY
-;                                    :to ["admin" "customer"]}}})
-;             (#'migrations/make-migration* "" []))))))

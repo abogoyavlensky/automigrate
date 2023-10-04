@@ -414,6 +414,46 @@
                :options options-to-alter}))))
 
 
+(defn- new-type?
+  [old-model types-diff type-name]
+  (and (contains? types-diff type-name)
+       (not (contains? (:types old-model) type-name))))
+
+
+(defn- drop-type?
+  [types-removals type-name]
+  (= DROPPED-ENTITY-VALUE (get types-removals type-name)))
+
+
+(defn- parse-types-diff
+  "Return type's migrations for model."
+  [{:keys [model-diff model-removals old-model new-model model-name]}]
+  ; TODO: abstract this function for types/indexes/fields
+  (let [types-diff (:types model-diff)
+        types-removals (if (= DROPPED-ENTITY-VALUE (:types model-removals))
+                         (->> (:types old-model)
+                              (reduce-kv (fn [m k _v] (assoc m k DROPPED-ENTITY-VALUE)) {}))
+                         (:types model-removals))
+        changed-types (-> (set (keys types-diff))
+                          (set/union (set (keys types-removals))))]
+    (for [type-name changed-types
+          :let [options-to-add (get types-diff type-name)
+                options-to-alter (get-in new-model [:types type-name])
+                new-type?* (new-type? old-model types-diff type-name)
+                drop-type?* (drop-type? types-removals type-name)]]
+      (cond
+        new-type?* {:action actions/CREATE-TYPE-ACTION
+                    :type-name type-name
+                    :model-name model-name
+                    :options options-to-add}
+        drop-type?* {:action actions/DROP-TYPE-ACTION
+                     :type-name type-name
+                     :model-name model-name}
+        :else {:action actions/ALTER-TYPE-ACTION
+               :type-name type-name
+               :model-name model-name
+               :options options-to-alter}))))
+
 (defn- make-migration*
   [models-file migrations-files]
   (let [old-schema (schema/current-db-schema migrations-files)
@@ -440,7 +480,13 @@
                                                 :old-model old-model
                                                 :new-model new-model
                                                 :model-name model-name}))
-                    (parse-indexes-diff model-diff model-removals old-model new-model model-name)))]
+                    (parse-indexes-diff model-diff model-removals old-model new-model model-name)
+                    (parse-types-diff
+                      {:model-diff model-diff
+                       :model-removals model-removals
+                       :old-model old-model
+                       :new-model new-model
+                       :model-name model-name})))]
     (->> actions
       (flatten)
       (sort-actions)

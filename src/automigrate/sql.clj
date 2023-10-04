@@ -379,6 +379,25 @@
                :automigrate.actions.indexes/options])
     ::alter-index->sql))
 
+(s/def ::create-type->sql
+  (s/conformer
+    (fn [value]
+      (when (= :enum (get-in value [:options :type]))
+        (let [options (:options value)
+              type-action actions/CREATE-TYPE-ACTION]
+          {type-action [(:type-name value) :as (cons :enum (:choices options))]})))))
+
+
+(defmethod action->sql actions/CREATE-TYPE-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::actions/action
+               ::actions/type-name
+               ::actions/model-name
+               :automigrate.actions.types/options])
+    ::create-type->sql))
+
 
 (s/def ::->sql (s/multi-spec action->sql :action))
 

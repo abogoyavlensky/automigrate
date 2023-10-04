@@ -81,10 +81,16 @@
     (:options action)))
 
 
+(defmethod apply-action-to-schema actions/CREATE-TYPE-ACTION
+  [schema action]
+  (assoc-in schema [(:model-name action) :types (:type-name action)]
+    (:options action)))
+
+
 (defn- actions->internal-models
   [actions]
   ; Throws spec exception if not valid.
-  (actions/validate-actions actions)
+  (actions/validate-actions! actions)
   (->> actions
     (reduce apply-action-to-schema {})
     (spec-util/conform ::models/internal-models)))
