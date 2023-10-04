@@ -9,9 +9,11 @@
     [automigrate.testing-util :as test-util]
     [automigrate.testing-config :as config]))
 
+
 (use-fixtures :each
   (test-util/with-drop-tables config/DATABASE-CONN)
   (test-util/with-delete-dir config/MIGRATIONS-DIR))
+
 
 (deftest test-make-migration*-create-type-enum-ok
   (let [existing-actions '({:action :create-table
@@ -30,6 +32,7 @@
                           :choices ["admin" "customer"]}})
             (#'migrations/make-migration* "" []))))))
 
+
 (deftest test-make-migration*-create-type-enum-restore-ok
   (let [existing-actions '({:action :create-table
                             :model-name :account
@@ -46,6 +49,7 @@
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly existing-models)]]
       (is (= [] (#'migrations/make-migration* "" []))))))
+
 
 (deftest test-make-and-migrate-create-type-enum-ok
   (let [existing-actions '({:action :create-table
@@ -77,12 +81,13 @@
               {:typname "account_role"
                :typtype "e"
                :enumlabel "customer"}]
-             (db-util/exec!
-               config/DATABASE-CONN
-               {:select [:t.typname :t.typtype :e.enumlabel]
-                :from [[:pg_type :t]]
-                :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
-                :where [:= :t.typname "account_role"]}))))))
+            (db-util/exec!
+              config/DATABASE-CONN
+              {:select [:t.typname :t.typtype :e.enumlabel]
+               :from [[:pg_type :t]]
+               :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
+               :where [:= :t.typname "account_role"]}))))))
+
 
 (deftest test-make-and-migrate-drop-type-enum-ok
   (let [existing-actions '({:action :create-table
@@ -110,12 +115,13 @@
 
     (testing "check type has been dropped in db"
       (is (= []
-             (db-util/exec!
-               config/DATABASE-CONN
-               {:select [:t.typname :t.typtype :e.enumlabel]
-                :from [[:pg_type :t]]
-                :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
-                :where [:= :t.typname "account_role"]}))))))
+            (db-util/exec!
+              config/DATABASE-CONN
+              {:select [:t.typname :t.typtype :e.enumlabel]
+               :from [[:pg_type :t]]
+               :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
+               :where [:= :t.typname "account_role"]}))))))
+
 
 (deftest test-make-migration*-drop-type-enum-restore-ok
   (let [existing-actions '({:action :create-table

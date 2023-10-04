@@ -417,7 +417,7 @@
 (defn- new-type?
   [old-model types-diff type-name]
   (and (contains? types-diff type-name)
-       (not (contains? (:types old-model) type-name))))
+    (not (contains? (:types old-model) type-name))))
 
 
 (defn- drop-type?
@@ -432,10 +432,10 @@
   (let [types-diff (:types model-diff)
         types-removals (if (= DROPPED-ENTITY-VALUE (:types model-removals))
                          (->> (:types old-model)
-                              (reduce-kv (fn [m k _v] (assoc m k DROPPED-ENTITY-VALUE)) {}))
+                           (reduce-kv (fn [m k _v] (assoc m k DROPPED-ENTITY-VALUE)) {}))
                          (:types model-removals))
         changed-types (-> (set (keys types-diff))
-                          (set/union (set (keys types-removals))))]
+                        (set/union (set (keys types-removals))))]
     (for [type-name changed-types
           :let [options-to-add (get types-diff type-name)
                 options-to-alter (get-in new-model [:types type-name])
@@ -453,6 +453,7 @@
                :type-name type-name
                :model-name model-name
                :options options-to-alter}))))
+
 
 (defn- make-migration*
   [models-file migrations-files]

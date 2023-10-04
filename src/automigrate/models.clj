@@ -55,15 +55,18 @@
     ::item-vec->map
     ::map-kw->kebab-case))
 
+
 (s/def ::validate-types-duplication
   (fn [types]
     (model-util/has-duplicates? (map :name types))))
+
 
 (s/def :automigrate.models.types->internal/types
   (s/and
     ::validate-types-duplication
     ::item-vec->map
     ::map-kw->kebab-case))
+
 
 (s/def ::model->internal
   (s/keys
@@ -166,11 +169,13 @@
           missing-fields (set/difference index-fields model-fields)]
       (empty? missing-fields))))
 
+
 (s/def ::validate-types-duplication-across-models
   (fn [models]
     (->> (vals models)
-         (mapcat (comp keys :types))
-         (model-util/has-duplicates?))))
+      (mapcat (comp keys :types))
+      (model-util/has-duplicates?))))
+
 
 (s/def ::internal-models
   (s/and
@@ -187,8 +192,10 @@
 (s/def :automigrate.models.indexes-vec/indexes
   (s/coll-of ::indexes/index-vec :min-count 1 :kind vector? :distinct true))
 
+
 (s/def :automigrate.models.types-vec/types
   (s/coll-of ::types/type-vec :min-count 1 :kind vector? :distinct true))
+
 
 (s/def ::public-model-as-vec
   :automigrate.models.fields-vec/fields)
@@ -249,6 +256,7 @@
   "Transform public models from file to internal representation."
   [models]
   (spec-util/conform ::->internal-models models))
+
 
 (comment
   (let [models {:account {:types [[:account-role :enum {:choices ["admin" "customer"]}]]

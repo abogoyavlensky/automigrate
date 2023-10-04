@@ -28,6 +28,7 @@
       (->> {:drop-table tables}
         (db-util/exec! db)))))
 
+
 (defn- drop-all-enum-types
   "Drop all user defined enum types."
   [db]
@@ -38,6 +39,7 @@
                      (mapv (comp keyword :typname)))]
     (when (seq enum-types)
       (db-util/exec! db {:drop-type enum-types}))))
+
 
 (defn with-drop-tables
   [db]
@@ -89,6 +91,7 @@
     :reports
     (map #(dissoc % :problem))))
 
+
 (defn test-make-and-migrate-ok!
   [existing-actions changed-models expected-actions expected-q-edn expected-q-sql]
   (bond/with-stub [[schema/load-migrations-from-files
@@ -107,7 +110,7 @@
         (is (every?
               #(= [#:next.jdbc{:update-count 0}] %)
               (#'migrations/exec-actions!
-                {:db db
-                 :actions (concat existing-actions actions)
-                 :direction :forward
-                 :migration-type :edn})))))))
+               {:db db
+                :actions (concat existing-actions actions)
+                :direction :forward
+                :migration-type :edn})))))))

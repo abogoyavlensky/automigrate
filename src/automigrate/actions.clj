@@ -7,19 +7,23 @@
             [automigrate.util.model :as model-util]
             [automigrate.util.spec :as spec-util]))
 
+
 ; Tables
 (def CREATE-TABLE-ACTION :create-table)
 (def DROP-TABLE-ACTION :drop-table)
+
 
 ; Columns
 (def ADD-COLUMN-ACTION :add-column)
 (def ALTER-COLUMN-ACTION :alter-column)
 (def DROP-COLUMN-ACTION :drop-column)
 
+
 ; Indexes
 (def CREATE-INDEX-ACTION :create-index)
 (def DROP-INDEX-ACTION :drop-index)
 (def ALTER-INDEX-ACTION :alter-index)
+
 
 ; Types
 (def CREATE-TYPE-ACTION :create-type)
@@ -142,6 +146,7 @@
 (s/def :automigrate.actions.types/options
   ::types/type)
 
+
 (defmethod action CREATE-TYPE-ACTION
   [_]
   (s/keys
@@ -150,12 +155,14 @@
              ::model-name
              :automigrate.actions.types/options]))
 
+
 (defmethod action DROP-TYPE-ACTION
   [_]
   (s/keys
     :req-un [::action
              ::type-name
              ::model-name]))
+
 
 (s/def ::->migration (s/multi-spec action :action))
 

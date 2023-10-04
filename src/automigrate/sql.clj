@@ -379,6 +379,7 @@
                :automigrate.actions.indexes/options])
     ::alter-index->sql))
 
+
 (s/def ::create-type->sql
   (s/conformer
     (fn [value]
