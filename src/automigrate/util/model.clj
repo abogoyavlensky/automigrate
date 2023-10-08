@@ -22,13 +22,20 @@
       ((juxt namespace name) kw))))
 
 
-(defn kw->name
+(defn kw->map
+  [kw]
+  (when-let [[model-name field-name] (kw->vec kw)]
+    {:model-name model-name
+     :field-name field-name}))
+
+
+(defn- kw->name
   "Convert full qualified keyword to keywordized name."
   [kw]
   (-> kw name keyword))
 
 
-(defn kw->kebab-case
+(defn- kw->kebab-case
   [kw]
   (-> kw
     (name)
@@ -43,6 +50,14 @@
       (assoc m (kw->kebab-case k) v))
     {}
     map-kw))
+
+
+(defn kw->snake-case
+  [kw]
+  (-> kw
+    (name)
+    (str/replace #"-" "_")
+    (keyword)))
 
 
 (defn- remove-empty-option

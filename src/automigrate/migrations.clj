@@ -15,12 +15,13 @@
             [weavejester.dependency :as dep]
             [automigrate.actions :as actions]
             [automigrate.models :as models]
+            [automigrate.fields :as fields]
             [automigrate.errors :as errors]
             [automigrate.sql :as sql]
             [automigrate.schema :as schema]
             [automigrate.util.file :as file-util]
             [automigrate.util.db :as db-util]
-            [automigrate.util.spec :as spec-util]
+            [automigrate.util.spec :as su]
             [automigrate.util.model :as model-util])
   (:import [java.io FileNotFoundException]))
 
@@ -162,7 +163,10 @@
       actions/ALTER-COLUMN-ACTION} (:field-name action)
     #{actions/CREATE-INDEX-ACTION
       actions/DROP-INDEX-ACTION
-      actions/ALTER-INDEX-ACTION} (:index-name action)))
+      actions/ALTER-INDEX-ACTION} (:index-name action)
+    #{actions/CREATE-TYPE-ACTION
+      actions/DROP-TYPE-ACTION
+      actions/ALTER-TYPE-ACTION} (:type-name action)))
 
 
 (defn- get-action-name
@@ -310,25 +314,50 @@
     (models/->internal-models)))
 
 
-(defn- action-dependencies
-  "Return dependencies as vector of vectors for an action or nil.
+(s/def ::model-name keyword?)
+(s/def ::field-name keyword?)
+(s/def ::type-name keyword?)
 
-  return: [[:model-name :field-name] ...]"
+
+(s/def ::action-dependencies-ret-item
+  (s/keys
+    :opt-un [::model-name
+             ::field-name
+             ::type-name]))
+
+
+(s/def ::action-dependencies-ret
+  (s/coll-of ::action-dependencies-ret-item))
+
+
+(defn- action-dependencies
+  "Return dependencies as vector of vectors for an action or nil."
   [action]
+  {:pre [(su/assert! map? action)]
+   :post [(su/assert! ::action-dependencies-ret %)]}
   (let [changes-to-add (model-util/changes-to-add (:changes action))
         fk (condp contains? (:action action)
              #{actions/ADD-COLUMN-ACTION} (get-in action [:options :foreign-key])
              #{actions/ALTER-COLUMN-ACTION} (:foreign-key changes-to-add)
-             nil)]
+             nil)
+        type-def (condp contains? (:action action)
+                   #{actions/ADD-COLUMN-ACTION} (get-in action [:options :type])
+                   #{actions/ALTER-COLUMN-ACTION} (:type changes-to-add)
+                   nil)]
     (->> (condp contains? (:action action)
            #{actions/ADD-COLUMN-ACTION
              actions/ALTER-COLUMN-ACTION
-             actions/DROP-COLUMN-ACTION} (cond-> [[(:model-name action) nil]]
-                                           (some? fk) (conj (model-util/kw->vec fk)))
-           #{actions/CREATE-TABLE-ACTION} (mapv (comp model-util/kw->vec :foreign-key)
+             actions/DROP-COLUMN-ACTION} (cond-> [{:model-name (:model-name action)}]
+                                           (some? fk) (conj (model-util/kw->map fk))
+
+                                           (s/valid? ::fields/enum-type type-def)
+                                           (conj {:type-name (last type-def)}))
+           #{actions/CREATE-TABLE-ACTION} (mapv (comp model-util/kw->map :foreign-key)
                                             (vals (:fields action)))
            #{actions/CREATE-INDEX-ACTION
-             actions/ALTER-INDEX-ACTION} (mapv (fn [field] [(:model-name action) field])
+             actions/ALTER-INDEX-ACTION} (mapv (fn [field]
+                                                 {:model-name (:model-name action)
+                                                  :field-name field})
                                            (get-in action [:options :fields]))
            [])
       (remove nil?))))
@@ -337,14 +366,18 @@
 (defn- parent-action?
   "Check if action is parent to one with presented dependencies."
   [deps action]
-  (let [model-names (set (map first deps))]
+  (let [model-names (set (map :model-name deps))
+        type-names (set (map :type-name deps))]
     (condp contains? (:action action)
       #{actions/CREATE-TABLE-ACTION} (contains? model-names (:model-name action))
       #{actions/ADD-COLUMN-ACTION
         actions/ALTER-COLUMN-ACTION} (some
-                                       #(and (= (:model-name action) (first %))
-                                          (= (:field-name action) (last %)))
+                                       #(and (= (:model-name action) (:model-name %))
+                                          (= (:field-name action) (:field-name %)))
                                        deps)
+      #{actions/CREATE-TYPE-ACTION
+        actions/ALTER-TYPE-ACTION
+        actions/DROP-TYPE-ACTION} (contains? type-names (:type-name action))
       false)))
 
 
@@ -353,9 +386,9 @@
   [actions graph next-action]
   (let [deps (action-dependencies next-action)
         parent-actions (filter (partial parent-action? deps) actions)]
-    (as-> graph g
-      (dep/depend g next-action DEFAULT-ROOT-NODE)
-      (reduce #(dep/depend %1 next-action %2) g parent-actions))))
+    (as-> graph $
+      (dep/depend $ next-action DEFAULT-ROOT-NODE)
+      (reduce #(dep/depend %1 next-action %2) $ parent-actions))))
 
 
 (defn- compare-actions
@@ -617,8 +650,8 @@
 (defn- get-migration-by-number
   "Return migration file name by number."
   [migration-names number]
-  {:pre [(spec-util/assert! (s/coll-of string?) migration-names)
-         (spec-util/assert! integer? number)]}
+  {:pre [(su/assert! (s/coll-of string?) migration-names)
+         (su/assert! integer? number)]}
   (->> migration-names
     (filter #(= number (get-migration-number %)))
     (first)))
@@ -718,7 +751,7 @@
 
 (defmethod exec-action! [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
   [{:keys [db action]}]
-  (let [formatted-action (spec-util/conform ::sql/->sql action)]
+  (let [formatted-action (su/conform ::sql/->sql action)]
     (if (sequential? formatted-action)
       (doseq [sub-action formatted-action]
         (db-util/exec! db sub-action))

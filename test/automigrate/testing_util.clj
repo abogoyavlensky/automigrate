@@ -114,3 +114,17 @@
                 :actions (concat existing-actions actions)
                 :direction :forward
                 :migration-type :edn})))))))
+
+
+(defn get-table-schema-from-db
+  ([db model-name]
+   (get-table-schema-from-db db model-name nil))
+  ([db model-name select-columns]
+   (db-util/exec!
+     db
+     {:select (or select-columns
+                [:table-name :data-type :udt-name :column-name :column-default
+                 :is-nullable :character-maximum-length])
+      :from [:information-schema.columns]
+      :where [:= :table-name model-name]
+      :order-by [:ordinal-position]})))

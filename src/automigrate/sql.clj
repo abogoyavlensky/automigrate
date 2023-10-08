@@ -128,13 +128,27 @@
   (s/map-of keyword? ::options->sql))
 
 
+(defn field-type->sql
+  [type-value]
+  (cond
+    (s/valid? ::fields/enum-type type-value)
+    ; :add-column clause in honeysql converts type name in kebab case into
+    ; two separated words. So, for custom enum types we have to convert
+    ; custom type name to snake case to use it in SQL as a single word.
+    (-> type-value last model-util/kw->snake-case)
+
+    :else type-value))
+
+
 (defn- fields->columns
   [fields]
   (reduce
     (fn [acc [field-name options]]
       (conj acc (->> (dissoc options :type :foreign-key)
                   (vals)
-                  (concat [field-name (:type options)] (:foreign-key options)))))
+                  (concat
+                    [field-name (-> options :type field-type->sql)]
+                    (:foreign-key options)))))
     []
     fields))
 
@@ -255,7 +269,7 @@
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
                       (case option
-                        :type {:alter-column [field-name :type value]}
+                        :type {:alter-column [field-name :type (field-type->sql value)]}
                         :null (let [operation (if (nil? value) :drop :set)]
                                 {:alter-column [field-name operation [:not nil]]})
                         :default {:alter-column [field-name :set value]}

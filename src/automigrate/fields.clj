@@ -22,6 +22,8 @@
 
 (s/def ::float-type (s/tuple #{:float} pos-int?))
 
+(s/def ::enum-type (s/tuple #{:enum} keyword?))
+
 
 (s/def ::decimal
   (s/and
@@ -86,6 +88,11 @@
 (defmethod field-type :float
   [_]
   ::float-type)
+
+
+(defmethod field-type :enum
+  [_]
+  ::enum-type)
 
 
 (defmethod field-type :decimal
@@ -301,6 +308,12 @@
     (decimal? default)
     (int? default)
     (float? default)
+    (nil? default)))
+
+
+(defmethod validate-default-and-type :enum
+  [{:keys [default]}]
+  (or (string? default)
     (nil? default)))
 
 
