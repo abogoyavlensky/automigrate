@@ -21,7 +21,7 @@
 
 (defmethod apply-action-to-schema actions/CREATE-TABLE-ACTION
   [schema action]
-  (assoc schema (:model-name action) (select-keys action [:fields])))
+  (assoc-in schema [(:model-name action) :fields] (:fields action)))
 
 
 (defmethod apply-action-to-schema actions/ADD-COLUMN-ACTION

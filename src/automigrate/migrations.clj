@@ -352,7 +352,16 @@
 
                                            (s/valid? ::fields/enum-type type-def)
                                            (conj {:type-name (last type-def)}))
-           #{actions/CREATE-TABLE-ACTION} (mapv (comp model-util/kw->map :foreign-key)
+           #{actions/CREATE-TABLE-ACTION} (mapv
+                                            (fn [field]
+                                              (cond
+                                                (contains? field :foreign-key)
+                                                (-> field
+                                                  :foreign-key
+                                                  model-util/kw->map)
+
+                                                (s/valid? ::fields/enum-type (:type field))
+                                                {:type-name (-> field :type last)}))
                                             (vals (:fields action)))
            #{actions/CREATE-INDEX-ACTION
              actions/ALTER-INDEX-ACTION} (mapv (fn [field]
