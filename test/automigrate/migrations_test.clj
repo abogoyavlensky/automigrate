@@ -382,7 +382,8 @@
                   {:action :create-table,
                    :model-name :account,
                    :fields {:id {:type :serial, :unique true, :primary-key true}
-                            :created_at {:type :timestamp}}})]
+                            :created_at {:type :timestamp}}})
+        old-schema (#'schema/actions->internal-models actions)]
     (is (= '({:action :create-table,
               :model-name :account,
               :fields {:id {:type :serial, :unique true, :primary-key true}
@@ -401,7 +402,7 @@
               :options {:type :integer,
                         :foreign-key :account/id}}
              {:action :drop-column, :field-name :created_at, :model-name :account})
-          (#'migrations/sort-actions actions)))))
+          (#'migrations/sort-actions old-schema actions)))))
 
 
 (deftest test-sort-actions-with-create-index-ok
@@ -417,7 +418,8 @@
                   {:action :add-column
                    :field-name :name
                    :model-name :feed
-                   :options {:type :text}})]
+                   :options {:type :text}})
+        old-schema (#'schema/actions->internal-models actions)]
 
     (is (= '({:action :create-table
               :model-name :feed
@@ -432,7 +434,7 @@
               :model-name :feed
               :options {:type :btree
                         :fields [:name :id]}})
-          (#'migrations/sort-actions actions)))))
+          (#'migrations/sort-actions old-schema actions)))))
 
 
 (deftest test-sort-actions-with-alter-index-ok
@@ -444,7 +446,8 @@
                   {:action :add-column
                    :field-name :name
                    :model-name :feed
-                   :options {:type :text}})]
+                   :options {:type :text}})
+        old-schema (#'schema/actions->internal-models actions)]
 
     (is (= '({:action :add-column
               :field-name :name
@@ -455,7 +458,7 @@
               :model-name :feed
               :options {:type :btree
                         :fields [:name :id]}})
-          (#'migrations/sort-actions actions)))))
+          (#'migrations/sort-actions old-schema actions)))))
 
 
 (deftest test-make-and-migrate-create-index-on-new-model-ok

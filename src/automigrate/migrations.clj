@@ -346,12 +346,13 @@
                    nil)]
     (->> (condp contains? (:action action)
            #{actions/ADD-COLUMN-ACTION
-             actions/ALTER-COLUMN-ACTION
-             actions/DROP-COLUMN-ACTION} (cond-> [{:model-name (:model-name action)}]
-                                           (some? fk) (conj (model-util/kw->map fk))
+             actions/ALTER-COLUMN-ACTION} (cond-> [{:model-name (:model-name action)}]
+                                            (some? fk) (conj (model-util/kw->map fk))
 
-                                           (s/valid? ::fields/enum-type type-def)
-                                           (conj {:type-name (last type-def)}))
+                                            (s/valid? ::fields/enum-type type-def)
+                                            (conj {:type-name (last type-def)}))
+           #{actions/DROP-COLUMN-ACTION} (cond-> [{:model-name (:model-name action)}]
+                                           (some? fk) (conj (model-util/kw->map fk)))
            #{actions/CREATE-TABLE-ACTION} (mapv
                                             (fn [field]
                                               (cond
@@ -368,33 +369,47 @@
                                                  {:model-name (:model-name action)
                                                   :field-name field})
                                            (get-in action [:options :fields]))
+           #{actions/DROP-TYPE-ACTION} [{:type-name (:type-name action)}]
            [])
       (remove nil?))))
 
 
 (defn- parent-action?
   "Check if action is parent to one with presented dependencies."
-  [deps action]
+  [old-schema deps next-action action]
   (let [model-names (set (map :model-name deps))
         type-names (set (map :type-name deps))]
-    (condp contains? (:action action)
-      #{actions/CREATE-TABLE-ACTION} (contains? model-names (:model-name action))
-      #{actions/ADD-COLUMN-ACTION
-        actions/ALTER-COLUMN-ACTION} (some
-                                       #(and (= (:model-name action) (:model-name %))
-                                          (= (:field-name action) (:field-name %)))
-                                       deps)
-      #{actions/CREATE-TYPE-ACTION
-        actions/ALTER-TYPE-ACTION
-        actions/DROP-TYPE-ACTION} (contains? type-names (:type-name action))
-      false)))
+    (if (= next-action action)
+      false
+      (condp contains? (:action action)
+        #{actions/CREATE-TABLE-ACTION} (contains? model-names (:model-name action))
+        #{actions/ADD-COLUMN-ACTION
+          actions/ALTER-COLUMN-ACTION} (some
+                                         #(and (= (:model-name action) (:model-name %))
+                                            (= (:field-name action) (:field-name %)))
+                                         deps)
+        ; First, drop enum column, then drop enum.
+        #{actions/DROP-COLUMN-ACTION} (let [field-type (get-in old-schema
+                                                         [(:model-name action)
+                                                          :fields
+                                                          (:field-name action)
+                                                          :type])]
+                                        (if (s/valid? ::fields/enum-type field-type)
+                                          (contains? type-names (last field-type))
+                                          false))
+        ; First, create/alter enum type, then add/alter column/table
+        #{actions/CREATE-TYPE-ACTION
+          actions/ALTER-TYPE-ACTION} (contains? type-names (:type-name action))
+        false))))
 
 
 (defn- assoc-action-deps
   "Assoc dependencies to graph by actions."
-  [actions graph next-action]
+  [old-schema actions graph next-action]
   (let [deps (action-dependencies next-action)
-        parent-actions (filter (partial parent-action? deps) actions)]
+        parent-actions (filter
+                         (partial parent-action? old-schema deps next-action)
+                         actions)]
     (as-> graph $
       (dep/depend $ next-action DEFAULT-ROOT-NODE)
       (reduce #(dep/depend %1 next-action %2) $ parent-actions))))
@@ -408,9 +423,9 @@
 
 (defn- sort-actions
   "Apply order for migration's actions by foreign key between models."
-  [actions]
+  [old-schema actions]
   (->> actions
-    (reduce (partial assoc-action-deps actions) (dep/graph))
+    (reduce (partial assoc-action-deps old-schema actions) (dep/graph))
     (dep/topo-sort compare-actions)
     ; drop first default root node `:root`
     (drop 1)))
@@ -463,16 +478,20 @@
 
 
 (defn- drop-type?
-  [types-removals type-name]
-  (= DROPPED-ENTITY-VALUE (get types-removals type-name)))
+  [types-removals type-name type-from-dropped-model?]
+  (or
+    (= DROPPED-ENTITY-VALUE (get types-removals type-name))
+    type-from-dropped-model?))
 
 
 (defn- parse-types-diff
   "Return type's migrations for model."
-  [{:keys [model-diff model-removals old-model new-model model-name]}]
+  [{:keys [model-diff model-removals old-model new-model model-name
+           type-from-dropped-model?]}]
   ; TODO: abstract this function for types/indexes/fields
   (let [types-diff (:types model-diff)
-        types-removals (if (= DROPPED-ENTITY-VALUE (:types model-removals))
+        types-removals (if (or (= DROPPED-ENTITY-VALUE (:types model-removals))
+                             type-from-dropped-model?)
                          (->> (:types old-model)
                            (reduce-kv (fn [m k _v] (assoc m k DROPPED-ENTITY-VALUE)) {}))
                          (:types model-removals))
@@ -482,7 +501,7 @@
           :let [options-to-add (get types-diff type-name)
                 options-to-alter (get-in new-model [:types type-name])
                 new-type?* (new-type? old-model types-diff type-name)
-                drop-type?* (drop-type? types-removals type-name)]]
+                drop-type?* (drop-type? types-removals type-name type-from-dropped-model?)]]
       (cond
         new-type?* {:action actions/CREATE-TYPE-ACTION
                     :type-name type-name
@@ -529,10 +548,11 @@
                        :model-removals model-removals
                        :old-model old-model
                        :new-model new-model
-                       :model-name model-name})))]
+                       :model-name model-name
+                       :type-from-dropped-model? drop-model?*})))]
     (->> actions
       (flatten)
-      (sort-actions)
+      (sort-actions old-schema)
       (actions/->migrations))))
 
 

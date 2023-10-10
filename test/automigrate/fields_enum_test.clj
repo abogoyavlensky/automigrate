@@ -100,6 +100,28 @@
       (is (= [] (#'migrations/make-migration* "" []))))))
 
 
+(deftest test-make-migration*-drop-table-with-enum-column-ok
+  (let [existing-actions '({:action :create-type
+                            :model-name :account
+                            :type-name :account-role
+                            :options {:type :enum
+                                      :choices ["admin" "customer"]}}
+                           {:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial}
+                                     :role {:type [:enum :account-role]}}})
+        existing-models {}]
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly existing-actions)]
+                     [file-util/read-edn (constantly existing-models)]]
+      (is (= '({:action :drop-type
+                :model-name :account
+                :type-name :account-role}
+               {:action :drop-table
+                :model-name :account})
+            (#'migrations/make-migration* "" []))))))
+
+
 (deftest test-make-and-migrate-add-column-enum-ok
   (let [existing-actions '({:action :create-table
                             :model-name :account
@@ -244,6 +266,48 @@
                :column_name "role"
                :data_type "USER-DEFINED"
                :udt_name "account_role"
+               :is_nullable "NO"
+               :table_name "account"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
+
+
+(deftest test-make-and-migrate-drop-type-and-column-enum-null-ok
+  (let [existing-actions '({:action :create-type
+                            :model-name :account
+                            :type-name :account-role
+                            :options {:type :enum
+                                      :choices ["admin" "customer"]}}
+                           {:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial}
+                                     :role {:type [:enum :account-role]}}})
+        changed-models {:account
+                        {:fields [[:id :serial]]}}
+        expected-actions '({:action :drop-column
+                            :model-name :account
+                            :field-name :role}
+                           {:action :drop-type
+                            :model-name :account
+                            :type-name :account-role})
+        expected-q-edn '({:alter-table :account
+                          :drop-column :role}
+                         {:drop-type [:account-role]})
+        expected-q-sql (list ["ALTER TABLE account DROP COLUMN role"]
+                         ["DROP TYPE account_role"])]
+
+    (test-util/test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "test actual db schema after applying the migration"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('account_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
                :is_nullable "NO"
                :table_name "account"}]
             (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
