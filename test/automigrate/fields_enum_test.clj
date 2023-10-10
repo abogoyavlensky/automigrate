@@ -1,6 +1,7 @@
 (ns automigrate.fields-enum-test
   (:require [clojure.test :refer :all]
             [bond.james :as bond]
+            [automigrate.util.db :as db-util]
             [automigrate.migrations :as migrations]
             [automigrate.schema :as schema]
             [automigrate.util.file :as file-util]
@@ -114,11 +115,11 @@
     (bond/with-stub [[schema/load-migrations-from-files
                       (constantly existing-actions)]
                      [file-util/read-edn (constantly existing-models)]]
-      (is (= '({:action :drop-type
+      (is (= '({:action :drop-table
+                :model-name :account}
+               {:action :drop-type
                 :model-name :account
-                :type-name :account-role}
-               {:action :drop-table
-                :model-name :account})
+                :type-name :account-role})
             (#'migrations/make-migration* "" []))))))
 
 
@@ -271,7 +272,7 @@
             (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
 
 
-(deftest test-make-and-migrate-drop-type-and-column-enum-null-ok
+(deftest test-make-and-migrate-drop-type-and-column-enum-ok
   (let [existing-actions '({:action :create-type
                             :model-name :account
                             :type-name :account-role
@@ -310,4 +311,55 @@
                :udt_name "int4"
                :is_nullable "NO"
                :table_name "account"}]
-            (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))
+
+    (testing "check type has been dropped in db"
+      (is (= []
+            (db-util/exec!
+              config/DATABASE-CONN
+              {:select [:t.typname :t.typtype :e.enumlabel]
+               :from [[:pg_type :t]]
+               :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
+               :where [:= :t.typname "account_role"]}))))))
+
+
+(deftest test-make-and-migrate-drop-type-and-table-with-enum-ok
+  (let [existing-actions '({:action :create-type
+                            :model-name :account
+                            :type-name :account-role
+                            :options {:type :enum
+                                      :choices ["admin" "customer"]}}
+                           {:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial}
+                                     :role {:type [:enum :account-role]}}})
+        changed-models {}
+        expected-actions '({:action :drop-table
+                            :model-name :account}
+                           {:action :drop-type
+                            :model-name :account
+                            :type-name :account-role})
+        expected-q-edn '({:drop-table [:if-exists :account]}
+                         {:drop-type [:account-role]})
+        expected-q-sql (list ["DROP TABLE IF EXISTS account"]
+                         ["DROP TYPE account_role"])]
+
+    (test-util/test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "test actual db schema after applying the migration"
+      (is (= []
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))
+
+    (testing "check type has been dropped in db"
+      (is (= []
+            (db-util/exec!
+              config/DATABASE-CONN
+              {:select [:t.typname :t.typtype :e.enumlabel]
+               :from [[:pg_type :t]]
+               :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
+               :where [:= :t.typname "account_role"]}))))))

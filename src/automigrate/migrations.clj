@@ -394,9 +394,17 @@
                                                           :fields
                                                           (:field-name action)
                                                           :type])]
-                                        (if (s/valid? ::fields/enum-type field-type)
-                                          (contains? type-names (last field-type))
-                                          false))
+                                        (and (s/valid? ::fields/enum-type field-type)
+                                          (contains? type-names (last field-type))))
+        ; First, drop table with enum column, then drop enum.
+        #{actions/DROP-TABLE-ACTION} (let [fields (get-in old-schema
+                                                    [(:model-name action)
+                                                     :fields])
+                                           field-types (mapv :type (vals fields))]
+                                       (some
+                                         #(and (s/valid? ::fields/enum-type %)
+                                            (contains? type-names (last %)))
+                                         field-types))
         ; First, create/alter enum type, then add/alter column/table
         #{actions/CREATE-TYPE-ACTION
           actions/ALTER-TYPE-ACTION} (contains? type-names (:type-name action))
