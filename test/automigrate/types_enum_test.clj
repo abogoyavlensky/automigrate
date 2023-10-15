@@ -194,3 +194,79 @@
                :is_nullable "NO"
                :table_name "account"}]
             (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
+
+
+(deftest test-make-and-migrate-alter-type-enum-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial}}}
+                           {:action :create-type
+                            :model-name :account
+                            :type-name :account-role
+                            :options {:type :enum
+                                      :choices ["admin" "customer"]}})
+        changed-models {:account
+                        {:fields [[:id :serial]]
+                         :types [[:account-role
+                                  :enum
+                                  {:choices ["basic" "admin" "developer" "customer" "support" "other"]}]]}}
+        expected-actions '({:action :alter-type
+                            :model-name :account
+                            :type-name :account-role
+                            :options {:type :enum
+                                      :choices ["basic" "admin" "developer" "customer" "support" "other"]}
+                            :changes {:choices {:from ["admin" "customer"]
+                                                :to ["basic" "admin" "developer" "customer" "support" "other"]}}})
+        expected-q-edn '([{:alter-type
+                           [:account-role :add-value "basic" :before "admin"]}
+                          {:alter-type
+                           [:account-role :add-value "developer" :before "customer"]}
+                          {:alter-type
+                           [:account-role :add-value "support" :after "customer"]}
+                          {:alter-type
+                           [:account-role :add-value "other" :after "support"]}])
+        expected-q-sql (list
+                         [["ALTER TYPE account_role ADD VALUE 'basic' BEFORE 'admin'"]
+                          ["ALTER TYPE account_role ADD VALUE 'developer' BEFORE 'customer'"]
+                          ["ALTER TYPE account_role ADD VALUE 'support' AFTER 'customer'"]
+                          ["ALTER TYPE account_role ADD VALUE 'other' AFTER 'support'"]])]
+
+    (test-util/test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "check created type in db"
+      (is (= [{:typname "account_role"
+               :typtype "e"
+               :enumlabel "basic"
+               :enumsortorder 0.0}
+              {:typname "account_role"
+               :typtype "e"
+               :enumlabel "admin"
+               :enumsortorder 1.0}
+              {:typname "account_role"
+               :typtype "e"
+               :enumlabel "developer"
+               :enumsortorder 1.5}
+              {:typname "account_role"
+               :typtype "e"
+               :enumlabel "customer"
+               :enumsortorder 2.0}
+              {:typname "account_role"
+               :typtype "e"
+               :enumlabel "support"
+               :enumsortorder 3.0}
+              {:typname "account_role"
+               :typtype "e"
+               :enumlabel "other"
+               :enumsortorder 4.0}]
+            (db-util/exec!
+              config/DATABASE-CONN
+              {:select [:t.typname :t.typtype :e.enumlabel :e.enumsortorder]
+               :from [[:pg_type :t]]
+               :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
+               :where [:= :t.typname "account_role"]
+               :order-by [[:e.enumsortorder :asc]]}))))))

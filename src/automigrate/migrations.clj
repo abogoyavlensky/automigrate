@@ -507,9 +507,10 @@
                         (set/union (set (keys types-removals))))]
     (for [type-name changed-types
           :let [options-to-add (get types-diff type-name)
-                options-to-alter (get-in new-model [:types type-name])
                 new-type?* (new-type? old-model types-diff type-name)
-                drop-type?* (drop-type? types-removals type-name type-from-dropped-model?)]]
+                drop-type?* (drop-type? types-removals type-name type-from-dropped-model?)
+                type-options-old (get-in old-model [:types type-name])
+                type-options-new (get-in new-model [:types type-name])]]
       (cond
         new-type?* {:action actions/CREATE-TYPE-ACTION
                     :type-name type-name
@@ -521,7 +522,12 @@
         :else {:action actions/ALTER-TYPE-ACTION
                :type-name type-name
                :model-name model-name
-               :options options-to-alter}))))
+               :options type-options-new
+               :changes (get-changes
+                          type-options-old
+                          (options-added
+                            {:to-add (dissoc type-options-new :type)})
+                          #{})}))))
 
 
 (defn- make-migration*

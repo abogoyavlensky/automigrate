@@ -164,6 +164,29 @@
              ::model-name]))
 
 
+(s/def :automigrate.actions.types/changes
+  (s/and
+    (s/map-of keyword? map? :min-count 1)
+    (d/dict*
+      (d/->opt (model-util/generate-changes [::types/choices])))))
+
+
+(s/def :automigrate.actions.types/options
+  ::types/type)
+
+
+(defmethod action ALTER-TYPE-ACTION
+  [_]
+  (s/keys
+    :req-un [::action
+             ::type-name
+             ::model-name
+             :automigrate.actions.types/options
+             :automigrate.actions.types/changes]))
+
+
+; Public
+
 (s/def ::->migration (s/multi-spec action :action))
 
 

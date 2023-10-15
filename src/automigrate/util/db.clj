@@ -54,6 +54,13 @@
   :create-type)
 
 
+(honey/register-clause! :alter-type
+  ; TODO: update with more precise formatter
+  (fn [k spec]
+    (#'honey/format-add-item k spec))
+  :drop-type)
+
+
 ; Public
 
 (defn db-conn
