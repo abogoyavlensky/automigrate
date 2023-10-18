@@ -116,6 +116,23 @@
                 :migration-type :edn})))))))
 
 
+(defn get-make-migration-output
+  [{:keys [existing-actions existing-models]
+    :or {existing-actions []
+         existing-models {}}}]
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly existing-actions)]
+                   ; existing models
+                   [file-util/read-edn
+                    (constantly existing-models)]]
+    (with-out-str
+      (#'migrations/make-migration
+       ; parameters are not involved in test as they are mocked
+       ; passing them here just to be able to run the make-migratoin fn
+       {:models-file (str config/MODELS-DIR "feed_basic.edn")
+        :migrations-dir config/MIGRATIONS-DIR}))))
+
+
 (defn get-table-schema-from-db
   ([db model-name]
    (get-table-schema-from-db db model-name nil))
@@ -128,3 +145,4 @@
       :from [:information-schema.columns]
       :where [:= :table-name model-name]
       :order-by [:ordinal-position]})))
+

@@ -270,3 +270,18 @@
                :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
                :where [:= :t.typname "account_role"]
                :order-by [[:e.enumsortorder :asc]]}))))))
+
+
+; ERRORS
+
+(deftest test-types-enum-model-validation-strict-keys-error
+  (let [params {:existing-models
+                {:account {:fields [[:id :integer {:null false}]
+                                    [:rol [:enum :account-role]]]
+                           :types [[:account-role
+                                    :enum
+                                    {:choices ["admin" "customer"]
+                                     :wrong true}]]}}}]
+    (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+             "Options of type :account.types/account-role have extra keys.\n\n")
+          (test-util/get-make-migration-output params)))))

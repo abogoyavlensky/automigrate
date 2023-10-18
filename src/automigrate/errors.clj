@@ -34,7 +34,7 @@
 
 (defn- get-model-items-path
   [data items-key]
-  {:pre [(contains? #{:fields :indexes} items-key)]}
+  {:pre [(contains? #{:fields :indexes :types} items-key)]}
   (let [model-name (get-model-name data)
         model (get (:origin-value data) model-name)
         in-path (:in data)
@@ -85,12 +85,29 @@
       (get-in (:origin-value data) (conj path 0)))))
 
 
+(defn- get-type-name
+  [data]
+  (let [path (get-model-items-path data :types)
+        last-item (peek path)]
+    (if (keyword? last-item)
+      last-item
+      (get-in (:origin-value data) (conj path 0)))))
+
+
 (defn- get-fq-index-name
-  "Return full qualified field name with model namespace."
+  "Return full qualified index name with model namespace."
   [data]
   (let [model-name (str (name (get-model-name data)) ".indexes")
-        field-name (name (get-index-name data))]
-    (keyword model-name field-name)))
+        index-name (name (get-index-name data))]
+    (keyword model-name index-name)))
+
+
+(defn- get-fq-type-name
+  "Return full qualified type name with model namespace."
+  [data]
+  (let [model-name (str (name (get-model-name data)) ".types")
+        type-name (name (get-type-name data))]
+    (keyword model-name type-name)))
 
 
 (defn- last-spec
@@ -282,6 +299,12 @@
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (format "Options of index %s have extra keys." fq-index-name)))
+
+
+(defmethod ->error-message :automigrate.types/type-vec-options-strict-keys
+  [data]
+  (let [fq-type-name (get-fq-type-name data)]
+    (format "Options of type %s have extra keys." fq-type-name)))
 
 
 (defmethod ->error-message :automigrate.indexes/unique
