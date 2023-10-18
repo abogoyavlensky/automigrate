@@ -372,7 +372,25 @@
                                                 :choices ["admin" "customer"]}}]
                   :existing-models
                   {:account {:fields [[:id :serial]]
-                             :types [[:role :enum {:choices ["admin"]}]]}}}]
+                             :types [[:role :enum {:choices ["admin" "test"]}]]}}}]
       (is (= (str "-- MIGRATION ERROR -------------------------------------\n\n"
-               "It is not possible to remove existing choices of enum type :account/role.\n\n")
+               "It is not possible to remove existing choices of enum type :account/role.\n\n"
+               "  {:choices {:from [\"admin\" \"customer\"], :to [\"admin\" \"test\"]}}\n\n")
+            (test-util/get-make-migration-output params)))))
+
+  (testing "do not allow to re-order existing choice values"
+    (let [params {:existing-actions [{:action :create-table
+                                      :model-name :account
+                                      :fields {:id {:type :serial}}}
+                                     {:action :create-type
+                                      :model-name :account
+                                      :type-name :role
+                                      :options {:type :enum
+                                                :choices ["admin" "customer"]}}]
+                  :existing-models
+                  {:account {:fields [[:id :serial]]
+                             :types [[:role :enum {:choices ["customer" "admin"]}]]}}}]
+      (is (= (str "-- MIGRATION ERROR -------------------------------------\n\n"
+               "It is not possible to re-order existing choices of enum type :account/role.\n\n"
+               "  {:choices {:from [\"admin\" \"customer\"], :to [\"customer\" \"admin\"]}}\n\n")
             (test-util/get-make-migration-output params))))))

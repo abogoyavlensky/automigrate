@@ -183,6 +183,15 @@
       (set/subset? choices-from choices-to))))
 
 
+(s/def ::validate-type-choices-not-allow-to-re-order
+  (fn [action-data]
+    (let [choices-from (-> action-data :changes :choices :from)
+          choices-from-set (set choices-from)
+          choices-to (->> (get-in action-data [:changes :choices :to])
+                       (filterv #(contains? choices-from-set %)))]
+      (= choices-from choices-to))))
+
+
 (defmethod action ALTER-TYPE-ACTION
   [_]
   (s/and
@@ -192,7 +201,8 @@
                ::model-name
                :automigrate.actions.types/options
                :automigrate.actions.types/changes])
-    ::validate-type-choices-not-allow-to-remove))
+    ::validate-type-choices-not-allow-to-remove
+    ::validate-type-choices-not-allow-to-re-order))
 
 
 ; Public

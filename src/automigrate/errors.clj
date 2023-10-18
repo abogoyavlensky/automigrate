@@ -754,15 +754,29 @@
     (:val data)))
 
 
-(defmethod ->error-message :automigrate.actions/validate-type-choices-not-allow-to-remove
+(defn get-fq-type-from-action-error
   [data]
   (let [model-name (-> data :val :model-name)
-        type-name (-> data :val :type-name)
-        fq-type-name (keyword (name model-name) (name type-name))]
+        type-name (-> data :val :type-name)]
+    (keyword (name model-name) (name type-name))))
+
+
+(defmethod ->error-message :automigrate.actions/validate-type-choices-not-allow-to-remove
+  [data]
+  (let [fq-type-name (get-fq-type-from-action-error data)]
     (add-error-value
       (format "It is not possible to remove existing choices of enum type %s."
         fq-type-name)
-      '())))
+      (-> data :val :changes))))
+
+
+(defmethod ->error-message :automigrate.actions/validate-type-choices-not-allow-to-re-order
+  [data]
+  (let [fq-type-name (get-fq-type-from-action-error data)]
+    (add-error-value
+      (format "It is not possible to re-order existing choices of enum type %s."
+        fq-type-name)
+      (-> data :val :changes))))
 
 
 ; Command arguments
