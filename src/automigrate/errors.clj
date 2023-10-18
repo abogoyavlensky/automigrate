@@ -165,11 +165,18 @@
   :hierarchy #'error-hierarchy)
 
 
+(defn- get-model-name-by-default
+  [data]
+  (if-let [spec-val (seq (:val data))]
+    spec-val
+    (-> data :in first)))
+
+
 (defmethod ->error-message :default
   [data]
   (case (:main-spec data)
     :automigrate.models/->internal-models
-    (add-error-value "Schema failed for model." (:val data))
+    (add-error-value "Schema failed for model." (get-model-name-by-default data))
 
     :automigrate.actions/->migrations
     (add-error-value "Schema failed for migration." (:val data))
@@ -285,6 +292,64 @@
       (:val data))))
 
 
+(defmethod ->error-message :automigrate.types/choices
+  [data]
+  (let [model-name (get-model-name data)
+        fq-type-name (get-fq-type-name data)]
+    (condp = (:pred data)
+      '(clojure.core/<= 1 (clojure.core/count %) Integer/MAX_VALUE)
+      (add-error-value
+        (format "Enum type %s should contain at least one choice."
+          fq-type-name)
+        '())
+
+      `vector? (add-error-value
+                 (format "Choices definition of type %s should be a vector of strings."
+                   fq-type-name)
+                 (:val data))
+
+      'distinct? (add-error-value
+                   (format "Enum type definition %s has duplicated choices."
+                     fq-type-name)
+                   (:val data))
+
+      (format "Enum type definition error in model %s." model-name))))
+
+
+(defmethod ->error-message :automigrate.types/type-vec-options
+  [data]
+  (let [fq-type-name (get-fq-type-name data)]
+    (condp = (:pred data)
+      '(clojure.core/fn [%] (clojure.core/contains? % :choices))
+      (format "Enum type %s misses :choices option." fq-type-name)
+
+      (format "Invalid definition of the enum type %s." fq-type-name))))
+
+
+(defmethod ->error-message :automigrate.types/type-vec
+  [data]
+  (let [fq-type-name (get-fq-type-name data)]
+    (condp = (:pred data)
+      '(clojure.spec.alpha/and
+         :automigrate.types/type-vec-options
+         :automigrate.types/type-vec-options-strict-keys)
+      (format "Enum type %s misses :choices option." fq-type-name)
+
+      (format "Invalid definition of the enum type %s." fq-type-name))))
+
+
+(defmethod ->error-message :automigrate.types.define-as/type
+  [data]
+  (let [fq-type-name (get-fq-type-name data)]
+    (format "Type %s must contain one of definition [:enum]." fq-type-name)))
+
+
+(defmethod ->error-message :automigrate.types/name
+  [data]
+  (let [model-name (get-model-name data)]
+    (format "Type definition in model %s must contain a name." model-name)))
+
+
 (defmethod ->error-message :automigrate.indexes/index-vec-options
   [data]
   (let [fq-index-name (get-fq-index-name data)]
@@ -367,6 +432,19 @@
                              (flatten)
                              (duplicates))]
     (format "Models have duplicated indexes: [%s]." (str/join ", " duplicated-indexes))))
+
+
+(defmethod ->error-message :automigrate.models/validate-types-duplication-across-models
+  [data]
+  (let [duplicated-types (->> (:origin-value data)
+                           (vals)
+                           (map (fn [model]
+                                  (when (map? model)
+                                    (map first (:types model)))))
+                           (remove nil?)
+                           (flatten)
+                           (duplicates))]
+    (format "Models have duplicated types: [%s]." (str/join ", " duplicated-types))))
 
 
 (defmethod ->error-message :automigrate.models/validate-indexed-fields

@@ -285,3 +285,76 @@
     (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
              "Options of type :account.types/account-role have extra keys.\n\n")
           (test-util/get-make-migration-output params)))))
+
+
+(deftest test-types-enum-model-validation-duplicated-type-across-models-error
+  (let [params {:existing-models
+                {:account {:fields [[:id :integer {:null false}]]
+                           :types [[:role :enum {:choices ["admin" "customer"]}]]}
+                 :feed {:fields [[:id :integer {:null false}]]
+                        :types [[:role :enum {:choices ["admin"]}]]}}}]
+    (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+             "Models have duplicated types: [:role].\n\n")
+          (test-util/get-make-migration-output params)))))
+
+
+(deftest test-types-enum-model-validation-choices-error
+  (testing "do not allow empty value in type choices option"
+    (let [params {:existing-models
+                  {:account {:fields [[:id :integer {:null false}]]
+                             :types [[:role :enum {:choices []}]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Enum type :account.types/role should contain at least one choice.\n\n")
+            (test-util/get-make-migration-output params)))))
+
+  (testing "type option choices must be a vector"
+    (let [params {:existing-models
+                  {:account {:fields [[:id :integer {:null false}]]
+                             :types [[:role :enum {:choices '("admin")}]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Choices definition of type :account.types/role should be a vector of strings.\n\n"
+               "  (\"admin\")\n\n")
+            (test-util/get-make-migration-output params)))))
+
+  (testing "type option choices must not have duplicated values"
+    (let [params {:existing-models
+                  {:account {:fields [[:id :integer {:null false}]]
+                             :types [[:role :enum {:choices ["admin" "admin"]}]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Enum type definition :account.types/role has duplicated choices.\n\n"
+               "  [\"admin\" \"admin\"]\n\n")
+            (test-util/get-make-migration-output params)))))
+
+  (testing "type option must contain choices"
+    (let [params {:existing-models
+                  {:account {:fields [[:id :integer {:null false}]]
+                             :types [[:role :enum {}]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Enum type :account.types/role misses :choices option.\n\n")
+            (test-util/get-make-migration-output params)))))
+
+  (testing "type must contain options with choices"
+    (let [params {:existing-models
+                  {:account {:fields [[:id :integer {:null false}]]
+                             :types [[:role :enum]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Enum type :account.types/role misses :choices option.\n\n")
+            (test-util/get-make-migration-output params))))))
+
+
+(deftest test-types-enum-model-validation-type-definition-error
+  (testing "invalid type definition"
+    (let [params {:existing-models
+                  {:account {:fields [[:id :integer {:null false}]]
+                             :types [[:role]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Type :account.types/role must contain one of definition [:enum].\n\n")
+            (test-util/get-make-migration-output params)))))
+
+  (testing "empty type"
+    (let [params {:existing-models
+                  {:account {:fields [[:id :integer {:null false}]]
+                             :types [[]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Type definition in model :account must contain a name.\n\n")
+            (test-util/get-make-migration-output params))))))
