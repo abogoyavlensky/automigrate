@@ -754,6 +754,17 @@
     (:val data)))
 
 
+(defmethod ->error-message :automigrate.actions/validate-type-choices-not-allow-to-remove
+  [data]
+  (let [model-name (-> data :val :model-name)
+        type-name (-> data :val :type-name)
+        fq-type-name (keyword (name model-name) (name type-name))]
+    (add-error-value
+      (format "It is not possible to remove existing choices of enum type %s."
+        fq-type-name)
+      '())))
+
+
 ; Command arguments
 
 (defmethod ->error-message ::common-command-args-errors

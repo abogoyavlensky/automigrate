@@ -1,5 +1,6 @@
 (ns automigrate.actions
   (:require [clojure.spec.alpha :as s]
+            [clojure.set :as set]
             [spec-dict :as d]
             [automigrate.indexes :as indexes]
             [automigrate.fields :as fields]
@@ -175,14 +176,23 @@
   ::types/type)
 
 
+(s/def ::validate-type-choices-not-allow-to-remove
+  (fn [action-data]
+    (let [choices-from (-> action-data :changes :choices :from set)
+          choices-to (-> action-data :changes :choices :to set)]
+      (set/subset? choices-from choices-to))))
+
+
 (defmethod action ALTER-TYPE-ACTION
   [_]
-  (s/keys
-    :req-un [::action
-             ::type-name
-             ::model-name
-             :automigrate.actions.types/options
-             :automigrate.actions.types/changes]))
+  (s/and
+    (s/keys
+      :req-un [::action
+               ::type-name
+               ::model-name
+               :automigrate.actions.types/options
+               :automigrate.actions.types/changes])
+    ::validate-type-choices-not-allow-to-remove))
 
 
 ; Public

@@ -358,3 +358,21 @@
       (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
                "Type definition in model :account must contain a name.\n\n")
             (test-util/get-make-migration-output params))))))
+
+
+(deftest test-types-enum-migrations-choices-error
+  (testing "do not allow removing existing choice values"
+    (let [params {:existing-actions [{:action :create-table
+                                      :model-name :account
+                                      :fields {:id {:type :serial}}}
+                                     {:action :create-type
+                                      :model-name :account
+                                      :type-name :role
+                                      :options {:type :enum
+                                                :choices ["admin" "customer"]}}]
+                  :existing-models
+                  {:account {:fields [[:id :serial]]
+                             :types [[:role :enum {:choices ["admin"]}]]}}}]
+      (is (= (str "-- MIGRATION ERROR -------------------------------------\n\n"
+               "It is not possible to remove existing choices of enum type :account/role.\n\n")
+            (test-util/get-make-migration-output params))))))
