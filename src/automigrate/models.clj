@@ -5,6 +5,7 @@
             [clojure.set :as set]
             [automigrate.util.model :as model-util]
             [automigrate.util.spec :as spec-util]
+            [automigrate.util.validation :as validation-util]
             [automigrate.fields :as fields]
             [automigrate.indexes :as indexes]
             [automigrate.types :as types])
@@ -105,7 +106,7 @@
 (defn- check-fields-type-valid?
   "Check that referenced and origin fields has same types.
 
-  Also check that field should has `:unique` option enabled and
+  Also check that field should have `:unique` option enabled, and
   it has the same type as origin field."
   [qualified-field-name field-options fk-field-options fk-model-name fk-field-name]
   (when-not (true? (:unique fk-field-options))
@@ -172,9 +173,16 @@
 
 (s/def ::validate-types-duplication-across-models
   (fn [models]
-    (->> (vals models)
-      (mapcat (comp keys :types))
+    (->> (validation-util/get-all-types models)
       (model-util/has-duplicates?))))
+
+
+(s/def ::validate-enum-field-misses-type
+  (fn [models]
+    (let [all-types (set (validation-util/get-all-types models))
+          all-fields-no-type (validation-util/get-all-enum-fields-without-type
+                               models all-types)]
+      (not (some? (seq all-fields-no-type))))))
 
 
 (s/def ::internal-models
@@ -182,7 +190,8 @@
     (s/map-of keyword? ::model)
     validate-foreign-key
     ::validate-indexes-duplication-across-models
-    ::validate-types-duplication-across-models))
+    ::validate-types-duplication-across-models
+    ::validate-enum-field-misses-type))
 
 
 (s/def :automigrate.models.fields-vec/fields

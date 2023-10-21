@@ -98,10 +98,10 @@
     (d/dict*
       ^:opt {OPTION-KEY-BACKWARD (s/and (s/or :empty #{EMPTY-OPTION}
                                           :value field-spec)
-                                   (s/conformer spec-util/tagged->value))
+                                   (s/conformer peek))
              OPTION-KEY-FORWARD (s/and (s/or :empty #{EMPTY-OPTION}
                                          :value field-spec)
-                                  (s/conformer spec-util/tagged->value))})
+                                  (s/conformer peek))})
     check-option-state))
 
 

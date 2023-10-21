@@ -1,7 +1,9 @@
 (ns automigrate.errors
-  (:require [clojure.string :as str]
-            [clojure.spec.alpha :as s]
-            [clojure.set :as set]))
+  (:require
+    [automigrate.util.validation :as validation-util]
+    [clojure.string :as str]
+    [clojure.spec.alpha :as s]
+    [clojure.set :as set]))
 
 
 (def ^:private ERROR-TEMPLATE
@@ -445,6 +447,16 @@
                            (flatten)
                            (duplicates))]
     (format "Models have duplicated types: [%s]." (str/join ", " duplicated-types))))
+
+
+(defmethod ->error-message :automigrate.models/validate-enum-field-misses-type
+  [data]
+  (let [models-internal (->> (:val data))
+        all-types (set (validation-util/get-all-types models-internal))
+        all-fields-no-type (validation-util/get-all-enum-fields-without-type
+                             models-internal all-types)]
+    (format "There enum fields with missing enum types: [%s]."
+      (str/join ", " all-fields-no-type))))
 
 
 (defmethod ->error-message :automigrate.models/validate-indexed-fields

@@ -363,3 +363,20 @@
                :from [[:pg_type :t]]
                :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
                :where [:= :t.typname "account_role"]}))))))
+
+
+; ERRORS
+
+(deftest test-fields-enum-uses-existing-enum-type
+  (let [params {:existing-models
+                {:account
+                 {:fields [[:id :serial]
+                           [:role [:enum :account-role]]]
+                  :types [[:account-role-wrong :enum {:choices ["admin" "support"]}]]}
+
+                 :feed {:fields [[:id :serial]
+                                 [:status [:enum :feed-status]]]
+                        :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}}]
+    (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+             "There enum fields with missing enum types: [:feed/status].\n\n")
+          (test-util/get-make-migration-output params)))))
