@@ -172,6 +172,64 @@
             (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
 
 
+(deftest test-make-and-migrate-add-column-enum-with-type-from-another-model-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial}}})
+        changed-models {:account
+                        {:fields [[:id :serial]
+                                  [:role [:enum :account-role]]]}
+
+                        :feed
+                        {:fields [[:id :serial]]
+                         :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}
+        expected-actions '({:action :create-type
+                            :model-name :feed
+                            :type-name :account-role
+                            :options {:type :enum
+                                      :choices ["admin" "customer"]}}
+                           {:action :create-table
+                            :model-name :feed
+                            :fields {:id {:type :serial}}}
+                           {:action :add-column
+                            :model-name :account
+                            :field-name :role
+                            :options {:type [:enum :account-role]}})
+        expected-q-edn '({:create-type
+                          [:account-role :as (:enum "admin" "customer")]}
+                         {:create-table [:feed]
+                          :with-columns [(:id :serial)]}
+                         {:alter-table :account
+                          :add-column (:role :account_role)})
+        expected-q-sql (list ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
+                         ["CREATE TABLE feed (id SERIAL)"]
+                         ["ALTER TABLE account ADD COLUMN role ACCOUNT_ROLE"])]
+
+    (test-util/test-make-and-migrate-ok!
+      existing-actions
+      changed-models
+      expected-actions
+      expected-q-edn
+      expected-q-sql)
+
+    (testing "test actual db schema after applying the migration"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('account_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "account"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "role"
+               :data_type "USER-DEFINED"
+               :udt_name "account_role"
+               :is_nullable "YES"
+               :table_name "account"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
+
+
 (deftest test-make-and-migrate-add-column-enum-with-default-ok
   (let [existing-actions '({:action :create-table
                             :model-name :account
