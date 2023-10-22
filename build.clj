@@ -119,7 +119,7 @@
     (assoc
       :lib lib
       :version (version (select-keys opts [:snapshot? :release? :bump]))
-      :src-pom "template/pom.xml")
+      :src-pom "templates/pom.xml")
     (build-clj/clean)
     (build-clj/jar)))
 

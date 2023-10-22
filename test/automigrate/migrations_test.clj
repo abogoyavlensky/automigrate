@@ -382,7 +382,8 @@
                   {:action :create-table,
                    :model-name :account,
                    :fields {:id {:type :serial, :unique true, :primary-key true}
-                            :created_at {:type :timestamp}}})]
+                            :created_at {:type :timestamp}}})
+        old-schema (#'schema/actions->internal-models actions)]
     (is (= '({:action :create-table,
               :model-name :account,
               :fields {:id {:type :serial, :unique true, :primary-key true}
@@ -401,7 +402,7 @@
               :options {:type :integer,
                         :foreign-key :account/id}}
              {:action :drop-column, :field-name :created_at, :model-name :account})
-          (#'migrations/sort-actions actions)))))
+          (#'migrations/sort-actions old-schema actions)))))
 
 
 (deftest test-sort-actions-with-create-index-ok
@@ -417,7 +418,8 @@
                   {:action :add-column
                    :field-name :name
                    :model-name :feed
-                   :options {:type :text}})]
+                   :options {:type :text}})
+        old-schema (#'schema/actions->internal-models actions)]
 
     (is (= '({:action :create-table
               :model-name :feed
@@ -432,7 +434,7 @@
               :model-name :feed
               :options {:type :btree
                         :fields [:name :id]}})
-          (#'migrations/sort-actions actions)))))
+          (#'migrations/sort-actions old-schema actions)))))
 
 
 (deftest test-sort-actions-with-alter-index-ok
@@ -444,7 +446,8 @@
                   {:action :add-column
                    :field-name :name
                    :model-name :feed
-                   :options {:type :text}})]
+                   :options {:type :text}})
+        old-schema (#'schema/actions->internal-models actions)]
 
     (is (= '({:action :add-column
               :field-name :name
@@ -455,7 +458,7 @@
               :model-name :feed
               :options {:type :btree
                         :fields [:name :id]}})
-          (#'migrations/sort-actions actions)))))
+          (#'migrations/sort-actions old-schema actions)))))
 
 
 (deftest test-make-and-migrate-create-index-on-new-model-ok
@@ -635,31 +638,6 @@
                   :migration-type :edn}))))))))
 
 
-(defn- test-make-and-migrate-ok!
-  [existing-actions changed-models expected-actions expected-q-edn expected-q-sql]
-  #_{:clj-kondo/ignore [:private-call]}
-  (bond/with-stub [[schema/load-migrations-from-files
-                    (constantly existing-actions)]
-                   [file-util/read-edn (constantly changed-models)]]
-    (let [db config/DATABASE-CONN
-          actions (#'migrations/make-migration* "" [])
-          queries (map #(spec-util/conform ::sql/->sql %) actions)]
-      (testing "test make-migration for model changes"
-        (is (= expected-actions actions)))
-      (testing "test converting migration actions to sql queries formatted as edn"
-        (is (= expected-q-edn queries)))
-      (testing "test converting actions to sql"
-        (is (= expected-q-sql (map #(sql/->sql %) actions))))
-      (testing "test running migrations on db"
-        (is (every?
-              #(= [#:next.jdbc{:update-count 0}] %)
-              (#'migrations/exec-actions!
-               {:db db
-                :actions (concat existing-actions actions)
-                :direction :forward
-                :migration-type :edn})))))))
-
-
 (deftest test-make-and-migrate-add-fk-field-on-delete-ok
   #_{:clj-kondo/ignore [:private-call]}
   (let [existing-actions '({:action :create-table
@@ -691,7 +669,7 @@
                                         [:raw "cascade"]),
                           :alter-table :feed})
         expected-q-sql '(["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
-    (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
+    (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
 
 
 (deftest test-make-and-migrate-alter-fk-field-on-delete-ok
@@ -732,7 +710,7 @@
         expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
                                 "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
                                 "REFERENCES account(id) on delete set null")])]
-    (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)
+    (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)
     (testing "test constraints [another option to test constraints]"
       (is (= [{:colname "id"
                :constraint_name "account_pkey"
@@ -786,7 +764,7 @@
         expected-q-edn '({:alter-table (:feed
                                          {:drop-constraint :feed-account-fkey})})
         expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey")])]
-    (test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
+    (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
 
 
 (deftest test-validate-migration-numbers
@@ -832,7 +810,7 @@
                                              :to [:varchar 200]}}})
         expected-q-edn '({:alter-table (:feed {:alter-column [:name :type [:varchar 200]]})})
         expected-q-sql (list ["ALTER TABLE feed ALTER COLUMN name TYPE VARCHAR(200)"])]
-    (test-make-and-migrate-ok!
+    (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
       expected-actions
@@ -854,7 +832,7 @@
                                              :to [:char 100]}}})
         expected-q-edn '({:alter-table (:feed {:alter-column [:name :type [:char 100]]})})
         expected-q-sql (list ["ALTER TABLE feed ALTER COLUMN name TYPE CHAR(100)"])]
-    (test-make-and-migrate-ok!
+    (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
       expected-actions
@@ -876,7 +854,7 @@
         expected-q-edn '({:alter-table :feed
                           :add-column (:amount [:decimal 10 2])})
         expected-q-sql (list ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2)"])]
-    (test-make-and-migrate-ok!
+    (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
       expected-actions
@@ -900,7 +878,7 @@
                                              :to [:numeric 10]}}})
         expected-q-edn '({:alter-table (:feed {:alter-column [:amount :type [:numeric 10]]})})
         expected-q-sql (list ["ALTER TABLE feed ALTER COLUMN amount TYPE NUMERIC(10)"])]
-    (test-make-and-migrate-ok!
+    (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
       expected-actions
@@ -946,7 +924,7 @@
                          ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
                          ["ALTER TABLE feed ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
 
-    (test-make-and-migrate-ok!
+    (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
       expected-actions
@@ -1051,7 +1029,7 @@
                           :add-column (:name [:varchar 10] [:default "test"])})
         expected-q-sql (list ["ALTER TABLE feed ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
 
-    (test-make-and-migrate-ok!
+    (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
       expected-actions
@@ -1111,7 +1089,7 @@
         expected-q-sql (list [(str "ALTER TABLE feed"
                                 " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
-    (test-make-and-migrate-ok!
+    (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
       expected-actions
@@ -1183,7 +1161,7 @@
         expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey"
                                 ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
-    (test-make-and-migrate-ok!
+    (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
       expected-actions

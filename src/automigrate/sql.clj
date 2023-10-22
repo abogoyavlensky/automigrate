@@ -1,13 +1,16 @@
 (ns automigrate.sql
   "Module for transforming actions from migration to SQL queries."
-  (:require [clojure.spec.alpha :as s]
-            [clojure.string :as str]
-            [spec-dict :as d]
-            [automigrate.actions :as actions]
-            [automigrate.fields :as fields]
-            [automigrate.util.db :as db-util]
-            [automigrate.util.model :as model-util]
-            [automigrate.util.spec :as spec-util]))
+  (:require
+    [automigrate.util.spec :as su]
+    [clojure.spec.alpha :as s]
+    [clojure.string :as str]
+    [slingshot.slingshot :refer [throw+]]
+    [spec-dict :as d]
+    [automigrate.actions :as actions]
+    [automigrate.fields :as fields]
+    [automigrate.util.db :as db-util]
+    [automigrate.util.model :as model-util]
+    [automigrate.util.spec :as spec-util]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
@@ -128,13 +131,27 @@
   (s/map-of keyword? ::options->sql))
 
 
+(defn field-type->sql
+  [type-value]
+  (cond
+    (s/valid? ::fields/enum-type type-value)
+    ; :add-column clause in honeysql converts type name in kebab case into
+    ; two separated words. So, for custom enum types we have to convert
+    ; custom type name to snake case to use it in SQL as a single word.
+    (-> type-value last model-util/kw->snake-case)
+
+    :else type-value))
+
+
 (defn- fields->columns
   [fields]
   (reduce
     (fn [acc [field-name options]]
       (conj acc (->> (dissoc options :type :foreign-key)
                   (vals)
-                  (concat [field-name (:type options)] (:foreign-key options)))))
+                  (concat
+                    [field-name (-> options :type field-type->sql)]
+                    (:foreign-key options)))))
     []
     fields))
 
@@ -255,7 +272,7 @@
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
                       (case option
-                        :type {:alter-column [field-name :type value]}
+                        :type {:alter-column [field-name :type (field-type->sql value)]}
                         :null (let [operation (if (nil? value) :drop :set)]
                                 {:alter-column [field-name operation [:not nil]]})
                         :default {:alter-column [field-name :set value]}
@@ -380,6 +397,136 @@
     ::alter-index->sql))
 
 
+(s/def ::create-type->sql
+  (s/conformer
+    (fn [value]
+      (when (= :enum (get-in value [:options :type]))
+        (let [options (:options value)
+              type-action actions/CREATE-TYPE-ACTION]
+          {type-action [(:type-name value) :as (cons :enum (:choices options))]})))))
+
+
+(defmethod action->sql actions/CREATE-TYPE-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::actions/action
+               ::actions/type-name
+               ::actions/model-name
+               :automigrate.actions.types/options])
+    ::create-type->sql))
+
+
+(s/def ::drop-type->sql
+  (s/conformer
+    (fn [value]
+      ; TODO: try to remove vector
+      {:drop-type [(:type-name value)]})))
+
+
+(defmethod action->sql actions/DROP-TYPE-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::actions/action
+               ::actions/type-name
+               ::actions/model-name])
+    ::drop-type->sql))
+
+
+(defn- ->alter-type-action
+  [{:keys [type-name new-value position existing-value]}]
+  {:pre [(su/assert! keyword? type-name)
+         (su/assert! string? new-value)
+         (su/assert! #{:before :after} position)
+         (su/assert! string? existing-value)]}
+  {:alter-type [type-name :add-value new-value position existing-value]})
+
+
+(defn- get-actions-for-new-choices
+  [type-name initial-value choices-to-add position]
+  {:pre [(su/assert! #{:before :after} position)]}
+  (loop [prev-value initial-value
+         [new-value & rest-choices] choices-to-add
+         actions []]
+    (if-not new-value
+      actions
+      (let [next-action (->alter-type-action {:type-name type-name
+                                              :new-value new-value
+                                              :position position
+                                              :existing-value prev-value})]
+        (recur new-value rest-choices (conj actions next-action))))))
+
+
+(defn- last-item?
+  [idx items]
+  (= (inc idx) (count items)))
+
+
+(defn- get-actions-for-enum-choices-changes
+  [type-name
+   from-choices
+   to-choices
+   result-actions
+   [from-idx from-value]]
+  (let [value-in-to-idx (.indexOf to-choices from-value)]
+    ; It is not possible to remove choices from the enum type
+    (when (< value-in-to-idx 0)
+      (throw+ {:type ::alter-type-missing-old-choice
+               :message "Missing old choice value in new enum type definition"
+               :data {:from-idx from-idx
+                      :from-value from-value}}))
+
+    (let [prev-value-count-drop (if (= from-idx 0)
+                                  0
+                                  (->> (nth from-choices (dec from-idx) 0)
+                                    (.indexOf to-choices)
+                                    ; inc index to get count of  items from the start of vec
+                                    (inc)))
+          before-reversed (-> to-choices
+                            (subvec prev-value-count-drop value-in-to-idx)
+                            (reverse))
+          new-actions-before (get-actions-for-new-choices
+                               type-name
+                               from-value
+                               before-reversed
+                               :before)
+          new-actions-after (if (last-item? from-idx from-choices)
+                              (get-actions-for-new-choices
+                                type-name
+                                from-value
+                                ; the rest of the `to-choices` vec
+                                (subvec to-choices (inc value-in-to-idx))
+                                :after)
+                              [])]
+      (vec (concat result-actions new-actions-before new-actions-after)))))
+
+
+(s/def ::alter-type->sql
+  (s/conformer
+    (fn [action]
+      ; Currently there is implementation for enum type
+      (let [{:keys [from to]} (get-in action [:changes :choices])]
+        (reduce
+          (partial get-actions-for-enum-choices-changes (:type-name action) from to)
+          []
+          (map-indexed vector from))))))
+
+
+(defmethod action->sql actions/ALTER-TYPE-ACTION
+  [_]
+  (s/and
+    (s/keys
+      :req-un [::actions/action
+               ::actions/type-name
+               ::actions/model-name
+               :automigrate.actions.types/options
+               :automigrate.actions.types/changes])
+    ::alter-type->sql))
+
+
+; Public
+
 (s/def ::->sql (s/multi-spec action->sql :action))
 
 
@@ -390,3 +537,13 @@
     (if (sequential? formatted-action)
       (map #(db-util/fmt %) formatted-action)
       (db-util/fmt formatted-action))))
+
+
+(comment
+  (let [type-name :account-role
+        from ["admin" "customer"]
+        to ["basic" "other" "admin" "test" "developer" "customer" "support"]]
+    (reduce
+      (partial get-actions-for-enum-choices-changes type-name from to)
+      []
+      (map-indexed vector from))))

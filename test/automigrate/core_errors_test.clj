@@ -1,4 +1,4 @@
-(ns automigrate.core-errors
+(ns automigrate.core-errors-test
   (:require [clojure.test :refer :all]
             [clojure.spec.alpha :as s]
             [bond.james :as bond]

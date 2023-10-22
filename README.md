@@ -169,7 +169,7 @@ As we saw in the previous example:
         [:description :text]]}
 ```
 
-Or it could be a map with two keys `:fields` and (*optional*) `:indexes`. Each of these is also a vector of vectors. 
+Or it could be a map with two keys `:fields`, `:indexes` (*optional*) and `:types` (*optional*). Each of these is also a vector of vectors. 
 The same model from above could be described as a map:
 
 ```clojure
@@ -190,30 +190,31 @@ The first element is the name of a field and must be a keyword.
 The second element could be a keyword or a vector of keyword and integer. 
 Available field types are presented in the following table:
 
-| Field type                                | Description                                                                                                                                                                |
-|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `:integer`                                |                                                                                                                                                                            |
-| `:smallint`                               |                                                                                                                                                                            |
-| `:bigint`                                 |                                                                                                                                                                            |
-| `:float`                                  |                                                                                                                                                                            |
-| `:real`                                   |                                                                                                                                                                            |
-| `:serial`                                 | auto-incremented integer field                                                                                                                                             |
-| `:numeric or [:numeric <pos-int>? <int>]` | Numeric type with optional precision and scale params. Default value could be set as numeric string, bigdec, float, int and nil: `"10.22"`, `10.22M`, `10`, `10.22`, `nil` |
-| `:decimal or [:decimal <pos-int>? <int>]` | Numeric type with optional precision and scale params. Same as `:numeric`.                                                                                                 |
-| `:uuid`                                   |                                                                                                                                                                            |
-| `:boolean`                                |                                                                                                                                                                            |
-| `:text`                                   |                                                                                                                                                                            |
-| `:timestamp`                              |                                                                                                                                                                            |
-| `:timestamp-with-time-zone`               |                                                                                                                                                                            |
-| `:timestamp-without-time-zone`            |                                                                                                                                                                            |
-| `:date`                                   |                                                                                                                                                                            |
-| `:time`                                   |                                                                                                                                                                            |
-| `:point`                                  |                                                                                                                                                                            |
-| `:json`                                   |                                                                                                                                                                            |
-| `:jsonb`                                  |                                                                                                                                                                            |
-| `[:varchar <pos-int>]`                    | second element is the length of value                                                                                                                                      |
-| `[:char <pos-int>]`                       | second element is the length of value                                                                                                                                      |
-| `:float or [:float <pos-int>]`            | second element is the minimum acceptable precision in binary digits                                                                                                        |
+| Field type                                | Description                                                                                                                                                                 |
+|-------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `:integer`                                |                                                                                                                                                                             |
+| `:smallint`                               |                                                                                                                                                                             |
+| `:bigint`                                 |                                                                                                                                                                             |
+| `:float`                                  |                                                                                                                                                                             |
+| `:real`                                   |                                                                                                                                                                             |
+| `:serial`                                 | Auto-incremented integer field.                                                                                                                                             |
+| `:numeric or [:numeric <pos-int>? <int>]` | Numeric type with optional precision and scale params. Default value could be set as numeric string, bigdec, float, int and nil: `"10.22"`, `10.22M`, `10`, `10.22`, `nil`. |
+| `:decimal or [:decimal <pos-int>? <int>]` | Numeric type with optional precision and scale params. Same as `:numeric`.                                                                                                  |
+| `:uuid`                                   |                                                                                                                                                                             |
+| `:boolean`                                |                                                                                                                                                                             |
+| `:text`                                   |                                                                                                                                                                             |
+| `:timestamp`                              |                                                                                                                                                                             |
+| `:timestamp-with-time-zone`               |                                                                                                                                                                             |
+| `:timestamp-without-time-zone`            |                                                                                                                                                                             |
+| `:date`                                   |                                                                                                                                                                             |
+| `:time`                                   |                                                                                                                                                                             |
+| `:point`                                  |                                                                                                                                                                             |
+| `:json`                                   |                                                                                                                                                                             |
+| `:jsonb`                                  |                                                                                                                                                                             |
+| `[:varchar <pos-int>]`                    | Second element is the length of value.                                                                                                                                      |
+| `[:char <pos-int>]`                       | Second element is the length of value.                                                                                                                                      |
+| `:float or [:float <pos-int>]`            | Second element is the minimum acceptable precision in binary digits.                                                                                                        |
+| `[:enum <enum-type-name>]`                | To use enum type you should define it in `:types` section in model.                                                                                                         |
 
 
 ###### Notes
@@ -273,7 +274,45 @@ Available options are presented in the table below:
 | `:fields`    | Vector of fields as keywords. Index will be created for those fields. | `true`    | [`:field-name` ...] |
 | `:unique`    | Set to `true` if index should be unique.                              | `false`   | `true?`             |
 
+#### Types
 
+:information_source: _At the moment only Enum type is supported._
+
+Each type is a vector of three elements: `[:name-of-type :type-of-type {...}]`
+Name, type-of-type and options are required.
+
+The first element is the name of a type and must be a keyword.
+
+##### Type of type
+
+The second element is a type of type and must be a keyword of available types:
+
+
+| Field type |
+|------------|
+| `:enum`    |
+
+
+##### Enum type
+Each enum type is a vector of three elements: `[:name-of-type :enum {:choices [<str>]}]`
+
+Options for enum type must contain the `:choices` value with vector of strings. 
+`:choices` represent enum values for the type.
+
+An example of model definition with enum type:
+```clojure
+{:account {:fields [[:id :serial]
+                    [:role [:enum :account-role]]]
+           :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}
+```
+
+Limitations:
+
+- `:choices` can't be empty;
+- values in `:choices` must be unique for the particular type;
+- **removing** a value from `:choices` of existing type is not supported;
+- **re-ordering** values in `:choices` of existing type is not supported;
+        
 ### CLI interface
 
 Available commands are: `make`, `migrate`, `list`, `explain`. Let's see them in detail by section.
@@ -339,7 +378,7 @@ There are no changes in models.
 
 #### `migrate`
 
-Applies changes described in migration to database.
+Applies change described in migration to database.
 Applies all unapplied migrations by number order if arg `:number` is not presented in command.
 Throws error for same migration number.
 

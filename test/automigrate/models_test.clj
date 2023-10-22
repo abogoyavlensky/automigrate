@@ -109,7 +109,7 @@
     (is (true? (s/valid? ::models/validate-indexed-fields models)))))
 
 
-(deftest test-validate-validate-fields-duplication
+(deftest test-validate-fields-duplication
   (testing "check valid model fields ok"
     (let [fields [{:name :id}
                   {:name :text}]]
@@ -120,7 +120,7 @@
       (is (false? (s/valid? ::models/validate-fields-duplication fields))))))
 
 
-(deftest test-validate-validate-indexes-duplication
+(deftest test-validate-indexes-duplication
   (testing "check valid model indexes ok"
     (let [fields {:feed
                   {:indexes {:feed_name_id_ids {:type :btree
@@ -137,3 +137,27 @@
                   {:indexes {:feed_name_id_ids {:type :btree
                                                 :fields [:id]}}}}]
       (is (false? (s/valid? ::models/validate-indexes-duplication-across-models fields))))))
+
+
+(deftest test-validate-types-duplication
+  (testing "check valid model types ok"
+    (let [models {:account {:types {:account-role {:type :enum
+                                                   :choices ["admin" "customer"]}}
+                            :fields {:id {:type :serial
+                                          :unique true}}}
+                  :feed {:types {:status {:type :enum
+                                          :choices ["ok" "err"]}}
+                         :fields {:id {:type :serial
+                                       :unique true}}}}]
+      (is (true? (s/valid? ::models/validate-types-duplication-across-models models)))))
+
+  (testing "check valid model types err"
+    (let [fields {:account {:types {:account-role {:type :enum
+                                                   :choices ["admin" "customer"]}}
+                            :fields {:id {:type :serial
+                                          :unique true}}}
+                  :feed {:types {:account-role {:type :enum
+                                                :choices ["user"]}}
+                         :fields {:id {:type :serial
+                                       :unique true}}}}]
+      (is (false? (s/valid? ::models/validate-types-duplication-across-models fields))))))

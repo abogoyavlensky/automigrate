@@ -143,7 +143,6 @@
 
 
 (deftest test-make-migration*-drop-column-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
@@ -170,7 +169,6 @@
 
 
 (deftest test-make-migration*-drop-table-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
@@ -191,7 +189,6 @@
 
 
 (deftest test-make-migration*-foreign-key-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
@@ -215,7 +212,6 @@
 
 
 (deftest test-make-migration*-create-index-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
@@ -238,7 +234,6 @@
 
 
 (deftest test-make-migration*-drop-index-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
@@ -262,7 +257,6 @@
 
 
 (deftest test-make-migration*-alter-index-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (bond/with-stub [[schema/load-migrations-from-files
                     (constantly
                       '(({:action :create-table
@@ -289,7 +283,6 @@
 
 
 (deftest test-make-migration*-create-table-with-fk-on-delete-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (let [existing-actions '({:action :create-table
                             :model-name :account
                             :fields {:id {:type :serial
@@ -316,7 +309,6 @@
 
 
 (deftest test-make-migration*-alter-column-with-fk-on-delete-restore-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (let [existing-actions '({:action :create-table
                             :model-name :account
                             :fields {:id {:type :serial

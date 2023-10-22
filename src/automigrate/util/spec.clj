@@ -20,12 +20,6 @@
                ed)))))
 
 
-(defn tagged->value
-  "Convert tagged value to vector or identity without a tag."
-  [tagged]
-  (peek tagged))
-
-
 (defn- throw-exception-for-spec!
   ([spec data]
    (throw-exception-for-spec! spec data nil))

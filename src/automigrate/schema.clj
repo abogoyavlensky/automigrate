@@ -21,7 +21,7 @@
 
 (defmethod apply-action-to-schema actions/CREATE-TABLE-ACTION
   [schema action]
-  (assoc schema (:model-name action) (select-keys action [:fields])))
+  (assoc-in schema [(:model-name action) :fields] (:fields action)))
 
 
 (defmethod apply-action-to-schema actions/ADD-COLUMN-ACTION
@@ -81,10 +81,28 @@
     (:options action)))
 
 
+(defmethod apply-action-to-schema actions/CREATE-TYPE-ACTION
+  [schema action]
+  (assoc-in schema [(:model-name action) :types (:type-name action)]
+    (:options action)))
+
+
+(defmethod apply-action-to-schema actions/DROP-TYPE-ACTION
+  [schema action]
+  (let [action-name (:model-name action)
+        result (map-util/dissoc-in
+                 schema
+                 [action-name :types]
+                 (:type-name action))]
+    (if (seq (get-in result [action-name :types]))
+      result
+      (map-util/dissoc-in result [action-name] :types))))
+
+
 (defn- actions->internal-models
   [actions]
   ; Throws spec exception if not valid.
-  (actions/validate-actions actions)
+  (actions/validate-actions! actions)
   (->> actions
     (reduce apply-action-to-schema {})
     (spec-util/conform ::models/internal-models)))

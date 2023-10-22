@@ -1,4 +1,5 @@
 (ns automigrate.fields
+  "All possible field types with spec validation."
   (:require [clojure.spec.alpha :as s]
             [automigrate.util.spec :as spec-util])
   (:import (clojure.lang PersistentVector)))
@@ -20,6 +21,8 @@
 (s/def ::char-type (s/tuple #{:char :varchar} pos-int?))
 
 (s/def ::float-type (s/tuple #{:float} pos-int?))
+
+(s/def ::enum-type (s/tuple #{:enum} keyword?))
 
 
 (s/def ::decimal
@@ -85,6 +88,11 @@
 (defmethod field-type :float
   [_]
   ::float-type)
+
+
+(defmethod field-type :enum
+  [_]
+  ::enum-type)
 
 
 (defmethod field-type :decimal
@@ -300,6 +308,12 @@
     (decimal? default)
     (int? default)
     (float? default)
+    (nil? default)))
+
+
+(defmethod validate-default-and-type :enum
+  [{:keys [default]}]
+  (or (string? default)
     (nil? default)))
 
 

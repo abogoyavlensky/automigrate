@@ -1,7 +1,9 @@
 (ns automigrate.errors
-  (:require [clojure.string :as str]
-            [clojure.spec.alpha :as s]
-            [clojure.set :as set]))
+  (:require
+    [automigrate.util.validation :as validation-util]
+    [clojure.string :as str]
+    [clojure.spec.alpha :as s]
+    [clojure.set :as set]))
 
 
 (def ^:private ERROR-TEMPLATE
@@ -34,7 +36,7 @@
 
 (defn- get-model-items-path
   [data items-key]
-  {:pre [(contains? #{:fields :indexes} items-key)]}
+  {:pre [(contains? #{:fields :indexes :types} items-key)]}
   (let [model-name (get-model-name data)
         model (get (:origin-value data) model-name)
         in-path (:in data)
@@ -85,12 +87,29 @@
       (get-in (:origin-value data) (conj path 0)))))
 
 
+(defn- get-type-name
+  [data]
+  (let [path (get-model-items-path data :types)
+        last-item (peek path)]
+    (if (keyword? last-item)
+      last-item
+      (get-in (:origin-value data) (conj path 0)))))
+
+
 (defn- get-fq-index-name
-  "Return full qualified field name with model namespace."
+  "Return full qualified index name with model namespace."
   [data]
   (let [model-name (str (name (get-model-name data)) ".indexes")
-        field-name (name (get-index-name data))]
-    (keyword model-name field-name)))
+        index-name (name (get-index-name data))]
+    (keyword model-name index-name)))
+
+
+(defn- get-fq-type-name
+  "Return full qualified type name with model namespace."
+  [data]
+  (let [model-name (str (name (get-model-name data)) ".types")
+        type-name (name (get-type-name data))]
+    (keyword model-name type-name)))
 
 
 (defn- last-spec
@@ -148,11 +167,18 @@
   :hierarchy #'error-hierarchy)
 
 
+(defn- get-model-name-by-default
+  [data]
+  (if-let [spec-val (seq (:val data))]
+    spec-val
+    (-> data :in first)))
+
+
 (defmethod ->error-message :default
   [data]
   (case (:main-spec data)
     :automigrate.models/->internal-models
-    (add-error-value "Schema failed for model." (:val data))
+    (add-error-value "Schema failed for model." (get-model-name-by-default data))
 
     :automigrate.actions/->migrations
     (add-error-value "Schema failed for migration." (:val data))
@@ -244,7 +270,7 @@
       (format "Indexes definition error in model %s." model-name))))
 
 
-(defmethod ->error-message :automigrate.models/index-vec
+(defmethod ->error-message :automigrate.indexes/index-vec
   [data]
   (let [model-name (get-model-name data)]
     (if (= "Extra input" (:reason data))
@@ -257,7 +283,7 @@
         (:val data)))))
 
 
-(defmethod ->error-message :automigrate.models.index/fields
+(defmethod ->error-message :automigrate.indexes/fields
   [data]
   (let [model-name (get-model-name data)
         fq-index-name (get-fq-index-name data)]
@@ -268,7 +294,65 @@
       (:val data))))
 
 
-(defmethod ->error-message :automigrate.models/index-vec-options
+(defmethod ->error-message :automigrate.types/choices
+  [data]
+  (let [model-name (get-model-name data)
+        fq-type-name (get-fq-type-name data)]
+    (condp = (:pred data)
+      '(clojure.core/<= 1 (clojure.core/count %) Integer/MAX_VALUE)
+      (add-error-value
+        (format "Enum type %s should contain at least one choice."
+          fq-type-name)
+        '())
+
+      `vector? (add-error-value
+                 (format "Choices definition of type %s should be a vector of strings."
+                   fq-type-name)
+                 (:val data))
+
+      'distinct? (add-error-value
+                   (format "Enum type definition %s has duplicated choices."
+                     fq-type-name)
+                   (:val data))
+
+      (format "Enum type definition error in model %s." model-name))))
+
+
+(defmethod ->error-message :automigrate.types/type-vec-options
+  [data]
+  (let [fq-type-name (get-fq-type-name data)]
+    (condp = (:pred data)
+      '(clojure.core/fn [%] (clojure.core/contains? % :choices))
+      (format "Enum type %s misses :choices option." fq-type-name)
+
+      (format "Invalid definition of the enum type %s." fq-type-name))))
+
+
+(defmethod ->error-message :automigrate.types/type-vec
+  [data]
+  (let [fq-type-name (get-fq-type-name data)]
+    (condp = (:pred data)
+      '(clojure.spec.alpha/and
+         :automigrate.types/type-vec-options
+         :automigrate.types/type-vec-options-strict-keys)
+      (format "Enum type %s misses :choices option." fq-type-name)
+
+      (format "Invalid definition of the enum type %s." fq-type-name))))
+
+
+(defmethod ->error-message :automigrate.types.define-as/type
+  [data]
+  (let [fq-type-name (get-fq-type-name data)]
+    (format "Type %s must contain one of definition [:enum]." fq-type-name)))
+
+
+(defmethod ->error-message :automigrate.types/name
+  [data]
+  (let [model-name (get-model-name data)]
+    (format "Type definition in model %s must contain a name." model-name)))
+
+
+(defmethod ->error-message :automigrate.indexes/index-vec-options
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (condp = (:pred data)
@@ -278,19 +362,25 @@
       (format "Invalid definition of the index %s." fq-index-name))))
 
 
-(defmethod ->error-message :automigrate.models/index-vec-options-strict-keys
+(defmethod ->error-message :automigrate.indexes/index-vec-options-strict-keys
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (format "Options of index %s have extra keys." fq-index-name)))
 
 
-(defmethod ->error-message :automigrate.models.index/unique
+(defmethod ->error-message :automigrate.types/type-vec-options-strict-keys
+  [data]
+  (let [fq-type-name (get-fq-type-name data)]
+    (format "Options of type %s have extra keys." fq-type-name)))
+
+
+(defmethod ->error-message :automigrate.indexes/unique
   [data]
   (let [fq-index-name (get-fq-index-name data)]
     (format "Option :unique of index %s should satisfy: `true?`." fq-index-name)))
 
 
-(defmethod ->error-message :automigrate.models/index-name
+(defmethod ->error-message :automigrate.indexes/index-name
   [data]
   (let [model-name (get-model-name data)]
     (if (= "Insufficient input" (:reason data))
@@ -300,7 +390,7 @@
         (:val data)))))
 
 
-(defmethod ->error-message :automigrate.models.index/type
+(defmethod ->error-message :automigrate.indexes/type
   [data]
   (let [fq-index-name (get-fq-index-name data)
         value (:val data)]
@@ -344,6 +434,29 @@
                              (flatten)
                              (duplicates))]
     (format "Models have duplicated indexes: [%s]." (str/join ", " duplicated-indexes))))
+
+
+(defmethod ->error-message :automigrate.models/validate-types-duplication-across-models
+  [data]
+  (let [duplicated-types (->> (:origin-value data)
+                           (vals)
+                           (map (fn [model]
+                                  (when (map? model)
+                                    (map first (:types model)))))
+                           (remove nil?)
+                           (flatten)
+                           (duplicates))]
+    (format "Models have duplicated types: [%s]." (str/join ", " duplicated-types))))
+
+
+(defmethod ->error-message :automigrate.models/validate-enum-field-misses-type
+  [data]
+  (let [models-internal (->> (:val data))
+        all-types (set (validation-util/get-all-types models-internal))
+        all-fields-no-type (validation-util/get-all-enum-fields-without-type
+                             models-internal all-types)]
+    (format "There enum fields with missing enum types: [%s]."
+      (str/join ", " all-fields-no-type))))
 
 
 (defmethod ->error-message :automigrate.models/validate-indexed-fields
@@ -651,6 +764,31 @@
   (add-error-value
     (format "Action has invalid model name.")
     (:val data)))
+
+
+(defn get-fq-type-from-action-error
+  [data]
+  (let [model-name (-> data :val :model-name)
+        type-name (-> data :val :type-name)]
+    (keyword (name model-name) (name type-name))))
+
+
+(defmethod ->error-message :automigrate.actions/validate-type-choices-not-allow-to-remove
+  [data]
+  (let [fq-type-name (get-fq-type-from-action-error data)]
+    (add-error-value
+      (format "It is not possible to remove existing choices of enum type %s."
+        fq-type-name)
+      (-> data :val :changes))))
+
+
+(defmethod ->error-message :automigrate.actions/validate-type-choices-not-allow-to-re-order
+  [data]
+  (let [fq-type-name (get-fq-type-from-action-error data)]
+    (add-error-value
+      (format "It is not possible to re-order existing choices of enum type %s."
+        fq-type-name)
+      (-> data :val :changes))))
 
 
 ; Command arguments
