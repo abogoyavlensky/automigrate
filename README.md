@@ -378,7 +378,7 @@ There are no changes in models.
 
 #### `migrate`
 
-Applies changes described in migration to database.
+Applies change described in migration to database.
 Applies all unapplied migrations by number order if arg `:number` is not presented in command.
 Throws error for same migration number.
 
