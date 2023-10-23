@@ -18,8 +18,8 @@ Creating examples_demo_run ... done
 Existing migrations:
 
 [ ] 0001_auto_create_table_book.edn
-[ ] 0002_auto_create_table_author.edn
-[ ] 0003_auto_add_column_amount.edn
+[ ] 0002_auto_create_table_author_etc.edn
+[ ] 0003_auto_add_column_amount_to_book_etc.edn
 ```
 
 Migrate database according to migrations:
@@ -29,10 +29,10 @@ $ docker-compose run demo clojure -X:migrations migrate
 Creating examples_demo_run ... done
 Migrating: 0001_auto_create_table_book...
 Successfully migrated: 0001_auto_create_table_book
-Migrating: 0002_auto_create_table_author...
-Successfully migrated: 0002_auto_create_table_author
-Migrating: 0003_auto_add_column_amount...
-Successfully migrated: 0003_auto_add_column_amount
+Migrating: 0002_auto_create_table_author_etc...
+Successfully migrated: 0002_auto_create_table_author_etc
+Migrating: 0003_auto_add_column_amount_to_book_etc...
+Successfully migrated: 0003_auto_add_column_amount_to_book_etc
 ```
 
 Check migration status again:
@@ -43,8 +43,8 @@ Creating examples_demo_run ... done
 Existing migrations:
 
 [✓] 0001_auto_create_table_book.edn
-[✓] 0002_auto_create_table_author.edn
-[✓] 0003_auto_add_column_amount.edn
+[✓] 0002_auto_create_table_author_etc.edn
+[✓] 0003_auto_add_column_amount_to_book_etc.edn
 ```
 
 Now you can open the adminer UI in browser and check newly created tables by link: [http://localhost:8081/](http://localhost:8081/).

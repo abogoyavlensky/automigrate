@@ -29,6 +29,7 @@
 (def ^:private DROPPED-ENTITY-VALUE 0)
 (def ^:private DEFAULT-ROOT-NODE :root)
 (def ^:private AUTO-MIGRATION-PREFIX "auto")
+(def ^:private AUTO-MIGRATION-POSTFIX "etc")
 (def ^:private FORWARD-DIRECTION :forward)
 (def ^:private BACKWARD-DIRECTION :backward)
 (def ^:private AUTO-MIGRATION-EXT :edn)
@@ -169,17 +170,48 @@
       actions/ALTER-TYPE-ACTION} (:type-name action)))
 
 
-(defn- get-action-name
+(defn- get-action-description-vec-basic
   [action]
-  (let [action-name (-> action :action name)
-        item-name (-> action extract-item-name name)]
-    (str/join #"_" [AUTO-MIGRATION-PREFIX action-name item-name])))
+  (let [action-name (-> action :action name (str/replace #"-" "_") (str/split #"_"))
+        item-name (-> action extract-item-name name (str/replace #"-" "_"))]
+    (conj action-name item-name)))
+
+
+(defn- get-action-description-vec-with-table
+  [action preposition]
+  (let [action-desc-basic (get-action-description-vec-basic action)
+        model-name (-> action :model-name name (str/replace #"-" "_"))]
+    (conj action-desc-basic preposition model-name)))
+
+
+(defn- get-action-description-vec
+  [action]
+  (condp contains? (:action action)
+    #{actions/ADD-COLUMN-ACTION} (get-action-description-vec-with-table action "to")
+    #{actions/ALTER-COLUMN-ACTION} (get-action-description-vec-with-table action "in")
+    #{actions/DROP-COLUMN-ACTION} (get-action-description-vec-with-table action "from")
+
+    #{actions/CREATE-INDEX-ACTION
+      actions/ALTER-INDEX-ACTION
+      actions/DROP-INDEX-ACTION} (get-action-description-vec-with-table action "on")
+
+    ; default
+    (get-action-description-vec-basic action)))
+
+
+(defn- get-next-migration-name-auto
+  [actions]
+  (let [first-action (first actions)
+        action-desc-vec (get-action-description-vec first-action)
+        action-desc-vec* (cond-> (concat [AUTO-MIGRATION-PREFIX] action-desc-vec)
+                           (> (count actions) 1) (concat [AUTO-MIGRATION-POSTFIX]))]
+    (str/join #"_" action-desc-vec*)))
 
 
 (defn- get-next-migration-name
   "Return given custom name with underscores or first action name."
   [actions custom-name]
-  (let [migration-name (or custom-name (get-action-name (first actions)))]
+  (let [migration-name (or custom-name (get-next-migration-name-auto actions))]
     (str/replace migration-name #"-" "_")))
 
 
@@ -598,16 +630,9 @@
 
 (defn- get-action-name-verbose
   [action]
-  (let [action-name (-> action :action name (str/replace #"-" " "))
-        item-name (-> action extract-item-name name (str/replace #"-" "_"))
-        model-name (:model-name action)
-        at-model (when-not (contains? #{actions/CREATE-TABLE-ACTION
-                                        actions/DROP-TABLE-ACTION}
-                             (:action action))
-                   (str "in table " (-> model-name name (str/replace #"-" "_"))))
-        full-action-name-vec (cond-> [action-name item-name]
-                               (some? at-model) (conj at-model))]
-    (str/join " " full-action-name-vec)))
+  (->> action
+    (get-action-description-vec)
+    (str/join " ")))
 
 
 (defn- print-action-names

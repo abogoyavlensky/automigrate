@@ -619,6 +619,7 @@ the tool while not every type of database column is supported.
 ## Inspired by
 
 - [Django migrations](https://docs.djangoproject.com/en/4.0/topics/migrations/)
+- [Prisma Migrate](https://www.prisma.io/migrate)
 
 ### Thanks to projects
 - [Honey SQL](https://github.com/seancorfield/honeysql)
