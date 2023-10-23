@@ -79,14 +79,14 @@
             :field-name :name
             :model-name :feed
             :options {:type [:varchar 100] :null true}})
-        (-> (str config/MIGRATIONS-DIR "/0002_auto_add_column_created_at_to_feed_and_more.edn")
+        (-> (str config/MIGRATIONS-DIR "/0002_auto_add_column_created_at_to_feed_etc.edn")
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0002_auto_add_column_created_at_to_feed_and_more"})
+            :name "0002_auto_add_column_created_at_to_feed_etc"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
@@ -98,7 +98,7 @@
               :migrations-dir config/MIGRATIONS-DIR})
   (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
               :migrations-dir config/MIGRATIONS-DIR})
-  (is (= (str "Created migration: test/automigrate/migrations/0003_auto_alter_column_id_in_feed_and_more.edn\n"
+  (is (= (str "Created migration: test/automigrate/migrations/0003_auto_alter_column_id_in_feed_etc.edn\n"
            "Actions:\n"
            "  - alter column id in feed\n"
            "  - alter column name in feed\n")
@@ -111,7 +111,7 @@
                    :number 2
                    :migrations-table "custom-migrations_table"})
     (is (= #{"0001_auto_create_table_feed"
-             "0002_auto_add_column_created_at_to_feed_and_more"}
+             "0002_auto_add_column_created_at_to_feed_etc"}
           (->> {:select [:*]
                 :from [:custom-migrations-table]}
             (db-util/exec! config/DATABASE-CONN)
@@ -125,7 +125,7 @@
                            :number 2
                            :migrations-table "custom-migrations-table"}))))
     (is (= #{"0001_auto_create_table_feed"
-             "0002_auto_add_column_created_at_to_feed_and_more"}
+             "0002_auto_add_column_created_at_to_feed_etc"}
           (->> {:select [:*]
                 :from [:custom-migrations-table]}
             (db-util/exec! config/DATABASE-CONN)
@@ -136,8 +136,8 @@
                    :jdbc-url config/DATABASE-URL
                    :migrations-table "custom-migrations-table"})
     (is (= #{"0001_auto_create_table_feed"
-             "0002_auto_add_column_created_at_to_feed_and_more"
-             "0003_auto_alter_column_id_in_feed_and_more"}
+             "0002_auto_add_column_created_at_to_feed_etc"
+             "0003_auto_alter_column_id_in_feed_etc"}
           (->> {:select [:*]
                 :from [:custom-migrations-table]}
             (db-util/exec! config/DATABASE-CONN)
@@ -155,8 +155,8 @@
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
   (is (= #{"0001_auto_create_table_feed"
-           "0002_auto_add_column_created_at_to_feed_and_more"
-           "0003_auto_alter_column_id_in_feed_and_more"}
+           "0002_auto_add_column_created_at_to_feed_etc"
+           "0003_auto_alter_column_id_in_feed_etc"}
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
@@ -167,7 +167,7 @@
                    :jdbc-url config/DATABASE-URL
                    :number 2})
     (is (= #{"0001_auto_create_table_feed"
-             "0002_auto_add_column_created_at_to_feed_and_more"}
+             "0002_auto_add_column_created_at_to_feed_etc"}
           (->> {:select [:*]
                 :from [db-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
@@ -204,14 +204,14 @@
             :options {:type :text}
             :field-name :name
             :model-name :feed})
-        (-> (str config/MIGRATIONS-DIR "/0002_auto_alter_column_id_in_feed_and_more.edn")
+        (-> (str config/MIGRATIONS-DIR "/0002_auto_alter_column_id_in_feed_etc.edn")
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
            {:id 2
-            :name "0002_auto_alter_column_id_in_feed_and_more"})
+            :name "0002_auto_alter_column_id_in_feed_etc"})
         (->> {:select [:*]
               :from [db-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)

@@ -29,6 +29,7 @@
 (def ^:private DROPPED-ENTITY-VALUE 0)
 (def ^:private DEFAULT-ROOT-NODE :root)
 (def ^:private AUTO-MIGRATION-PREFIX "auto")
+(def ^:private AUTO-MIGRATION-POSTFIX "etc")
 (def ^:private FORWARD-DIRECTION :forward)
 (def ^:private BACKWARD-DIRECTION :backward)
 (def ^:private AUTO-MIGRATION-EXT :edn)
@@ -203,7 +204,7 @@
   (let [first-action (first actions)
         action-desc-vec (get-action-description-vec first-action)
         action-desc-vec* (cond-> (concat [AUTO-MIGRATION-PREFIX] action-desc-vec)
-                           (> (count actions) 1) (concat ["and" "more"]))]
+                           (> (count actions) 1) (concat [AUTO-MIGRATION-POSTFIX]))]
     (str/join #"_" action-desc-vec*)))
 
 

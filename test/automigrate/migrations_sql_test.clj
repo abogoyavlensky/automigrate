@@ -31,7 +31,7 @@
       (is (= "0002_add_description_field.sql"
             (.getName (last files))))))
   (testing "check making next auto migration"
-    (is (= (str "Created migration: test/automigrate/migrations/0003_auto_add_column_created_at_to_feed_and_more.edn\n"
+    (is (= (str "Created migration: test/automigrate/migrations/0003_auto_add_column_created_at_to_feed_etc.edn\n"
              "Actions:\n"
              "  - add column created_at to feed\n"
              "  - add column name to feed\n")
@@ -40,7 +40,7 @@
                         :migrations-dir config/MIGRATIONS-DIR}))))
     (let [files (file-util/list-files config/MIGRATIONS-DIR)]
       (is (= 3 (count files)))
-      (is (= "0003_auto_add_column_created_at_to_feed_and_more.edn"
+      (is (= "0003_auto_add_column_created_at_to_feed_etc.edn"
             (.getName (last files)))))))
 
 
