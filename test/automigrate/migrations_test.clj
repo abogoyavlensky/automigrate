@@ -173,7 +173,7 @@
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
             (set)))))
-  (testing "test unapply all migrations"
+  (testing "test to revert all migrations"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                    :jdbc-url config/DATABASE-URL
                    :number 0})

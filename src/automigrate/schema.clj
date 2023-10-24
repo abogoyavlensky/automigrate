@@ -87,6 +87,12 @@
     (:options action)))
 
 
+(defmethod apply-action-to-schema actions/ALTER-TYPE-ACTION
+  [schema action]
+  (assoc-in schema [(:model-name action) :types (:type-name action)]
+    (:options action)))
+
+
 (defmethod apply-action-to-schema actions/DROP-TYPE-ACTION
   [schema action]
   (let [action-name (:model-name action)

@@ -455,7 +455,7 @@
         all-types (set (validation-util/get-all-types models-internal))
         all-fields-no-type (validation-util/get-all-enum-fields-without-type
                              models-internal all-types)]
-    (format "There enum fields with missing enum types: [%s]."
+    (format "There are enum fields with missing enum types: [%s]."
       (str/join ", " all-fields-no-type))))
 
 
