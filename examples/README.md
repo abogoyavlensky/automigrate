@@ -11,7 +11,7 @@ $ docker-compose up -d db adminer
 Check existing migrations:
 
 ```shell
-$ docker-compose run demo clojure -X:migrations list
+$ docker-compose run --rm demo clojure -X:migrations list
 Building demo
 ...
 Creating examples_demo_run ... done
@@ -25,7 +25,7 @@ Existing migrations:
 Migrate database according to migrations:
 
 ```shell
-$ docker-compose run demo clojure -X:migrations migrate
+$ docker-compose run --rm demo clojure -X:migrations migrate
 Creating examples_demo_run ... done
 Applying 0001_auto_create_table_book...
 0001_auto_create_table_book successfully applied.
@@ -38,7 +38,7 @@ Applying 0003_auto_add_column_amount_to_book_etc...
 Check migration status again:
 
 ```shell
-$ docker-compose run demo clojure -X:migrations list
+$ docker-compose run --rm demo clojure -X:migrations list
 Creating examples_demo_run ... done
 Existing migrations:
 

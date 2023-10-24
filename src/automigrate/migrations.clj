@@ -749,10 +749,10 @@
 (defmethod explain* [AUTO-MIGRATION-EXT FORWARD-DIRECTION EXPLAIN-FORMAT-HUMAN]
   ; Generate raw sql from migration.
   [{:keys [file-name migrations-dir] :as _args}]
-  (->> (read-migration {:file-name file-name
-                        :migrations-dir migrations-dir})
-    (mapv get-action-name-verbose)
-    (file-util/safe-println)))
+  (let [actions-explained (->> (read-migration {:file-name file-name
+                                                :migrations-dir migrations-dir})
+                            (mapv get-action-name-verbose))]
+    (file-util/safe-println actions-explained "")))
 
 
 (defmethod explain* [AUTO-MIGRATION-EXT BACKWARD-DIRECTION EXPLAIN-FORMAT-SQL]
