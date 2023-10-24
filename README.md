@@ -121,7 +121,7 @@ Existing migrations will be applied one by one in order of migration number:
 
 ```shell
 $ clojure -X:migrations migrate
-Applying migraiton 0001_auto_create_table_book...
+Applying 0001_auto_create_table_book...
 0001_auto_create_table_book successfully applied.
 ```
 
