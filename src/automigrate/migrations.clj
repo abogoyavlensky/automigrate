@@ -97,16 +97,16 @@
   (->> {:insert-into migrations-table
         :values [{:name migration-name}]}
     (db-util/exec! db))
-  (println (str "Successfully migrated: " migration-name)))
+  (println (str migration-name " successfully applied.")))
 
 
 (defn- delete-migration!
-  "Delete unapplied migration from db."
+  "Delete reverted migration from db."
   [db migration-name migrations-table]
   (->> {:delete-from migrations-table
         :where [:= :name migration-name]}
     (db-util/exec! db))
-  (println (str "Successfully unapplied: " migration-name)))
+  (println (str migration-name " successfully reverted.")))
 
 
 (defn- get-migration-name
@@ -924,8 +924,8 @@
       (if (seq to-migrate)
         (doseq [{:keys [migration-name file-name migration-type]} to-migrate]
           (if (= direction FORWARD-DIRECTION)
-            (println (str "Migrating: " migration-name "..."))
-            (println (str "Unapplying: " migration-name "...")))
+            (println (str "Applying " migration-name "..."))
+            (println (str "Reverting " migration-name "...")))
           (jdbc/with-transaction [tx db]
             (let [actions (read-migration {:file-name file-name
                                            :migrations-dir migrations-dir})]

@@ -121,8 +121,8 @@ Existing migrations will be applied one by one in order of migration number:
 
 ```shell
 $ clojure -X:migrations migrate
-Migrating: 0001_auto_create_table_book...
-Successfully migrated: 0001_auto_create_table_book
+Applying migraiton 0001_auto_create_table_book...
+0001_auto_create_table_book successfully applied.
 ```
 
 That's it. In the database you can see a newly created table called `book` with defined columns 
@@ -383,8 +383,8 @@ Applies all unapplied migrations by number order if arg `:number` is not present
 Throws error for same migration number.
 
 :warning: *Backward migration is not yet fully implemented for auto-migrations, but already works for custom SQL migrations.
-For auto-migrations, it is possible to unapply migration and to delete appropriate entry from migrations table.
-But database changes will not be unapplied for now.*
+For auto-migrations, it is possible to revert migration and to delete appropriate entry from migrations table.
+But database changes will not be reverted for now.*
 
 *Specific args:*
 
@@ -397,42 +397,42 @@ But database changes will not be unapplied for now.*
 Migrate forward all unapplied migrations:
 ```shell
 $ clojure -X:migrations migrate
-Migrating: 0001_auto_create_table_book...
-Successfully migrated: 0001_auto_create_table_book
-Migrating: 0002_create_table_author...
-Successfully migrated: 0002_create_table_author
-Migrating: 0003_add_custom_trigger...
-Successfully migrated: 0003_add_custom_trigger
+Appyling 0001_auto_create_table_book...
+0001_auto_create_table_book successfully applied.
+Appyling 0002_create_table_author...
+0002_create_table_author successfully applied.
+Appyling 0003_add_custom_trigger...
+0003_add_custom_trigger successfully applied.
 ```
 
 Migrate forward up to particular migration number (*included*):
 ```shell
 $ clojure -X:migrations migrate :number 2
-Migrating: 0001_auto_create_table_book...
-Successfully migrated: 0001_auto_create_table_book
-Migrating: 0002_create_table_author...
-Successfully migrated: 0002_create_table_author
+Appyling 0001_auto_create_table_book...
+0001_auto_create_table_book successfully applied.
+Appyling 0002_create_table_author...
+0002_create_table_author successfully applied.
 ```
 
 Migrate backward up to particular migration number (*excluded*):
 ```shell
 $ clojure -X:migrations migrate :number 1
-Unapplying: 0002_create_table_author...
+Reverting 0002_create_table_author...
 WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
-Successfully unapplied: 0002_create_table_author
+0002_create_table_author successfully reverted.
 ```
 
 Migrate backward to initial state of database:
 ```shell
 $ clojure -X:migrations migrate :number 0
-Unapplying: 0003_add_custom_trigger...
-Successfully unapplied: 0003_add_custom_trigger
-Unapplying: 0002_create_table_author...
+Reverting 0003_add_custom_trigger...
+0003_add_custom_trigger successfully reverted.
+Reverting 0002_create_table_author...
 WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
-Successfully unapplied: 0002_create_table_author
-Unapplying: 0001_auto_create_table_book...
+0002_create_table_author successfully reverted.
+Reverting 0001_auto_create_table_book...
 WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
-Successfully unapplied: 0001_auto_create_table_book
+0001_auto_create_table_book successfully reverted.
 ```
 
 Try to migrate already migrated migrations:
@@ -565,8 +565,8 @@ SET is_active = false;
 Then migrate it as usual:
 ```shell
 $ clojure -X:migrations migrate
-Migrating: 0003_make_all_accounts_active...
-Successfully migrated: 0003_make_all_accounts_active
+Appyling 0003_make_all_accounts_active...
+0003_make_all_accounts_active successfully applied.
 ```
 
 
@@ -581,7 +581,7 @@ command with env var using bash-script, makefile or whatever you want:
 
 ```shell
 $ clojure -X:migrations migrate :jdbc-url $DATABASE_URL 
-Migrating: ...
+Appyling ...
 ```
 
 *The downside of that approach could be a lack of ability to use a common config for a project.
