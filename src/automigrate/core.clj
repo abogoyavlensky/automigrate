@@ -14,8 +14,12 @@
 (s/def ::migrations-dir string?)
 (s/def ::jdbc-url (s/conformer str))
 (s/def ::number int?)
+
+
 (def HELP-CMDS-ORDER
   ['make 'migrate 'list 'explain 'help])
+
+
 (s/def ::cmd (set HELP-CMDS-ORDER))
 
 
@@ -148,17 +152,19 @@ Available options:
   [args]
   (run-fn migrations/list-migrations args ::list-args))
 
+
 (defn- fn-docstring
   [public-methods fn-sym]
   (-> public-methods (get fn-sym) (meta) :doc (str "\n")))
+
 
 (defn- general-help
   [public-methods]
   (let [all-cmd-descs (reduce
                         (fn [acc cmd]
                           (let [cmd-desc (->> (fn-docstring public-methods cmd)
-                                              (str/split-lines)
-                                              (first))]
+                                           (str/split-lines)
+                                           (first))]
                             (conj acc (str "  " cmd " - " cmd-desc))))
                         []
                         HELP-CMDS-ORDER)]
