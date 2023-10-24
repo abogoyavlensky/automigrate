@@ -394,3 +394,34 @@
                "It is not possible to re-order existing choices of enum type :account/role.\n\n"
                "  {:choices {:from [\"admin\" \"customer\"], :to [\"customer\" \"admin\"]}}\n\n")
             (test-util/get-make-migration-output params))))))
+
+
+(deftest test-types-enum-make-migration-alter-type-ok
+  (testing "do not allow empty value in type choices option"
+    (let [params {:existing-models
+                  {:account {:fields [[:id :integer]
+                                      [:role [:enum :account-role]]]
+                             :types [[:account-role :enum
+                                      {:choices ["admin" "customer" "support"]}]]}}
+
+                  :existing-actions '({:action :create-table
+                                       :model-name :account
+                                       :fields {:id {:type :serial}}}
+                                      {:action :create-type
+                                       :model-name :account
+                                       :type-name :account-role
+                                       :options {:type :enum
+                                                 :choices ["admin" "customer"]}}
+                                      {:action :alter-type
+                                       :model-name :account
+                                       :type-name :account-role
+                                       :options {:type :enum
+                                                 :choices ["admin" "customer"]}
+                                       :changes {:choices {:from ["admin" "customer"]
+                                                           :to ["admin" "customer" "support"]}}})}]
+      (is (= (str "Created migration: test/automigrate/migrations/0001_auto_alter_type_account_role_etc.edn\n"
+               "Actions:\n"
+               "  - alter type account_role\n"
+               "  - add column role to account\n"
+               "  - alter column id in account\n")
+            (test-util/get-make-migration-output params))))))
