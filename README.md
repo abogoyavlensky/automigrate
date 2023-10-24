@@ -476,10 +476,11 @@ Print out actual raw SQL for particular migration by number.
 
 *Specific args:*
 
-| Argument      | Description                                       | Required?    | Possible values                                 | Default value  |
-|---------------|---------------------------------------------------|--------------|-------------------------------------------------|----------------|
-| `:number`     | Number of migration which should be explained.    | `true`       | integer (example: `1` for migration `0001_...`) | *not provided* |
-| `:direction`  | Direction in which migration should be explained. | `false`      | `:forward`, `:backward`                         | `:forward`     |
+| Argument     | Description                                       | Required? | Possible values                                 | Default value  |
+|--------------|---------------------------------------------------|-----------|-------------------------------------------------|----------------|
+| `:number`    | Number of migration which should be explained.    | `true`    | integer (example: `1` for migration `0001_...`) | *not provided* |
+| `:direction` | Direction in which migration should be explained. | `false`   | `:forward`, `:backward`                         | `:forward`     |
+| `:format`    | Format of explanation.                            | `false`   | `:sql`, `:human`                                | `:sql`         |
 
 ##### Examples:
 

@@ -16,6 +16,12 @@
 (s/def ::number int?)
 
 
+(s/def ::format
+  (s/and
+    (s/conformer keyword)
+    #{:sql :human}))
+
+
 (s/def ::type
   (s/and
     (s/conformer keyword)
@@ -59,7 +65,8 @@
   (s/keys
     :req-un [::migrations-dir
              ::number]
-    :opt-un [::direction]))
+    :opt-un [::direction
+             ::format]))
 
 
 (s/def ::list-args
@@ -117,7 +124,8 @@
   Available options:
   - :migrations-dir - path to dir for storing migrations (required)
   - :number - integer number of migration to explain (required)
-  - :direction - direction for SQL from migration (optional)"
+  - :direction - direction for SQL from migration (optional)
+  - :format - format of explanation, can be `sql` or `human`, `sql` by default (optional)"
   [args]
   (run-fn migrations/explain args ::explain-args))
 
