@@ -261,9 +261,8 @@
           (map #(dissoc % :created_at))))))
 
 
-(deftest test-explain-basic-migration-ok
-  #_{:clj-kondo/ignore [:private-call]}
-  (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed.edn"])]
+(deftest test-explain-basic-migration-sql-ok
+  (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed_etc.edn"])]
                    [file-util/safe-println (constantly nil)]
                    [migrations/read-migration (constantly
                                                 '({:model-name :feed
@@ -357,6 +356,102 @@
             "DROP INDEX feed_name_idx"
             "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
             "COMMIT;"]
+          (-> (bond/calls file-util/safe-println)
+            (last)
+            :args
+            (first))))))
+
+
+(deftest test-explain-basic-migration-human-ok
+  (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed_etc.edn"])]
+                   [file-util/safe-println (constantly nil)]
+                   [migrations/read-migration (constantly
+                                                '({:model-name :feed
+                                                   :fields {:id {:type :serial
+                                                                 :null false
+                                                                 :primary-key true}
+                                                            :number {:type :integer
+                                                                     :default 0}
+                                                            :info {:type :text}}
+                                                   :action :create-table}
+                                                  {:model-name :account
+                                                   :fields {:id {:null true
+                                                                 :unique true
+                                                                 :type :serial}
+                                                            :name {:null true
+                                                                   :type [:varchar 100]}
+                                                            :rate {:type :float}}
+                                                   :action :create-table}
+                                                  {:model-name :role
+                                                   :fields {:is-active {:type :boolean}
+                                                            :created-at {:type :timestamp
+                                                                         :default [:now]}}
+                                                   :action :create-table}
+                                                  {:field-name :day
+                                                   :model-name :account
+                                                   :options {:type :date}
+                                                   :action :add-column}
+                                                  {:field-name :number
+                                                   :model-name :account
+                                                   :changes {:type {:to :integer :from :text}
+                                                             :unique {:to true :from :EMPTY}
+                                                             :default {:to 0 :from :EMPTY}
+                                                             :primary-key {:to :EMPTY :from true}
+                                                             :null {:to :EMPTY :from true}}
+                                                   :options {:type :integer
+                                                             :unique true
+                                                             :default 0}
+                                                   :action :alter-column}
+                                                  {:field-name :url
+                                                   :model-name :feed
+                                                   :action :drop-column}
+                                                  {:model-name :feed
+                                                   :action :drop-table}
+                                                  {:model-name :feed
+                                                   :fields {:account {:type :serial
+                                                                      :foreign-key :account/id}}
+                                                   :action :create-table}
+                                                  {:field-name :account
+                                                   :model-name :feed
+                                                   :changes {:foreign-key {:to :EMPTY :from :account/id}}
+                                                   :options {:type :serial
+                                                             :foreign-key :account/id}
+                                                   :action :alter-column}
+                                                  {:field-name :account
+                                                   :model-name :feed
+                                                   :changes {:foreign-key {:to :account/id :from :EMPTY}}
+                                                   :options {:type :integer
+                                                             :foreign-key :account/id}
+                                                   :action :alter-column}
+                                                  {:index-name :feed_name_idx
+                                                   :model-name :feed
+                                                   :options {:type :btree
+                                                             :fields [:name]}
+                                                   :action :create-index}
+                                                  {:index-name :feed_name_idx
+                                                   :model-name :feed
+                                                   :action :drop-index}
+                                                  {:index-name :feed_name_idx
+                                                   :model-name :feed
+                                                   :options {:type :btree
+                                                             :fields [:name]}
+                                                   :action :alter-index}))]]
+    (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
+                         :number 1
+                         :format :human})
+    (is (= ["  - create table feed"
+            "  - create table account"
+            "  - create table role"
+            "  - add column day to account"
+            "  - alter column number in account"
+            "  - drop column url from feed"
+            "  - drop table feed"
+            "  - create table feed"
+            "  - alter column account in feed"
+            "  - alter column account in feed"
+            "  - create index feed_name_idx on feed"
+            "  - drop index feed_name_idx on feed"
+            "  - alter index feed_name_idx on feed"]
           (-> (bond/calls file-util/safe-println)
             (last)
             :args
