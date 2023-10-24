@@ -34,7 +34,7 @@
 (defn safe-println
   ([more]
    (safe-println more ";"))
-  ([more  delimiter]
+  ([more delimiter]
    (.write *out*
      (str (str/join (str delimiter "\n") more) "\n"))))
 

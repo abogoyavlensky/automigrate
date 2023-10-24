@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Add Enum field type.
+- Add ability to explain migration in human-readable format.
 
 ### Changed
 
