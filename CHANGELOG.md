@@ -10,10 +10,11 @@ All notable changes to this project will be documented in this file.
 
 - Add Enum field type.
 - Add ability to explain migration in human-readable format.
+- Add help command.
 
 ### Changed
 
-- Add model name to auto-generated migration name
+- Add model name to the auto-generated migration name
 
 ## 0.1.1 - 2023-09-25
 
