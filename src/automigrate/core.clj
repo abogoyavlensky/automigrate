@@ -9,8 +9,10 @@
             [automigrate.errors :as errors])
   (:refer-clojure :exclude [list]))
 
+
 (def ^:private DOC-LINK
   "https://github.com/abogoyavlensky/automigrate#documentation")
+
 
 (s/def ::models-file string?)
 (s/def ::migrations-dir string?)
