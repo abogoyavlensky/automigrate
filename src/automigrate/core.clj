@@ -6,12 +6,9 @@
             [automigrate.migrations :as migrations]
             [automigrate.util.spec :as spec-util]
             [automigrate.util.file :as file-util]
-            [automigrate.errors :as errors])
+            [automigrate.errors :as errors]
+            [automigrate.help :as automigrate-help])
   (:refer-clojure :exclude [list]))
-
-
-(def ^:private DOC-LINK
-  "https://github.com/abogoyavlensky/automigrate#documentation")
 
 
 (s/def ::models-file string?)
@@ -20,11 +17,7 @@
 (s/def ::number int?)
 
 
-(def HELP-CMDS-ORDER
-  ['make 'migrate 'list 'explain 'help])
-
-
-(s/def ::cmd (set HELP-CMDS-ORDER))
+(s/def ::cmd (set automigrate-help/HELP-CMDS-ORDER))
 
 
 (s/def ::format
@@ -157,49 +150,10 @@ Available options:
   (run-fn migrations/list-migrations args ::list-args))
 
 
-(defn- fn-docstring
-  [public-methods fn-sym]
-  (-> public-methods (get fn-sym) (meta) :doc (str "\n")))
-
-
-(defn- general-help
-  [public-methods]
-  (let [all-cmd-descs (reduce
-                        (fn [acc cmd]
-                          (let [cmd-desc (->> (fn-docstring public-methods cmd)
-                                           (str/split-lines)
-                                           (first))]
-                            (conj acc (str "  " cmd " - " cmd-desc))))
-                        []
-                        HELP-CMDS-ORDER)]
-    (str/join
-      "\n"
-      (concat
-        ["Database auto-migration tool for Clojure.\n"
-         "Available commands:"]
-        all-cmd-descs
-        ["\nRun 'help :cmd COMMAND' for more information on a command.\n"
-         (str "To get more info, check out automigrate documentation at " DOC-LINK)]))))
-
-
-(defn- print-out-str
-  [doc-str]
-  (.write *out*
-    (str doc-str "\n")))
-
-
-(defn- help*
-  [{:keys [cmd]}]
-  (let [public-methods (ns-publics 'automigrate.core)]
-    (if (some? cmd)
-      (-> public-methods (fn-docstring cmd) (print-out-str))
-      (-> public-methods (general-help) (print-out-str)))))
-
-
 (defn help
   "Help information for all commands of automigrate tool.
 
 Available options:
   :cmd - Command name to display help information for a specific command. (optional)"
   [args]
-  (run-fn help* args ::help-args))
+  (run-fn automigrate-help/show-help! args ::help-args))
