@@ -6,7 +6,8 @@
             [automigrate.migrations :as migrations]
             [automigrate.util.spec :as spec-util]
             [automigrate.util.file :as file-util]
-            [automigrate.errors :as errors])
+            [automigrate.errors :as errors]
+            [automigrate.help :as automigrate-help])
   (:refer-clojure :exclude [list]))
 
 
@@ -14,6 +15,9 @@
 (s/def ::migrations-dir string?)
 (s/def ::jdbc-url (s/conformer str))
 (s/def ::number int?)
+
+
+(s/def ::cmd (set automigrate-help/HELP-CMDS-ORDER))
 
 
 (s/def ::format
@@ -76,6 +80,11 @@
     :opt-un [::migrations-table]))
 
 
+(s/def ::help-args
+  (s/keys
+    :opt-un [::cmd]))
+
+
 (defn- run-fn
   [f args args-spec]
   (try+
@@ -94,48 +103,57 @@
 ; Public interface
 
 (defn make
-  "Create new migration based on changes of models.
+  "Create a new migration based on changes to the models.
 
-  Available options:
-    - :models-file - path to models' file (required)
-    - :migrations-dir - path to dir for storing migrations (required)
-    - :name - custom name for migration (optional)
-    - :type - type of new migration, empty by default for auto-migration;
-              also available :empty-sql - for creating empty raw SQL migration; (optional)"
+Available options:
+  :models-file - Path to the file with model definitions. (required)
+  :migrations-dir - Path to directory containing migration files. (required)
+  :name - Custom name for a migration. (optional)
+  :type - Type of a new migration, empty by default for auto-migration.
+          Also available `:empty-sql` - for creating an empty raw SQL migration. (optional)"
   [args]
   (run-fn migrations/make-migration args ::make-args))
 
 
 (defn migrate
-  "Run existing migrations and change database schema.
+  "Run existing migrations and change the database schema.
 
-  Available options:
-  - :jdbc-url - jdbc url of database connection (required)
-  - :migrations-dir - path to dir for storing migrations (required)
-  - :migrations-table - optional migrations' table name (optional)
-  - :number - integer number of target point migration (optional)"
+Available options:
+  :jdbc-url - JDBC url for the database connection. (required)
+  :migrations-dir - Path to directory containing migration files. (required)
+  :migrations-table - Custom name for the migrations table in the database. (optional)
+  :number - Integer number of the target migration. (optional)"
   [args]
   (run-fn migrations/migrate args ::migrate-args))
 
 
 (defn explain
-  "Show raw SQL for migration by number
+  "Show raw SQL or human-readable actions for a migration by number.
 
-  Available options:
-  - :migrations-dir - path to dir for storing migrations (required)
-  - :number - integer number of migration to explain (required)
-  - :direction - direction for SQL from migration (optional)
-  - :format - format of explanation, can be `sql` or `human`, `sql` by default (optional)"
+Available options:
+  :migrations-dir - Path to directory containing migration files. (required)
+  :number - Integer number of the migration to explain. (required)
+  :direction - Direction of the migration to explain, can be `forward` (default) or `backward`. (optional)
+  :format - Format of explanation, can be `sql` (default) or `human`. (optional)"
   [args]
   (run-fn migrations/explain args ::explain-args))
 
 
 (defn list
-  "Show list of existing migrations with status.
+  "Show the list of existing migrations with status.
 
-  Available options:
-  - :jdbc-url - jdbc url of database connection (required)
-  - :migrations-dir - path to dir for storing migrations (required)
-  - :migrations-table - optional migrations' table name (optional)"
+Available options:
+  :jdbc-url - JDBC url for the database connection. (required)
+  :migrations-dir - Path to directory containing migration files. (required)
+  :migrations-table - Custom name for the migrations table in the database. (optional)"
   [args]
   (run-fn migrations/list-migrations args ::list-args))
+
+
+(defn help
+  "Help information for all commands of automigrate tool.
+
+Available options:
+  :cmd - Command name to display help information for a specific command. (optional)"
+  [args]
+  (run-fn automigrate-help/show-help! args ::help-args))
