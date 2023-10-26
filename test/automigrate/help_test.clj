@@ -9,7 +9,7 @@
            "  make - Create a new migration based on changes to the models.\n"
            "  migrate - Run existing migrations and change the database schema.\n"
            "  list - Show the list of existing migrations with status.\n"
-           "  explain - Show raw SQL or human-readable actions for a migration by number.\n"
+           "  explain - Show raw SQL or human-readable description for a migration by number.\n"
            "  help - Help information for all commands of automigrate tool.\n\n"
            "Run 'help :cmd COMMAND' for more information on a command.\n\n"
            "To get more info, check out automigrate documentation at https://github.com/abogoyavlensky/automigrate#documentation\n")
