@@ -128,7 +128,7 @@ Available options:
 
 
 (defn explain
-  "Show raw SQL or human-readable actions for a migration by number.
+  "Show raw SQL or human-readable description for a migration by number.
 
 Available options:
   :migrations-dir - Path to directory containing migration files. (required)
