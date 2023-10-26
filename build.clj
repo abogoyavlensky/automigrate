@@ -115,13 +115,15 @@
 (defn build
   "Build a jar-file for the lib."
   [opts]
-  (-> opts
-    (assoc
-      :lib lib
-      :version (version (select-keys opts [:snapshot? :release? :bump]))
-      :src-pom "templates/pom.xml")
-    (build-clj/clean)
-    (build-clj/jar)))
+  (let [new-version (version (select-keys opts [:snapshot? :release? :bump]))]
+    (-> opts
+      (assoc
+        :lib lib
+        :version new-version
+        :tag new-version
+        :src-pom "templates/pom.xml")
+      (build-clj/clean)
+      (build-clj/jar))))
 
 
 (defn install
