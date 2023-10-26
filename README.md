@@ -1,6 +1,7 @@
 # automigrate
 
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
+[![cljdoc badge](https://cljdoc.org/badge/net.clojars.abogoyavlensky/automigrate)](https://cljdoc.org/jump/release/net.clojars.abogoyavlensky/automigrate)
 
 Database auto-migration tool for Clojure. Define models as plain EDN data structures 
 and create database schema migrations automatically based on changes to the models.
