@@ -87,11 +87,11 @@
                          (latest-git-tag-name)
                          (latest-git-tag-name-across-all-branches))
         _ (s/assert ::version (split-git-tag latest-version))
-        _ (prn (format "Latest version: %s" latest-version))
+        _ (println (format "Latest version: %s" latest-version))
         new-version (cond-> latest-version
                       (some? bump) (bump-version bump)
                       (true? snapshot?) (add-snapshot))]
-    _ (prn (format "New version: %s" new-version))
+    _ (println (format "New version: %s" new-version))
     new-version))
 
 
