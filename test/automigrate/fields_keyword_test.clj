@@ -90,7 +90,16 @@
                                                {:field-type :circle}
                                                {:field-type :double-precision
                                                 :field-name "double precision"
-                                                :udt "float8"}]]
+                                                :udt "float8"}
+                                               {:field-type :inet}
+                                               {:field-type :line}
+                                               {:field-type :lseg}
+                                               {:field-type :macaddr}
+                                               {:field-type :macaddr8}
+                                               {:field-type :money}
+                                               {:field-type :path}
+                                               {:field-type :pg_lsn}
+                                               {:field-type :pg_snapshot}]]
     (test-util/drop-all-tables config/DATABASE-CONN)
     (test-util/delete-recursively config/MIGRATIONS-DIR)
 

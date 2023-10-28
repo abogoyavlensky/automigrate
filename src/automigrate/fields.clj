@@ -63,7 +63,16 @@
       :bytea
       :cidr
       :circle
-      :double-precision}))
+      :double-precision
+      :inet
+      :line
+      :lseg
+      :macaddr
+      :macaddr8
+      :money
+      :path
+      :pg_lsn
+      :pg_snapshot}))
 
 
 (defn- field-type-dispatch
@@ -128,7 +137,8 @@
     (derive :time :timestamp)
     (derive :uuid :string)
     (derive :bool :boolean)
-    (derive :real :float)))
+    (derive :real :float)
+    (derive :double-precision :float)))
 
 
 (defn check-type-group

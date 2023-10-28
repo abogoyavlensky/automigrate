@@ -222,6 +222,16 @@ Available field types are presented in the following table:
 | `cidr`                                    |                                                                                                                                                                             |
 | `circle`                                  |                                                                                                                                                                             |
 | `double-precision`                        |                                                                                                                                                                             |
+| `inet`                                    |                                                                                                                                                                             |
+| `line`                                    |                                                                                                                                                                             |
+| `lseg`                                    |                                                                                                                                                                             |
+| `macaddr`                                 |                                                                                                                                                                             |
+| `macaddr8`                                |                                                                                                                                                                             |
+| `money`                                   |                                                                                                                                                                             | 
+| `path`                                    |                                                                                                                                                                             |
+| `pg_lsn`                                  |                                                                                                                                                                             |
+| `pg_snapshot`                             |                                                                                                                                                                             |
+
 
 
 ###### Notes
