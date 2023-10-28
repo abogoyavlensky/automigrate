@@ -79,3 +79,31 @@
                  :is_nullable "NO"
                  :table_name "account"}]
               (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))
+
+
+(deftest test-fields-box-create-table-ok
+  (let [models {:account
+                {:fields [[:rectangle :box]]}}]
+
+    (testing "check generated actions, queries edn and sql from all actions"
+      (is (= {:new-actions [{:action :create-table
+                             :fields {:rectangle {:type :box}}
+                             :model-name :account}]
+              :q-edn [{:create-table [:account]
+                       :with-columns ['(:rectangle :box)]}]
+              :q-sql [["CREATE TABLE account (rectangle BOX)"]]}
+            (test-util/perform-make-and-migrate!
+              {:jdbc-url config/DATABASE-CONN
+               :existing-actions []
+               :existing-models models}))))
+
+    (testing "check actual db changes"
+      (testing "test actual db schema after applying the migration"
+        (is (= [{:character_maximum_length nil
+                 :column_default nil
+                 :column_name "rectangle"
+                 :data_type "box"
+                 :udt_name "box"
+                 :is_nullable "YES"
+                 :table_name "account"}]
+              (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))

@@ -58,7 +58,8 @@
       :time
       :point
       :json
-      :jsonb}))
+      :jsonb
+      :box}))
 
 
 (defn- field-type-dispatch
