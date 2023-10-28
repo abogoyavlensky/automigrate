@@ -14,7 +14,7 @@
             [slingshot.slingshot :refer [try+]]))
 
 
-(defn- drop-all-tables
+(defn drop-all-tables
   "Drop all database tables for public schema."
   [db]
   (let [tables (->> {:select [:table_name]
@@ -49,7 +49,7 @@
     (f)))
 
 
-(defn- delete-recursively
+(defn delete-recursively
   "Delete dir and files inside recursively."
   [path]
   (let [file-obj (io/file path)]

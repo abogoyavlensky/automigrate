@@ -59,7 +59,10 @@
       :point
       :json
       :jsonb
-      :box}))
+      :box
+      :bytea
+      :cidr
+      :circle}))
 
 
 (defn- field-type-dispatch

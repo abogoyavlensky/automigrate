@@ -1,7 +1,9 @@
 (ns automigrate.fields-keyword-test
-  (:require [clojure.test :refer :all]
-            [automigrate.testing-util :as test-util]
-            [automigrate.testing-config :as config]))
+  (:require
+    [clojure.string :as str]
+    [clojure.test :refer :all]
+    [automigrate.testing-util :as test-util]
+    [automigrate.testing-config :as config]))
 
 
 (use-fixtures :each
@@ -81,29 +83,32 @@
               (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))
 
 
-(deftest test-fields-box-create-table-ok
-  (let [models {:account
-                {:fields [[:rectangle :box]]}}]
+(deftest test-fields-kw-create-table-ok
+  (doseq [field-type [:box :bytea :cidr :circle]]
+    (test-util/drop-all-tables config/DATABASE-CONN)
+    (test-util/delete-recursively config/MIGRATIONS-DIR)
 
     (testing "check generated actions, queries edn and sql from all actions"
       (is (= {:new-actions [{:action :create-table
-                             :fields {:rectangle {:type :box}}
+                             :fields {:thing {:type field-type}}
                              :model-name :account}]
               :q-edn [{:create-table [:account]
-                       :with-columns ['(:rectangle :box)]}]
-              :q-sql [["CREATE TABLE account (rectangle BOX)"]]}
+                       :with-columns [(list :thing field-type)]}]
+              :q-sql [[(format "CREATE TABLE account (thing %s)"
+                         (str/upper-case (name field-type)))]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions []
-               :existing-models models}))))
+               :existing-models {:account
+                                 {:fields [[:thing field-type]]}}}))))
 
     (testing "check actual db changes"
       (testing "test actual db schema after applying the migration"
         (is (= [{:character_maximum_length nil
                  :column_default nil
-                 :column_name "rectangle"
-                 :data_type "box"
-                 :udt_name "box"
+                 :column_name "thing"
+                 :data_type (name field-type)
+                 :udt_name (name field-type)
                  :is_nullable "YES"
                  :table_name "account"}]
               (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))
