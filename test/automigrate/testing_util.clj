@@ -133,28 +133,41 @@
         :migrations-dir config/MIGRATIONS-DIR}))))
 
 
-(defn perform-migrate!
-  [{:keys [jdbc-url existing-actions]
-    :or {existing-actions []}}]
-  (bond/with-stub [[migrations/get-detailed-migrations-to-migrate
-                    (constantly {:to-migrate
-                                 '({:file-name "0001_test_migration.edn"
-                                    :migration-name "0001_test_migration"
-                                    :migration-type :edn
-                                    :number-int 1})
-                                 :direction :forward})]
-                   [migrations/read-migration
-                    (constantly existing-actions)]]
-    (bond/with-spy [migrations/action->honeysql]
-      (#'migrations/migrate
-       {:jdbc-url jdbc-url
-        :migrations-dir config/MIGRATIONS-DIR})
-      (let [q-edn (->> #'migrations/action->honeysql
-                    (bond/calls)
-                    (mapv :return))
-            q-sql (mapv #(db-util/fmt %) q-edn)]
-        {:q-edn q-edn
-         :q-sql q-sql}))))
+(defn perform-make-and-migrate!
+  [{:keys [jdbc-url existing-actions existing-models]
+    :or {existing-actions []
+         existing-models {}}}]
+  (bond/with-spy [migrations/make-next-migration
+                  migrations/action->honeysql]
+    ; Generate new actions
+    (get-make-migration-output {:existing-models existing-models
+                                :existing-actions existing-actions})
+    (let [new-actions (-> #'migrations/make-next-migration
+                        (bond/calls)
+                        (first)
+                        :return)
+          all-actions (concat (vec existing-actions) (vec new-actions))]
+      (bond/with-stub [[migrations/get-detailed-migrations-to-migrate
+                        (constantly {:to-migrate
+                                     '({:file-name "0001_test_migration.edn"
+                                        :migration-name "0001_test_migration"
+                                        :migration-type :edn
+                                        :number-int 1})
+                                     :direction :forward})]
+                       [migrations/read-migration
+                        (constantly all-actions)]]
+        ; Migrate all actions
+        (#'migrations/migrate
+         {:jdbc-url jdbc-url
+          :migrations-dir config/MIGRATIONS-DIR})
+        ; Response
+        (let [q-edn (->> #'migrations/action->honeysql
+                      (bond/calls)
+                      (mapv :return))
+              q-sql (mapv #(db-util/fmt %) q-edn)]
+          {:new-actions new-actions
+           :q-edn q-edn
+           :q-sql q-sql})))))
 
 
 (defn get-table-schema-from-db
