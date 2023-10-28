@@ -84,18 +84,25 @@
 
 
 (deftest test-fields-kw-create-table-ok
-  (doseq [field-type [:box :bytea :cidr :circle]]
+  (doseq [{:keys [field-type field-name udt]} [{:field-type :box}
+                                               {:field-type :bytea}
+                                               {:field-type :cidr}
+                                               {:field-type :circle}
+                                               {:field-type :double-precision
+                                                :field-name "double precision"
+                                                :udt "float8"}]]
     (test-util/drop-all-tables config/DATABASE-CONN)
     (test-util/delete-recursively config/MIGRATIONS-DIR)
 
     (testing "check generated actions, queries edn and sql from all actions"
-      (is (= {:new-actions [{:action :create-table
-                             :fields {:thing {:type field-type}}
-                             :model-name :account}]
+      (is (= {:new-actions (list {:action :create-table
+                                  :fields {:thing {:type field-type}}
+                                  :model-name :account})
               :q-edn [{:create-table [:account]
                        :with-columns [(list :thing field-type)]}]
               :q-sql [[(format "CREATE TABLE account (thing %s)"
-                         (str/upper-case (name field-type)))]]}
+                         (str/upper-case
+                           (or field-name (name field-type))))]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions []
@@ -107,8 +114,8 @@
         (is (= [{:character_maximum_length nil
                  :column_default nil
                  :column_name "thing"
-                 :data_type (name field-type)
-                 :udt_name (name field-type)
+                 :data_type (or field-name (name field-type))
+                 :udt_name (or udt (name field-type))
                  :is_nullable "YES"
                  :table_name "account"}]
               (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))

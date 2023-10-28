@@ -62,7 +62,8 @@
       :box
       :bytea
       :cidr
-      :circle}))
+      :circle
+      :double-precision}))
 
 
 (defn- field-type-dispatch

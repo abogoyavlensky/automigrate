@@ -221,6 +221,7 @@ Available field types are presented in the following table:
 | `bytea`                                   |                                                                                                                                                                             |
 | `cidr`                                    |                                                                                                                                                                             |
 | `circle`                                  |                                                                                                                                                                             |
+| `double-precision`                        |                                                                                                                                                                             |
 
 
 ###### Notes
