@@ -133,6 +133,30 @@
         :migrations-dir config/MIGRATIONS-DIR}))))
 
 
+(defn perform-migrate!
+  [{:keys [jdbc-url existing-actions]
+    :or {existing-actions []}}]
+  (bond/with-stub [[migrations/get-detailed-migrations-to-migrate
+                    (constantly {:to-migrate
+                                 '({:file-name "0001_test_migration.edn"
+                                    :migration-name "0001_test_migration"
+                                    :migration-type :edn
+                                    :number-int 1})
+                                 :direction :forward})]
+                   [migrations/read-migration
+                    (constantly existing-actions)]]
+    (bond/with-spy [migrations/action->honeysql]
+      (#'migrations/migrate
+       {:jdbc-url jdbc-url
+        :migrations-dir config/MIGRATIONS-DIR})
+      (let [q-edn (->> #'migrations/action->honeysql
+                    (bond/calls)
+                    (mapv :return))
+            q-sql (mapv #(db-util/fmt %) q-edn)]
+        {:q-edn q-edn
+         :q-sql q-sql}))))
+
+
 (defn get-table-schema-from-db
   ([db model-name]
    (get-table-schema-from-db db model-name nil))

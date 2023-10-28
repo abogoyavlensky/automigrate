@@ -49,6 +49,7 @@
       :decimal
       :numeric
       :serial
+      :bigserial
       :uuid
       :boolean
       :text
@@ -113,6 +114,7 @@
     (derive :smallint :integer)
     (derive :bigint :integer)
     (derive :serial :integer)
+    (derive :bigserial :integer)
     (derive :text :string)
     (derive :varchar :string)
     (derive :char :string)
