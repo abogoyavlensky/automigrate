@@ -83,6 +83,34 @@
               (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))
 
 
+(deftest test-fields-smallserial-create-table-ok
+  (let [models {:account
+                {:fields [[:id :smallserial]]}}]
+
+    (testing "check generated actions, queries edn and sql from all actions"
+      (is (= {:new-actions [{:action :create-table
+                             :fields {:id {:type :smallserial}}
+                             :model-name :account}]
+              :q-edn [{:create-table [:account]
+                       :with-columns ['(:id :smallserial)]}]
+              :q-sql [["CREATE TABLE account (id SMALLSERIAL)"]]}
+            (test-util/perform-make-and-migrate!
+              {:jdbc-url config/DATABASE-CONN
+               :existing-actions []
+               :existing-models models}))))
+
+    (testing "check actual db changes"
+      (testing "test actual db schema after applying the migration"
+        (is (= [{:character_maximum_length nil
+                 :column_default "nextval('account_id_seq'::regclass)"
+                 :column_name "id"
+                 :data_type "smallint"
+                 :udt_name "int2"
+                 :is_nullable "NO"
+                 :table_name "account"}]
+              (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))
+
+
 (deftest test-fields-kw-create-table-ok
   (doseq [{:keys [field-type field-name udt]} [{:field-type :box}
                                                {:field-type :bytea}
@@ -99,7 +127,12 @@
                                                {:field-type :money}
                                                {:field-type :path}
                                                {:field-type :pg_lsn}
-                                               {:field-type :pg_snapshot}]]
+                                               {:field-type :pg_snapshot}
+                                               {:field-type :polygon}
+                                               {:field-type :tsquery}
+                                               {:field-type :tsvector}
+                                               {:field-type :txid_snapshot}
+                                               {:field-type :xml}]]
     (test-util/drop-all-tables config/DATABASE-CONN)
     (test-util/delete-recursively config/MIGRATIONS-DIR)
 

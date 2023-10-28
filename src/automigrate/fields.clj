@@ -50,6 +50,7 @@
       :numeric
       :serial
       :bigserial
+      :smallserial
       :uuid
       :boolean
       :text
@@ -72,7 +73,12 @@
       :money
       :path
       :pg_lsn
-      :pg_snapshot}))
+      :pg_snapshot
+      :polygon
+      :tsquery
+      :tsvector
+      :txid_snapshot
+      :xml}))
 
 
 (defn- field-type-dispatch
@@ -129,6 +135,7 @@
     (derive :bigint :integer)
     (derive :serial :integer)
     (derive :bigserial :integer)
+    (derive :smallserial :integer)
     (derive :text :string)
     (derive :varchar :string)
     (derive :char :string)
