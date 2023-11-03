@@ -140,6 +140,7 @@
     (derive :varchar :string)
     (derive :char :string)
     (derive :numeric :decimal)
+    (derive :money :decimal)
     (derive :date :timestamp)
     (derive :time :timestamp)
     (derive :uuid :string)
