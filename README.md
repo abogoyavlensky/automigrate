@@ -262,7 +262,7 @@ Available options are presented in the table below:
 | `:default`     | Default value for a field.                                                                    | `false`   | `boolean?`, `integer?`, `float?`, `decimal?`, `string?`, `nil?`, or fn defined as `[:keyword <integer? or float? or string?>]` |
 | `:foreign-key` | Set to namespaced keyword to point to a primary key field from another model.                 | `false`   | `:another-model/field-name`                                                                                                    |
 | `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
-| `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   |                                                                                                                                |
+| `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
 
 
 #### Indexes
