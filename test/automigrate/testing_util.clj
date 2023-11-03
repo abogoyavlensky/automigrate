@@ -1,20 +1,27 @@
 (ns automigrate.testing-util
   "Utils for simplifying tests."
-  (:require [automigrate.migrations :as migrations]
+  (:require [clojure.java.io :as io]
+            [clojure.spec.alpha :as s]
+            [clojure.test :refer :all]
+            [eftest.runner :as runner]
+            [bond.james :as bond]
+            [slingshot.slingshot :refer [try+]]
+            [automigrate.migrations :as migrations]
             [automigrate.schema :as schema]
             [automigrate.sql :as sql]
             [automigrate.testing-config :as config]
             [automigrate.util.db :as db-util]
             [automigrate.util.file :as file-util]
-            [automigrate.util.spec :as spec-util]
-            [bond.james :as bond]
-            [clojure.java.io :as io]
-            [clojure.spec.alpha :as s]
-            [clojure.test :refer :all]
-            [slingshot.slingshot :refer [try+]]))
+            [automigrate.util.spec :as spec-util]))
 
 
-(defn- drop-all-tables
+(defn run-eftest
+  "Run all  test using Eftest runner."
+  [params]
+  (runner/run-tests (runner/find-tests "test") params))
+
+
+(defn drop-all-tables
   "Drop all database tables for public schema."
   [db]
   (let [tables (->> {:select [:table_name]
@@ -49,7 +56,7 @@
     (f)))
 
 
-(defn- delete-recursively
+(defn delete-recursively
   "Delete dir and files inside recursively."
   [path]
   (let [file-obj (io/file path)]
@@ -131,6 +138,43 @@
        ; passing them here just to be able to run the make-migratoin fn
        {:models-file (str config/MODELS-DIR "feed_basic.edn")
         :migrations-dir config/MIGRATIONS-DIR}))))
+
+
+(defn perform-make-and-migrate!
+  [{:keys [jdbc-url existing-actions existing-models]
+    :or {existing-actions []
+         existing-models {}}}]
+  (bond/with-spy [migrations/make-next-migration
+                  migrations/action->honeysql]
+    ; Generate new actions
+    (get-make-migration-output {:existing-models existing-models
+                                :existing-actions existing-actions})
+    (let [new-actions (-> #'migrations/make-next-migration
+                        (bond/calls)
+                        (first)
+                        :return)
+          all-actions (concat (vec existing-actions) (vec new-actions))]
+      (bond/with-stub [[migrations/get-detailed-migrations-to-migrate
+                        (constantly {:to-migrate
+                                     '({:file-name "0001_test_migration.edn"
+                                        :migration-name "0001_test_migration"
+                                        :migration-type :edn
+                                        :number-int 1})
+                                     :direction :forward})]
+                       [migrations/read-migration
+                        (constantly all-actions)]]
+        ; Migrate all actions
+        (#'migrations/migrate
+         {:jdbc-url jdbc-url
+          :migrations-dir config/MIGRATIONS-DIR})
+        ; Response
+        (let [q-edn (->> #'migrations/action->honeysql
+                      (bond/calls)
+                      (mapv :return))
+              q-sql (mapv #(db-util/fmt %) q-edn)]
+          {:new-actions new-actions
+           :q-edn q-edn
+           :q-sql q-sql})))))
 
 
 (defn get-table-schema-from-db

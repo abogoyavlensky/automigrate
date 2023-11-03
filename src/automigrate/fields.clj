@@ -49,6 +49,8 @@
       :decimal
       :numeric
       :serial
+      :bigserial
+      :smallserial
       :uuid
       :boolean
       :text
@@ -57,7 +59,26 @@
       :time
       :point
       :json
-      :jsonb}))
+      :jsonb
+      :box
+      :bytea
+      :cidr
+      :circle
+      :double-precision
+      :inet
+      :line
+      :lseg
+      :macaddr
+      :macaddr8
+      :money
+      :path
+      :pg_lsn
+      :pg_snapshot
+      :polygon
+      :tsquery
+      :tsvector
+      :txid_snapshot
+      :xml}))
 
 
 (defn- field-type-dispatch
@@ -113,15 +134,19 @@
     (derive :smallint :integer)
     (derive :bigint :integer)
     (derive :serial :integer)
+    (derive :bigserial :integer)
+    (derive :smallserial :integer)
     (derive :text :string)
     (derive :varchar :string)
     (derive :char :string)
     (derive :numeric :decimal)
+    (derive :money :decimal)
     (derive :date :timestamp)
     (derive :time :timestamp)
     (derive :uuid :string)
     (derive :bool :boolean)
-    (derive :real :float)))
+    (derive :real :float)
+    (derive :double-precision :float)))
 
 
 (defn check-type-group

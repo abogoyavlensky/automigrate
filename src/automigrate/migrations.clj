@@ -853,9 +853,14 @@
 (defmulti exec-action! (juxt :migration-type :direction))
 
 
+(defn- action->honeysql
+  [action]
+  (su/conform ::sql/->sql action))
+
+
 (defmethod exec-action! [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
   [{:keys [db action]}]
-  (let [formatted-action (su/conform ::sql/->sql action)]
+  (let [formatted-action (action->honeysql action)]
     (if (sequential? formatted-action)
       (doseq [sub-action formatted-action]
         (db-util/exec! db sub-action))

@@ -198,7 +198,9 @@ Available field types are presented in the following table:
 | `:bigint`                                 |                                                                                                                                                                             |
 | `:float`                                  |                                                                                                                                                                             |
 | `:real`                                   |                                                                                                                                                                             |
-| `:serial`                                 | Auto-incremented integer field.                                                                                                                                             |
+| `:serial`                                 | Auto-incremented pg integer field.                                                                                                                                          |
+| `:bigserial`                              | Auto-incremented pg bigint field.                                                                                                                                           |
+| `:smallserial`                            | Auto-incremented pg serial2 field.                                                                                                                                          |
 | `:numeric or [:numeric <pos-int>? <int>]` | Numeric type with optional precision and scale params. Default value could be set as numeric string, bigdec, float, int and nil: `"10.22"`, `10.22M`, `10`, `10.22`, `nil`. |
 | `:decimal or [:decimal <pos-int>? <int>]` | Numeric type with optional precision and scale params. Same as `:numeric`.                                                                                                  |
 | `:uuid`                                   |                                                                                                                                                                             |
@@ -216,6 +218,26 @@ Available field types are presented in the following table:
 | `[:char <pos-int>]`                       | Second element is the length of value.                                                                                                                                      |
 | `:float or [:float <pos-int>]`            | Second element is the minimum acceptable precision in binary digits.                                                                                                        |
 | `[:enum <enum-type-name>]`                | To use enum type you should define it in `:types` section in model.                                                                                                         |
+| `:box`                                    |                                                                                                                                                                             |
+| `:bytea`                                  |                                                                                                                                                                             |
+| `:cidr`                                   |                                                                                                                                                                             |
+| `:circle`                                 |                                                                                                                                                                             |
+| `:double-precision`                       |                                                                                                                                                                             |
+| `:inet`                                   |                                                                                                                                                                             |
+| `:line`                                   |                                                                                                                                                                             |
+| `:lseg`                                   |                                                                                                                                                                             |
+| `:macaddr`                                |                                                                                                                                                                             |
+| `:macaddr8`                               |                                                                                                                                                                             |
+| `:money`                                  |                                                                                                                                                                             | 
+| `:path`                                   |                                                                                                                                                                             |
+| `:pg_lsn`                                 |                                                                                                                                                                             |
+| `:pg_snapshot`                            |                                                                                                                                                                             |
+| `:polygon`                                |                                                                                                                                                                             |
+| `:tsquery`                                |                                                                                                                                                                             |
+| `:tsvector`                               |                                                                                                                                                                             |
+| `:txid_snapshot`                          |                                                                                                                                                                             |
+| `:xml`                                    |                                                                                                                                                                             |
+
 
 
 ###### Notes
@@ -240,7 +262,7 @@ Available options are presented in the table below:
 | `:default`     | Default value for a field.                                                                    | `false`   | `boolean?`, `integer?`, `float?`, `decimal?`, `string?`, `nil?`, or fn defined as `[:keyword <integer? or float? or string?>]` |
 | `:foreign-key` | Set to namespaced keyword to point to a primary key field from another model.                 | `false`   | `:another-model/field-name`                                                                                                    |
 | `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
-| `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   |                                                                                                                                |
+| `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
 
 
 #### Indexes
