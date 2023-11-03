@@ -161,3 +161,63 @@
                  :is_nullable "YES"
                  :table_name "account"}]
               (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))
+
+
+(deftest test-fields-kw-alter-column-ok
+  (doseq [{:keys [field-type field-name udt]} [{:field-type :box}
+                                               {:field-type :bytea}
+                                               {:field-type :cidr}
+                                               {:field-type :circle}
+                                               {:field-type :double-precision
+                                                :field-name "double precision"
+                                                :udt "float8"}
+                                               {:field-type :inet}
+                                               {:field-type :line}
+                                               {:field-type :lseg}
+                                               {:field-type :macaddr}
+                                               {:field-type :macaddr8}
+                                               {:field-type :money}
+                                               {:field-type :path}
+                                               {:field-type :pg_lsn}
+                                               {:field-type :pg_snapshot}
+                                               {:field-type :polygon}
+                                               {:field-type :tsquery}
+                                               {:field-type :tsvector}
+                                               {:field-type :txid_snapshot}
+                                               {:field-type :xml}]]
+    (test-util/drop-all-tables config/DATABASE-CONN)
+    (test-util/delete-recursively config/MIGRATIONS-DIR)
+
+    (testing "check generated actions, queries edn and sql from all actions"
+      (is (= {:new-actions (list {:action :alter-column
+                                  :changes {:null {:from :EMPTY
+                                                   :to false}}
+                                  :field-name :thing
+                                  :model-name :account
+                                  :options {:null false
+                                            :type field-type}})
+              :q-edn [{:create-table [:account]
+                       :with-columns [(list :thing field-type)]}
+                      {:alter-table '(:account
+                                       {:alter-column [:thing :set [:not nil]]})}]
+              :q-sql [[(format "CREATE TABLE account (thing %s)"
+                         (str/upper-case (or field-name (name field-type))))]
+                      ["ALTER TABLE account ALTER COLUMN thing SET NOT NULL"]]}
+            (test-util/perform-make-and-migrate!
+              {:jdbc-url config/DATABASE-CONN
+               :existing-actions [{:action :create-table
+                                   :fields {:thing {:type field-type}}
+                                   :model-name :account}]
+               :existing-models {:account
+                                 {:fields [[:thing field-type {:null false}]]}}}))))
+
+    (testing "check actual db changes"
+      (testing "test actual db schema after applying the migration"
+        (is (= [{:character_maximum_length nil
+                 :column_default nil
+                 :column_name "thing"
+                 :data_type (or field-name (name field-type))
+                 :udt_name (or udt (name field-type))
+                 :is_nullable "NO"
+                 :table_name "account"}]
+              (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))
