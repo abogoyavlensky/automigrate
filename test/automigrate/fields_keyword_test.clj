@@ -1,9 +1,8 @@
 (ns automigrate.fields-keyword-test
-  (:require
-    [clojure.string :as str]
-    [clojure.test :refer :all]
-    [automigrate.testing-util :as test-util]
-    [automigrate.testing-config :as config]))
+  (:require [clojure.string :as str]
+            [clojure.test :refer :all]
+            [automigrate.testing-util :as test-util]
+            [automigrate.testing-config :as config]))
 
 
 (use-fixtures :each
@@ -111,7 +110,7 @@
               (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))
 
 
-(deftest test-fields-kw-create-table-ok
+(deftest ^:eftest/slow test-fields-kw-create-table-ok
   (doseq [{:keys [field-type field-name udt]} [{:field-type :box}
                                                {:field-type :bytea}
                                                {:field-type :cidr}
@@ -163,7 +162,7 @@
               (test-util/get-table-schema-from-db config/DATABASE-CONN "account")))))))
 
 
-(deftest test-fields-kw-alter-column-ok
+(deftest ^:eftest/slow test-fields-kw-alter-column-ok
   (doseq [{:keys [field-type field-name udt]} [{:field-type :box}
                                                {:field-type :bytea}
                                                {:field-type :cidr}

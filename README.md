@@ -11,7 +11,7 @@ and create database schema migrations automatically based on changes to the mode
 
 - **declaratively** define db schema as **models** in EDN;
 - create migrations **automatically** based on model changes;
-- **migrate** db schema to any migration in forward and backward *[:construction: under development]* directions;
+- **migrate** db schema to any migration in forward or backward *[:construction: under development]* directions;
 - view actual SQL or human-readable description for a migration;
 - optionally add a custom SQL migration for specific cases;
 - use with PostgreSQL *[:construction: others are under development]*;

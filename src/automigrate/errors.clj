@@ -570,12 +570,21 @@
         value))))
 
 
-(defmethod ->error-message :automigrate.fields/decimal
+(defmethod ->error-message :automigrate.fields/decimal-type
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (:val data)]
     (add-error-value
       (format "Invalid definition decimal/numeric type of field %s." fq-field-name)
+      value)))
+
+
+(defmethod ->error-message :automigrate.fields/bit-type
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (:val data)]
+    (add-error-value
+      (format "Invalid definition bit type of field %s." fq-field-name)
       value)))
 
 
