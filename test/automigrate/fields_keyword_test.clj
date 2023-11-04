@@ -1,9 +1,8 @@
 (ns automigrate.fields-keyword-test
-  (:require
-    [clojure.string :as str]
-    [clojure.test :refer :all]
-    [automigrate.testing-util :as test-util]
-    [automigrate.testing-config :as config]))
+  (:require [clojure.string :as str]
+            [clojure.test :refer :all]
+            [automigrate.testing-util :as test-util]
+            [automigrate.testing-config :as config]))
 
 
 (use-fixtures :each

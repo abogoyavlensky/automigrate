@@ -24,8 +24,10 @@
 
 (s/def ::enum-type (s/tuple #{:enum} keyword?))
 
+(s/def ::bit-type (s/tuple #{:bit :varbit} pos-int?))
 
-(s/def ::decimal
+
+(s/def ::decimal-type
   (s/and
     (s/cat
       :type #{:decimal :numeric}
@@ -118,12 +120,22 @@
 
 (defmethod field-type :decimal
   [_]
-  ::decimal)
+  ::decimal-type)
 
 
 (defmethod field-type :numeric
   [_]
-  ::decimal)
+  ::decimal-type)
+
+
+(defmethod field-type :bit
+  [_]
+  ::bit-type)
+
+
+(defmethod field-type :varbit
+  [_]
+  ::bit-type)
 
 
 (s/def ::type (s/multi-spec field-type field-type-dispatch))
