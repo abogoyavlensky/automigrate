@@ -10,7 +10,7 @@
   (test-util/with-delete-dir config/MIGRATIONS-DIR))
 
 
-(deftest test-fields-bit-create-table-ok
+(deftest ^:eftest/slow test-fields-bit-create-table-ok
   (doseq [{:keys [field-type field-name]} [{:field-type :bit}
                                            {:field-type :varbit
                                             :field-name "bit varying"}]]
