@@ -3,7 +3,7 @@
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 [![cljdoc badge](https://cljdoc.org/badge/net.clojars.abogoyavlensky/automigrate)](https://cljdoc.org/jump/release/net.clojars.abogoyavlensky/automigrate)
 
-Database auto-migration tool for Clojure. Define models as plain EDN data structures 
+Database schema auto-migration tool for Clojure. Define models as plain EDN data 
 and create database schema migrations automatically based on changes to the models.
 
 
@@ -191,53 +191,55 @@ The first element is the name of a field and must be a keyword.
 The second element could be a keyword or a vector of keyword and integer. 
 Available field types are presented in the following table:
 
-| Field type                                | Description                                                                                                                                                                 |
-|-------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `:integer`                                |                                                                                                                                                                             |
-| `:smallint`                               |                                                                                                                                                                             |
-| `:bigint`                                 |                                                                                                                                                                             |
-| `:float`                                  |                                                                                                                                                                             |
-| `:real`                                   |                                                                                                                                                                             |
-| `:serial`                                 | Auto-incremented pg integer field.                                                                                                                                          |
-| `:bigserial`                              | Auto-incremented pg bigint field.                                                                                                                                           |
-| `:smallserial`                            | Auto-incremented pg serial2 field.                                                                                                                                          |
-| `:numeric or [:numeric <pos-int>? <int>]` | Numeric type with optional precision and scale params. Default value could be set as numeric string, bigdec, float, int and nil: `"10.22"`, `10.22M`, `10`, `10.22`, `nil`. |
-| `:decimal or [:decimal <pos-int>? <int>]` | Numeric type with optional precision and scale params. Same as `:numeric`.                                                                                                  |
-| `:uuid`                                   |                                                                                                                                                                             |
-| `:boolean`                                |                                                                                                                                                                             |
-| `:text`                                   |                                                                                                                                                                             |
-| `:timestamp`                              |                                                                                                                                                                             |
-| `:timestamp-with-time-zone`               |                                                                                                                                                                             |
-| `:timestamp-without-time-zone`            |                                                                                                                                                                             |
-| `:date`                                   |                                                                                                                                                                             |
-| `:time`                                   |                                                                                                                                                                             |
-| `:point`                                  |                                                                                                                                                                             |
-| `:json`                                   |                                                                                                                                                                             |
-| `:jsonb`                                  |                                                                                                                                                                             |
-| `[:varchar <pos-int>]`                    | Second element is the length of value.                                                                                                                                      |
-| `[:char <pos-int>]`                       | Second element is the length of value.                                                                                                                                      |
-| `:float or [:float <pos-int>]`            | Second element is the minimum acceptable precision in binary digits.                                                                                                        |
-| `[:enum <enum-type-name>]`                | To use enum type you should define it in `:types` section in model.                                                                                                         |
-| `:box`                                    |                                                                                                                                                                             |
-| `:bytea`                                  |                                                                                                                                                                             |
-| `:cidr`                                   |                                                                                                                                                                             |
-| `:circle`                                 |                                                                                                                                                                             |
-| `:double-precision`                       |                                                                                                                                                                             |
-| `:inet`                                   |                                                                                                                                                                             |
-| `:line`                                   |                                                                                                                                                                             |
-| `:lseg`                                   |                                                                                                                                                                             |
-| `:macaddr`                                |                                                                                                                                                                             |
-| `:macaddr8`                               |                                                                                                                                                                             |
-| `:money`                                  |                                                                                                                                                                             | 
-| `:path`                                   |                                                                                                                                                                             |
-| `:pg_lsn`                                 |                                                                                                                                                                             |
-| `:pg_snapshot`                            |                                                                                                                                                                             |
-| `:polygon`                                |                                                                                                                                                                             |
-| `:tsquery`                                |                                                                                                                                                                             |
-| `:tsvector`                               |                                                                                                                                                                             |
-| `:txid_snapshot`                          |                                                                                                                                                                             |
-| `:xml`                                    |                                                                                                                                                                             |
-
+| Field type                                  | Description                                                                                                                                                                 |
+|---------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `:integer`                                  |                                                                                                                                                                             |
+| `:smallint`                                 |                                                                                                                                                                             |
+| `:bigint`                                   |                                                                                                                                                                             |
+| `:float`                                    |                                                                                                                                                                             |
+| `:real`                                     |                                                                                                                                                                             |
+| `:serial`                                   | Auto-incremented pg integer field.                                                                                                                                          |
+| `:bigserial`                                | Auto-incremented pg bigint field.                                                                                                                                           |
+| `:smallserial`                              | Auto-incremented pg serial2 field.                                                                                                                                          |
+| `:numeric` or `[:numeric <pos-int>? <int>]` | Numeric type with optional precision and scale params. Default value could be set as numeric string, bigdec, float, int and nil: `"10.22"`, `10.22M`, `10`, `10.22`, `nil`. |
+| `:decimal` or `[:decimal <pos-int>? <int>]` | Numeric type with optional precision and scale params. Same as `:numeric`.                                                                                                  |
+| `:uuid`                                     |                                                                                                                                                                             |
+| `:boolean`                                  |                                                                                                                                                                             |
+| `:text`                                     |                                                                                                                                                                             |
+| `:timestamp`                                |                                                                                                                                                                             |
+| `:timestamp-with-time-zone`                 |                                                                                                                                                                             |
+| `:timestamp-without-time-zone`              |                                                                                                                                                                             |
+| `:date`                                     |                                                                                                                                                                             |
+| `:time`                                     |                                                                                                                                                                             |
+| `:point`                                    |                                                                                                                                                                             |
+| `:json`                                     |                                                                                                                                                                             |
+| `:jsonb`                                    |                                                                                                                                                                             |
+| `[:varchar <pos-int>]`                      | Second element is the length of value.                                                                                                                                      |
+| `[:char <pos-int>]`                         | Second element is the length of value.                                                                                                                                      |
+| `:float` or `[:float <pos-int>]`            | Second element is the minimum acceptable precision in binary digits.                                                                                                        |
+| `[:enum <enum-type-name>]`                  | To use enum type you should define it in `:types` section in model.                                                                                                         |
+| `:box`                                      |                                                                                                                                                                             |
+| `:bytea`                                    |                                                                                                                                                                             |
+| `:cidr`                                     |                                                                                                                                                                             |
+| `:circle`                                   |                                                                                                                                                                             |
+| `:double-precision`                         |                                                                                                                                                                             |
+| `:inet`                                     |                                                                                                                                                                             |
+| `:line`                                     |                                                                                                                                                                             |
+| `:lseg`                                     |                                                                                                                                                                             |
+| `:macaddr`                                  |                                                                                                                                                                             |
+| `:macaddr8`                                 |                                                                                                                                                                             |
+| `:money`                                    |                                                                                                                                                                             | 
+| `:path`                                     |                                                                                                                                                                             |
+| `:pg_lsn`                                   |                                                                                                                                                                             |
+| `:pg_snapshot`                              |                                                                                                                                                                             |
+| `:polygon`                                  |                                                                                                                                                                             |
+| `:tsquery`                                  |                                                                                                                                                                             |
+| `:tsvector`                                 |                                                                                                                                                                             |
+| `:txid_snapshot`                            |                                                                                                                                                                             |
+| `:xml`                                      |                                                                                                                                                                             |
+| `:bit` or `[:bit <pos-int>]`                |                                                                                                                                                                             | 
+| `:varbit` or `[:varbit <pos-int>]`          |                                                                                                                                                                             |
+| `:interval` or `[:interval <pos-int>]`      |                                                                                                                                                                             | 
 
 
 ###### Notes

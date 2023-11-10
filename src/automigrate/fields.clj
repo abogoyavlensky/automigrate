@@ -26,6 +26,8 @@
 
 (s/def ::bit-type (s/tuple #{:bit :varbit} pos-int?))
 
+(s/def ::interval-type (s/tuple #{:interval} pos-int?))
+
 
 (s/def ::decimal-type
   (s/and
@@ -59,9 +61,12 @@
       :timestamp
       :date
       :time
+      :interval
       :point
       :json
       :jsonb
+      :bit
+      :varbit
       :box
       :bytea
       :cidr
@@ -136,6 +141,11 @@
 (defmethod field-type :varbit
   [_]
   ::bit-type)
+
+
+(defmethod field-type :interval
+  [_]
+  ::interval-type)
 
 
 (s/def ::type (s/multi-spec field-type field-type-dispatch))

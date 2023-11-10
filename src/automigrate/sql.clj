@@ -134,11 +134,15 @@
 (defn field-type->sql
   [type-value]
   (cond
-    (s/valid? ::fields/enum-type type-value)
     ; :add-column clause in honeysql converts type name in kebab case into
     ; two separated words. So, for custom enum types we have to convert
     ; custom type name to snake case to use it in SQL as a single word.
+    (s/valid? ::fields/enum-type type-value)
     (-> type-value last model-util/kw->snake-case)
+
+    (s/valid? ::fields/interval-type type-value)
+    (let [[_ precision] type-value]
+      [:raw (format "INTERVAL(%s)" precision)])
 
     :else type-value))
 
