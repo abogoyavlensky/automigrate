@@ -180,13 +180,13 @@
 (defn get-table-schema-from-db
   ([db model-name]
    (get-table-schema-from-db db model-name nil))
-  ([db model-name select-columns]
-   (db-util/exec!
-     db
-     {:select (or select-columns
-                [:table-name :data-type :udt-name :column-name :column-default
-                 :is-nullable :character-maximum-length])
-      :from [:information-schema.columns]
-      :where [:= :table-name model-name]
-      :order-by [:ordinal-position]})))
-
+  ([db model-name {:keys [replace-cols add-cols]}]
+   (let [default-columns [:table-name :data-type :udt-name :column-name :column-default
+                          :is-nullable :character-maximum-length]]
+     (db-util/exec!
+       db
+       {:select (or replace-cols
+                  (-> (concat default-columns add-cols) (set) (vec)))
+        :from [:information-schema.columns]
+        :where [:= :table-name model-name]
+        :order-by [:ordinal-position]}))))

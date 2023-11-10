@@ -588,6 +588,15 @@
       value)))
 
 
+(defmethod ->error-message :automigrate.fields/interval-type
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (:val data)]
+    (add-error-value
+      (format "Invalid definition interval type of field %s." fq-field-name)
+      value)))
+
+
 (defmethod ->error-message :automigrate.fields/field-name
   [data]
   (let [model-name (get-model-name data)]
