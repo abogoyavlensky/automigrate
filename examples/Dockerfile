@@ -1,4 +1,4 @@
-FROM clojure:openjdk-11-tools-deps-1.10.3.1040-slim-buster
+FROM clojure:temurin-17-tools-deps-1.11.1.1413-bullseye-slim
 
 # Install deps
 WORKDIR /app
