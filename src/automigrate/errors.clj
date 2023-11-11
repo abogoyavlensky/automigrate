@@ -525,7 +525,7 @@
 
 (defmethod ->error-message :automigrate.fields/float-type
   [data]
-  (let [fq-field-name (get-fq-field-name #p data)
+  (let [fq-field-name (get-fq-field-name data)
         value (:val data)]
     (condp = (problem-reason data)
       `automigrate.fields/float-precision?
