@@ -147,7 +147,7 @@
                 (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))))
 
 
-(deftest test-fields-bit-uses-existing-enum-type
+(deftest test-fields-bit-uses-existing-bit-type
   (let [params {:existing-models
                 {:account
                  {:fields [[:thing [:bit]]]}}}]
