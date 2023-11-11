@@ -10,7 +10,7 @@
   (test-util/with-delete-dir config/MIGRATIONS-DIR))
 
 
-(deftest ^:eftest/slow test-fields-interval-create-table-ok
+(deftest ^:eftest/slow test-fields-time-create-table-ok
   (doseq [{:keys [field-type field-name edn sql data-type]}
           ; interval
           [{:field-type :interval
@@ -91,8 +91,18 @@
                   {:add-cols [:datetime_precision]}))))))))
 
 
-(deftest test-fields-interval-alter-column-ok
-  (doseq [{:keys [field-type]} [{:field-type :interval}]]
+(deftest ^:eftest/slow test-fields-time-alter-column-ok
+  (doseq [{:keys [field-type data-type]} [{:field-type :interval}
+                                          {:field-type :time
+                                           :data-type "time without time zone"}
+                                          {:field-type :timetz
+                                           :data-type "time with time zone"}
+                                          {:field-type :timestamp
+                                           :data-type "timestamp without time zone"}
+                                          {:field-type :timestamptz
+                                           :data-type "timestamp with time zone"}]
+          :let [type-name (name field-type)
+                type-name-up (str/upper-case type-name)]]
     (test-util/drop-all-tables config/DATABASE-CONN)
     (test-util/delete-recursively config/MIGRATIONS-DIR)
 
@@ -105,15 +115,16 @@
                                   :options {:type [field-type 6]}})
               :q-edn [{:create-table [:account]
                        :with-columns ['(:id :serial)]}
-                      {:add-column (list :thing [:raw "INTERVAL(3)"])
+                      {:add-column (list :thing [:raw (str type-name-up "(3)")])
                        :alter-table :account}
                       {:alter-table (list :account
-                                      {:alter-column [:thing :type [:raw "INTERVAL(6)"]]})}]
+                                      {:alter-column
+                                       [:thing :type [:raw (str type-name-up "(6)")]]})}]
               :q-sql [["CREATE TABLE account (id SERIAL)"]
                       [(format "ALTER TABLE account ADD COLUMN thing %s(3)"
-                         (str/upper-case (name field-type)))]
+                         type-name-up)]
                       [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s(6)"
-                         (str/upper-case (name field-type)))]]}
+                         type-name-up)]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions [{:action :create-table
@@ -140,8 +151,8 @@
                   {:character_maximum_length nil
                    :column_default nil
                    :column_name "thing"
-                   :data_type (name field-type)
-                   :udt_name (name field-type)
+                   :data_type (or data-type type-name)
+                   :udt_name type-name
                    :is_nullable "YES"
                    :table_name "account"
                    :datetime_precision 6}]
@@ -151,8 +162,36 @@
                   {:add-cols [:datetime_precision]}))))))))
 
 
-(deftest ^:eftest/slow test-fields-interval-add-column-ok
-  (doseq [{:keys [field-type field-name]} [{:field-type :interval}]]
+(deftest ^:eftest/slow test-fields-time-add-column-ok
+  (doseq [{:keys [field-type data-type]} [{:field-type [:interval 3]}
+                                          {:field-type :interval}
+
+                                          {:field-type [:time 3]
+                                           :data-type "time without time zone"}
+                                          {:field-type :time
+                                           :data-type "time without time zone"}
+
+                                          {:field-type [:timetz 3]
+                                           :data-type "time with time zone"}
+                                          {:field-type :timetz
+                                           :data-type "time with time zone"}
+
+                                          {:field-type [:timestamp 3]
+                                           :data-type "timestamp without time zone"}
+                                          {:field-type :timestamp
+                                           :data-type "timestamp without time zone"}
+
+                                          {:field-type [:timestamptz 3]
+                                           :data-type "timestamp with time zone"}
+                                          {:field-type :timestamptz
+                                           :data-type "timestamp with time zone"}]
+          :let [type-name (name (if (vector? field-type)
+                                  (first field-type)
+                                  field-type))
+                type-name-up (str/upper-case type-name)
+                precision (if (vector? field-type)
+                            (last field-type)
+                            6)]]
     (test-util/drop-all-tables config/DATABASE-CONN)
     (test-util/delete-recursively config/MIGRATIONS-DIR)
 
@@ -160,14 +199,19 @@
       (is (= {:new-actions (list {:action :add-column
                                   :field-name :thing
                                   :model-name :account
-                                  :options {:type [field-type 3]}})
+                                  :options {:type field-type}})
               :q-edn [{:create-table [:account]
                        :with-columns ['(:id :serial)]}
-                      {:add-column (list :thing [:raw "INTERVAL(3)"])
+                      {:add-column (list :thing
+                                     (if (vector? field-type)
+                                       [:raw (format "%s(%s)" type-name-up precision)]
+                                       field-type))
                        :alter-table :account}]
               :q-sql [["CREATE TABLE account (id SERIAL)"]
-                      [(format "ALTER TABLE account ADD COLUMN thing %s(3)"
-                         (str/upper-case (name field-type)))]]}
+                      [(format "ALTER TABLE account ADD COLUMN thing %s"
+                         (if (vector? field-type)
+                           (format "%s(%s)" type-name-up precision)
+                           type-name-up))]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions [{:action :create-table
@@ -175,7 +219,7 @@
                                    :model-name :account}]
                :existing-models {:account
                                  {:fields [[:id :serial]
-                                           [:thing [field-type 3]]]}}})))
+                                           [:thing field-type]]}}})))
 
       (testing "check actual db changes"
         (testing "test actual db schema after applying the migration"
@@ -190,19 +234,39 @@
                   {:character_maximum_length nil
                    :column_default nil
                    :column_name "thing"
-                   :data_type (or field-name (name field-type))
-                   :udt_name (name field-type)
+                   :data_type (or data-type type-name)
+                   :udt_name type-name
                    :is_nullable "YES"
                    :table_name "account"
-                   :datetime_precision 3}]
+                   :datetime_precision precision}]
                 (test-util/get-table-schema-from-db
                   config/DATABASE-CONN
                   "account"
                   {:add-cols [:datetime_precision]}))))))))
 
 
-(deftest ^:eftest/slow test-fields-interval-drop-column-ok
-  (doseq [{:keys [field-type]} [{:field-type :interval}]]
+(deftest ^:eftest/slow test-fields-time-drop-column-ok
+  (doseq [{:keys [field-type]} [{:field-type :interval}
+                                {:field-type [:interval 3]}
+
+                                {:field-type :time}
+                                {:field-type [:time 3]}
+
+                                {:field-type :timetz}
+                                {:field-type [:timetz 3]}
+
+                                {:field-type :timestamp}
+                                {:field-type [:timestamp 3]}
+
+                                {:field-type :timestamptz}
+                                {:field-type [:timestamptz 3]}]
+          :let [type-name (name (if (vector? field-type)
+                                  (first field-type)
+                                  field-type))
+                type-name-up (str/upper-case type-name)
+                precision (if (vector? field-type)
+                            (last field-type)
+                            6)]]
     (test-util/drop-all-tables config/DATABASE-CONN)
     (test-util/delete-recursively config/MIGRATIONS-DIR)
 
@@ -212,16 +276,22 @@
                                   :model-name :account})
               :q-edn [{:create-table [:account]
                        :with-columns ['(:id :serial)
-                                      '(:thing [:raw "INTERVAL(3)"])]}
+                                      (list :thing
+                                        (if (vector? field-type)
+                                          [:raw (format "%s(%s)" type-name-up precision)]
+                                          field-type))]}
                       {:drop-column :thing
                        :alter-table :account}]
-              :q-sql [["CREATE TABLE account (id SERIAL, thing INTERVAL(3))"]
+              :q-sql [[(format "CREATE TABLE account (id SERIAL, thing %s)"
+                         (if (vector? field-type)
+                           (format "%s(%s)" type-name-up precision)
+                           type-name-up))]
                       [(format "ALTER TABLE account DROP COLUMN thing")]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions [{:action :create-table
                                    :fields {:id {:type :serial}
-                                            :thing {:type [field-type 3]}}
+                                            :thing {:type field-type}}
                                    :model-name :account}]
                :existing-models {:account
                                  {:fields [[:id :serial]]}}})))
@@ -234,15 +304,13 @@
                    :data_type "integer"
                    :udt_name "int4"
                    :is_nullable "NO"
-                   :table_name "account"
-                   :datetime_precision nil}]
+                   :table_name "account"}]
                 (test-util/get-table-schema-from-db
                   config/DATABASE-CONN
-                  "account"
-                  {:add-cols [:datetime_precision]}))))))))
+                  "account"))))))))
 
 
-(deftest test-fields-interval-uses-existing-enum-type
+(deftest test-fields-time-uses-existing-enum-type
   (doseq [{:keys [field-type expected-output]}
           [{:field-type [:interval]
             :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
