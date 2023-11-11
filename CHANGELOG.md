@@ -11,6 +11,12 @@ All notable changes to this project will be documented in this file.
 - Add all data types without parameters for PostgreSQL.
 - Add bit data types.
 - Add interval data type.
+- Add parameterisable time and timestamp data types with time zone.
+- Add char and varchar data types without parameters.
+
+### Fixed
+
+- Fix validation of parameter for float data type.
 
 ## 0.1.3 - 2023-10-26
 

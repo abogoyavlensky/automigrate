@@ -20,13 +20,26 @@
 
 (s/def ::char-type (s/tuple #{:char :varchar} pos-int?))
 
-(s/def ::float-type (s/tuple #{:float} pos-int?))
+
+(defn float-precision?
+  [n]
+  (and (pos-int? n) (<= n 53)))
+
+
+(s/def ::float-type (s/tuple #{:float} float-precision?))
 
 (s/def ::enum-type (s/tuple #{:enum} keyword?))
 
 (s/def ::bit-type (s/tuple #{:bit :varbit} pos-int?))
 
-(s/def ::interval-type (s/tuple #{:interval} pos-int?))
+
+(defn time-precision?
+  [n]
+  (and (int? n) (>= n 0) (<= n 6)))
+
+
+(s/def ::time-types
+  (s/tuple #{:interval :time :timetz :timestamp :timestamptz} time-precision?))
 
 
 (s/def ::decimal-type
@@ -58,9 +71,13 @@
       :uuid
       :boolean
       :text
+      :char
+      :varchar
       :timestamp
+      :timestamptz
       :date
       :time
+      :timetz
       :interval
       :point
       :json
@@ -145,7 +162,27 @@
 
 (defmethod field-type :interval
   [_]
-  ::interval-type)
+  ::time-types)
+
+
+(defmethod field-type :time
+  [_]
+  ::time-types)
+
+
+(defmethod field-type :timetz
+  [_]
+  ::time-types)
+
+
+(defmethod field-type :timestamp
+  [_]
+  ::time-types)
+
+
+(defmethod field-type :timestamptz
+  [_]
+  ::time-types)
 
 
 (s/def ::type (s/multi-spec field-type field-type-dispatch))
@@ -335,7 +372,9 @@
 
 (defmethod validate-default-and-type :timestamp
   [{:keys [default]}]
-  (or (s/valid? (s/tuple #{:now}) default) (nil? default)))
+  (or (s/valid? (s/tuple #{:now}) default)
+    (nil? default)
+    (string? default)))
 
 
 (defmethod validate-default-and-type :float

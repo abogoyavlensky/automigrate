@@ -525,12 +525,13 @@
 
 (defmethod ->error-message :automigrate.fields/float-type
   [data]
-  (let [fq-field-name (get-fq-field-name data)
+  (let [fq-field-name (get-fq-field-name #p data)
         value (:val data)]
     (condp = (problem-reason data)
-      `pos-int? (add-error-value
-                  (format "Parameter for float type of field %s should be positive integer." fq-field-name)
-                  value)
+      `automigrate.fields/float-precision?
+      (add-error-value
+        (format "Parameter for float type of field %s should be between 1 and 53." fq-field-name)
+        value)
 
       '(clojure.core/= (clojure.core/count %) 2)
       (add-error-value
@@ -588,13 +589,20 @@
       value)))
 
 
-(defmethod ->error-message :automigrate.fields/interval-type
+(defmethod ->error-message :automigrate.fields/time-types
   [data]
   (let [fq-field-name (get-fq-field-name data)
         value (:val data)]
-    (add-error-value
-      (format "Invalid definition interval type of field %s." fq-field-name)
-      value)))
+    (condp = (problem-reason data)
+      `automigrate.fields/time-precision?
+      (add-error-value
+        (str (format "Invalid definition of type for field %s." fq-field-name)
+          " The allowed range of precision is from 0 to 6.")
+        value)
+
+      (add-error-value
+        (format "Invalid definition of type for field %s." fq-field-name)
+        value))))
 
 
 (defmethod ->error-message :automigrate.fields/field-name

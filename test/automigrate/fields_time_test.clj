@@ -1,4 +1,4 @@
-(ns automigrate.fields-interval-test
+(ns automigrate.fields-time-test
   (:require [clojure.string :as str]
             [clojure.test :refer :all]
             [automigrate.testing-util :as test-util]
@@ -11,45 +11,80 @@
 
 
 (deftest ^:eftest/slow test-fields-interval-create-table-ok
-  (let [field-type :interval]
+  (doseq [{:keys [field-type field-name edn sql data-type]}
+          ; interval
+          [{:field-type :interval
+            :field-name "interval"}
+           {:field-type [:interval 2]
+            :field-name "interval"
+            :edn [:raw "INTERVAL(2)"]
+            :sql "INTERVAL(2)"}
+           ; time
+           {:field-type :time
+            :field-name "time"
+            :data-type "time without time zone"}
+           {:field-type [:time 3]
+            :field-name "time"
+            :edn [:raw "TIME(3)"]
+            :sql "TIME(3)"
+            :data-type "time without time zone"}
+           ; timetz
+           {:field-type :timetz
+            :field-name "timetz"
+            :data-type "time with time zone"}
+           {:field-type [:timetz 3]
+            :field-name "timetz"
+            :edn [:raw "TIMETZ(3)"]
+            :sql "TIMETZ(3)"
+            :data-type "time with time zone"}
+           ; timestamp
+           {:field-type :timestamp
+            :field-name "timestamp"
+            :data-type "timestamp without time zone"}
+           {:field-type [:timestamp 3]
+            :field-name "timestamp"
+            :edn [:raw "TIMESTAMP(3)"]
+            :sql "TIMESTAMP(3)"
+            :data-type "timestamp without time zone"}
+           ; timestamptz
+           {:field-type :timestamptz
+            :field-name "timestamptz"
+            :data-type "timestamp with time zone"}
+           {:field-type [:timestamptz 3]
+            :field-name "timestamptz"
+            :edn [:raw "TIMESTAMPTZ(3)"]
+            :sql "TIMESTAMPTZ(3)"
+            :data-type "timestamp with time zone"}]]
     (test-util/drop-all-tables config/DATABASE-CONN)
     (test-util/delete-recursively config/MIGRATIONS-DIR)
 
     (testing "check generated actions, queries edn and sql from all actions"
       (is (= {:new-actions (list {:action :create-table
-                                  :fields {:thing {:type field-type}
-                                           :duration {:type [field-type 2]}}
+                                  :fields {:thing {:type field-type}}
                                   :model-name :account})
               :q-edn [{:create-table [:account]
-                       :with-columns [(list :thing field-type)
-                                      '(:duration [:raw "INTERVAL(2)"])]}]
-              :q-sql [[(format "CREATE TABLE account (thing %s, duration INTERVAL(2))"
-                         (str/upper-case (name field-type)))]]}
+                       :with-columns
+                       [(list :thing (or edn field-type))]}]
+              :q-sql [[(format "CREATE TABLE account (thing %s)"
+                         (or sql (str/upper-case field-name)))]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions []
                :existing-models {:account
-                                 {:fields [[:thing field-type]
-                                           [:duration [field-type 2]]]}}})))
+                                 {:fields [[:thing field-type]]}}})))
 
       (testing "check actual db changes"
         (testing "test actual db schema after applying the migration"
           (is (= [{:character_maximum_length nil
                    :column_default nil
                    :column_name "thing"
-                   :data_type (name field-type)
-                   :udt_name (name field-type)
+                   :data_type (or data-type field-name)
+                   :udt_name field-name
                    :is_nullable "YES"
                    :table_name "account"
-                   :datetime_precision 6}
-                  {:character_maximum_length nil
-                   :column_default nil
-                   :column_name "duration"
-                   :data_type (name field-type)
-                   :udt_name (name field-type)
-                   :is_nullable "YES"
-                   :table_name "account"
-                   :datetime_precision 2}]
+                   :datetime_precision (if (vector? field-type)
+                                         (last field-type)
+                                         6)}]
                 (test-util/get-table-schema-from-db
                   config/DATABASE-CONN
                   "account"
@@ -207,11 +242,60 @@
                   {:add-cols [:datetime_precision]}))))))))
 
 
-(deftest test-fields-enum-uses-existing-enum-type
-  (let [params {:existing-models
-                {:account
-                 {:fields [[:thing [:interval]]]}}}]
-    (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
-             "Invalid definition interval type of field :account/thing.\n\n"
-             "  [:interval]\n\n")
-          (test-util/get-make-migration-output params)))))
+(deftest test-fields-interval-uses-existing-enum-type
+  (doseq [{:keys [field-type expected-output]}
+          [{:field-type [:interval]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing.\n\n"
+                               "  [:interval]\n\n")}
+           {:field-type [:interval 10]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing."
+                               " The allowed range of precision is from 0 to 6.\n\n"
+                               "  10\n\n")}
+
+           {:field-type [:time]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing.\n\n"
+                               "  [:time]\n\n")}
+           {:field-type [:time 10]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing."
+                               " The allowed range of precision is from 0 to 6.\n\n"
+                               "  10\n\n")}
+
+           {:field-type [:timetz]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing.\n\n"
+                               "  [:timetz]\n\n")}
+           {:field-type [:timetz 10]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing."
+                               " The allowed range of precision is from 0 to 6.\n\n"
+                               "  10\n\n")}
+
+           {:field-type [:timestamp]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing.\n\n"
+                               "  [:timestamp]\n\n")}
+           {:field-type [:timestamp 10]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing."
+                               " The allowed range of precision is from 0 to 6.\n\n"
+                               "  10\n\n")}
+
+           {:field-type [:timestamptz]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing.\n\n"
+                               "  [:timestamptz]\n\n")}
+           {:field-type [:timestamptz 10]
+            :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
+                               "Invalid definition of type for field :account/thing."
+                               " The allowed range of precision is from 0 to 6.\n\n"
+                               "  10\n\n")}]]
+
+    (let [params {:existing-models
+                  {:account
+                   {:fields [[:thing field-type]]}}}]
+      (is (= expected-output
+            (test-util/get-make-migration-output params))))))
