@@ -217,7 +217,7 @@
 
   (testing "check invalid float type as vector with real"
     (let [data {:foo [[:id [:float 0]]]}]
-      (is (= [{:message "Parameter for float type of field :foo/id should be between 1 and 53.\n\n  0"
+      (is (= [{:message "Parameter for float type of field :foo/id should be integer between 1 and 53.\n\n  0"
                :title "MODEL ERROR"}]
             (test-util/get-spec-error-data #(models/->internal-models data)))))))
 

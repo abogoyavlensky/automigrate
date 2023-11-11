@@ -530,7 +530,7 @@
     (condp = (problem-reason data)
       `automigrate.fields/float-precision?
       (add-error-value
-        (format "Parameter for float type of field %s should be between 1 and 53." fq-field-name)
+        (format "Parameter for float type of field %s should be integer between 1 and 53." fq-field-name)
         value)
 
       '(clojure.core/= (clojure.core/count %) 2)
