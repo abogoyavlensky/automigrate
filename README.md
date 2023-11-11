@@ -188,8 +188,9 @@ The third element is optional, but name and type are required.
 The first element is the name of a field and must be a keyword.
 
 ##### Field types
-The second element could be a keyword or a vector of keyword and integer. 
-Available field types are presented in the following table:
+The second element could be a keyword or a vector of keyword and params. 
+Available field types are matched with PostgreSQL built-in data types
+and presented in the following table:
 
 | Field type                                  | Description                                                                                                                                                                 |
 |---------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -206,16 +207,17 @@ Available field types are presented in the following table:
 | `:uuid`                                     |                                                                                                                                                                             |
 | `:boolean`                                  |                                                                                                                                                                             |
 | `:text`                                     |                                                                                                                                                                             |
-| `:timestamp`                                |                                                                                                                                                                             |
-| `:timestamp-with-time-zone`                 |                                                                                                                                                                             |
-| `:timestamp-without-time-zone`              |                                                                                                                                                                             |
+| `:time` or `[:time <int>]`                  |                                                                                                                                                                             |
+| `:timetz` or `[:timetz <int>]`              |                                                                                                                                                                             |
+| `:timestamp` or `[:timestamp <int>]`        |                                                                                                                                                                             |
+| `:timestamptz`  or `[:timestamptz <int>]`   |                                                                                                                                                                             |
+| `:interval` or `[:interval <int>]`          |                                                                                                                                                                             |
 | `:date`                                     |                                                                                                                                                                             |
-| `:time`                                     |                                                                                                                                                                             |
 | `:point`                                    |                                                                                                                                                                             |
 | `:json`                                     |                                                                                                                                                                             |
 | `:jsonb`                                    |                                                                                                                                                                             |
-| `[:varchar <pos-int>]`                      | Second element is the length of value.                                                                                                                                      |
-| `[:char <pos-int>]`                         | Second element is the length of value.                                                                                                                                      |
+| `:varchar` or `[:varchar <pos-int>]`        | Second element is the length of value.                                                                                                                                      |
+| `:char` or `[:char <pos-int>]`              | Second element is the length of value.                                                                                                                                      |
 | `:float` or `[:float <pos-int>]`            | Second element is the minimum acceptable precision in binary digits.                                                                                                        |
 | `[:enum <enum-type-name>]`                  | To use enum type you should define it in `:types` section in model.                                                                                                         |
 | `:box`                                      |                                                                                                                                                                             |
@@ -239,8 +241,9 @@ Available field types are presented in the following table:
 | `:xml`                                      |                                                                                                                                                                             |
 | `:bit` or `[:bit <pos-int>]`                |                                                                                                                                                                             | 
 | `:varbit` or `[:varbit <pos-int>]`          |                                                                                                                                                                             |
-| `:interval` or `[:interval <pos-int>]`      |                                                                                                                                                                             | 
 
+Doc reference to the PostgreSQL built-in general-purpose data types: 
+[https://www.postgresql.org/docs/current/datatype.html#DATATYPE-TABLE](https://www.postgresql.org/docs/current/datatype.html#DATATYPE-TABLE) 
 
 ###### Notes
 

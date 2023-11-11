@@ -140,9 +140,9 @@
     (s/valid? ::fields/enum-type type-value)
     (-> type-value last model-util/kw->snake-case)
 
-    (s/valid? ::fields/interval-type type-value)
-    (let [[_ precision] type-value]
-      [:raw (format "INTERVAL(%s)" precision)])
+    (s/valid? ::fields/time-types type-value)
+    (let [[type-name precision] type-value]
+      [:raw (format "%s(%s)" (-> type-name name str/upper-case) precision)])
 
     :else type-value))
 
