@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Add interval data type.
 - Add parameterised time and timestamp data types with time zone.
 - Add char and varchar data types without parameters.
+- Add ability to create a field with any type as array.
 
 ### Fixed
 

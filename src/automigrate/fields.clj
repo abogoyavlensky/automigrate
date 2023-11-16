@@ -8,7 +8,6 @@
 (def FOREIGN-KEY-OPTION :foreign-key)
 (def ON-DELETE-OPTION :on-delete)
 (def ON-UPDATE-OPTION :on-update)
-(def ^:private MAX-ARRAY-DIMENSION 32)
 
 
 (def fk-actions
@@ -289,8 +288,18 @@
 (s/def ::on-update fk-actions)
 
 
+(def ^:private array-regex
+  "Examples of valid values:
+  []
+  [][]
+  [1][34]
+  [][201][]"
+
+  #"^(\[([1-9][0-9]*)?\]){1,32}$")
+
+
 (s/def ::array
-  (s/and pos-int? #(<= % MAX-ARRAY-DIMENSION)))
+  (s/and string? #(re-matches array-regex %)))
 
 
 (s/def ::options

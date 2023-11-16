@@ -99,7 +99,7 @@
     ::fields/array
     (s/conformer
       (fn [value]
-        [:raw (str/join "" (repeat value "[]"))]))))
+        [:raw value]))))
 
 
 (def ^:private options-specs

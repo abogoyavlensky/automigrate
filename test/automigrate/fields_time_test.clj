@@ -119,7 +119,7 @@
     (testing "check generated actions, queries edn and sql from all actions"
       (is (= {:new-actions (list {:action :create-table
                                   :fields {:thing {:type field-type
-                                                   :array 2}}
+                                                   :array "[][]"}}
                                   :model-name :account})
               :q-edn [{:create-table [:account]
                        :with-columns
@@ -130,7 +130,7 @@
               {:jdbc-url config/DATABASE-CONN
                :existing-actions []
                :existing-models {:account
-                                 {:fields [[:thing field-type {:array 2}]]}}})))
+                                 {:fields [[:thing field-type {:array "[][]"}]]}}})))
 
       (testing "check actual db changes"
         (testing "test actual db schema after applying the migration"
@@ -237,11 +237,11 @@
                                   :changes {:type {:from :text
                                                    :to field-type}
                                             :array {:from :EMPTY
-                                                    :to 3}}
+                                                    :to "[][202][1]"}}
                                   :field-name :thing
                                   :model-name :account
                                   :options {:type field-type
-                                            :array 3}})
+                                            :array "[][202][1]"}})
               :q-edn [{:create-table [:account]
                        :with-columns ['(:id :serial)]}
                       {:add-column (list :thing :text)
@@ -249,11 +249,11 @@
                       {:alter-table
                        (list :account
                          {:alter-column
-                          (list :thing :type field-type [:raw "[][][]"]
-                            :using :thing [:raw "::"] field-type [:raw "[][][]"])})}]
+                          (list :thing :type field-type [:raw "[][202][1]"]
+                            :using :thing [:raw "::"] field-type [:raw "[][202][1]"])})}]
               :q-sql [["CREATE TABLE account (id SERIAL)"]
                       ["ALTER TABLE account ADD COLUMN thing TEXT"]
-                      [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s [][][] USING THING :: %s [][][]"
+                      [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s [][202][1] USING THING :: %s [][202][1]"
                          type-name-up
                          type-name-up)]]}
             (test-util/perform-make-and-migrate!
@@ -267,7 +267,7 @@
                                    :options {:type :text}}]
                :existing-models {:account
                                  {:fields [[:id :serial]
-                                           [:thing field-type {:array 3}]]}}})))
+                                           [:thing field-type {:array "[][202][1]"}]]}}})))
 
       (testing "check actual db changes"
         (testing "test actual db schema after applying the migration"
@@ -458,7 +458,7 @@
              :existing-actions [{:action :create-table
                                  :fields {:id {:type :serial}
                                           :thing {:type :interval
-                                                  :array 2}}
+                                                  :array "[][]"}}
                                  :model-name :account}]
              :existing-models {:account
                                {:fields [[:id :serial]]}}})))
