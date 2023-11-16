@@ -284,7 +284,8 @@
                                      :wrong true}]]}}}]
     (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
              "Options of type :account.types/account-role have extra keys.\n\n")
-          (test-util/get-make-migration-output params)))))
+          (with-out-str
+            (test-util/make-migration! params))))))
 
 
 (deftest test-types-enum-model-validation-duplicated-type-across-models-error
@@ -295,7 +296,8 @@
                         :types [[:role :enum {:choices ["admin"]}]]}}}]
     (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
              "Models have duplicated types: [:role].\n\n")
-          (test-util/get-make-migration-output params)))))
+          (with-out-str
+            (test-util/make-migration! params))))))
 
 
 (deftest test-types-enum-model-validation-choices-error
@@ -305,7 +307,8 @@
                              :types [[:role :enum {:choices []}]]}}}]
       (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
                "Enum type :account.types/role should contain at least one choice.\n\n")
-            (test-util/get-make-migration-output params)))))
+            (with-out-str
+              (test-util/make-migration! params))))))
 
   (testing "type option choices must be a vector"
     (let [params {:existing-models
@@ -314,7 +317,8 @@
       (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
                "Choices definition of type :account.types/role should be a vector of strings.\n\n"
                "  (\"admin\")\n\n")
-            (test-util/get-make-migration-output params)))))
+            (with-out-str
+              (test-util/make-migration! params))))))
 
   (testing "type option choices must not have duplicated values"
     (let [params {:existing-models
@@ -323,7 +327,8 @@
       (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
                "Enum type definition :account.types/role has duplicated choices.\n\n"
                "  [\"admin\" \"admin\"]\n\n")
-            (test-util/get-make-migration-output params)))))
+            (with-out-str
+              (test-util/make-migration! params))))))
 
   (testing "type option must contain choices"
     (let [params {:existing-models
@@ -331,7 +336,8 @@
                              :types [[:role :enum {}]]}}}]
       (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
                "Enum type :account.types/role misses :choices option.\n\n")
-            (test-util/get-make-migration-output params)))))
+            (with-out-str
+              (test-util/make-migration! params))))))
 
   (testing "type must contain options with choices"
     (let [params {:existing-models
@@ -339,7 +345,8 @@
                              :types [[:role :enum]]}}}]
       (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
                "Enum type :account.types/role misses :choices option.\n\n")
-            (test-util/get-make-migration-output params))))))
+            (with-out-str
+              (test-util/make-migration! params)))))))
 
 
 (deftest test-types-enum-model-validation-type-definition-error
@@ -349,7 +356,8 @@
                              :types [[:role]]}}}]
       (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
                "Type :account.types/role must contain one of definition [:enum].\n\n")
-            (test-util/get-make-migration-output params)))))
+            (with-out-str
+              (test-util/make-migration! params))))))
 
   (testing "empty type"
     (let [params {:existing-models
@@ -357,7 +365,8 @@
                              :types [[]]}}}]
       (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
                "Type definition in model :account must contain a name.\n\n")
-            (test-util/get-make-migration-output params))))))
+            (with-out-str
+              (test-util/make-migration! params)))))))
 
 
 (deftest test-types-enum-migrations-choices-error
@@ -376,7 +385,8 @@
       (is (= (str "-- MIGRATION ERROR -------------------------------------\n\n"
                "It is not possible to remove existing choices of enum type :account/role.\n\n"
                "  {:choices {:from [\"admin\" \"customer\"], :to [\"admin\" \"test\"]}}\n\n")
-            (test-util/get-make-migration-output params)))))
+            (with-out-str
+              (test-util/make-migration! params))))))
 
   (testing "do not allow to re-order existing choice values"
     (let [params {:existing-actions [{:action :create-table
@@ -393,7 +403,8 @@
       (is (= (str "-- MIGRATION ERROR -------------------------------------\n\n"
                "It is not possible to re-order existing choices of enum type :account/role.\n\n"
                "  {:choices {:from [\"admin\" \"customer\"], :to [\"customer\" \"admin\"]}}\n\n")
-            (test-util/get-make-migration-output params))))))
+            (with-out-str
+              (test-util/make-migration! params)))))))
 
 
 (deftest test-types-enum-make-migration-alter-type-ok
@@ -424,4 +435,5 @@
                "  - alter type account_role\n"
                "  - add column role to account\n"
                "  - alter column id in account\n")
-            (test-util/get-make-migration-output params))))))
+            (with-out-str
+              (test-util/make-migration! params)))))))

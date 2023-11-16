@@ -12,6 +12,7 @@
 
 
 ; Additional sql clauses
+; TODO: update custom clauses with more precise formatters
 
 (honey/register-clause! :drop-constraint
   (fn [k spec]
@@ -20,42 +21,36 @@
 
 
 (honey/register-clause! :add-constraint
-  ; TODO: update with more precise formatter
   (fn [k spec]
     (#'honey/format-add-item k spec))
   :drop-constraint)
 
 
 (honey/register-clause! :create-index
-  ; TODO: update with more precise formatter
   (fn [k spec]
     (#'honey/format-add-item k spec))
   :add-index)
 
 
 (honey/register-clause! :create-unique-index
-  ; TODO: update with more precise formatter
   (fn [k spec]
     (#'honey/format-add-item k spec))
   :add-index)
 
 
 (honey/register-clause! :create-type
-  ; TODO: update with more precise formatter
   (fn [k spec]
     (#'honey/format-add-item k spec))
   :create-unique-index)
 
 
 (honey/register-clause! :drop-type
-  ; TODO: update with more precise formatter
   (fn [k spec]
     (#'honey/format-add-item k spec))
   :create-type)
 
 
 (honey/register-clause! :alter-type
-  ; TODO: update with more precise formatter
   (fn [k spec]
     (#'honey/format-add-item k spec))
   :drop-type)

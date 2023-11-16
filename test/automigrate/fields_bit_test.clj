@@ -46,7 +46,8 @@
 (deftest test-fields-bit-alter-column-ok
   (doseq [{:keys [field-type field-name]} [{:field-type :bit}
                                            {:field-type :varbit
-                                            :field-name "bit varying"}]]
+                                            :field-name "bit varying"}]
+          :let [type-name-up (str/upper-case (name field-type))]]
     (test-util/drop-all-tables config/DATABASE-CONN)
     (test-util/delete-recursively config/MIGRATIONS-DIR)
 
@@ -62,12 +63,15 @@
                       {:add-column (list :thing [field-type 3])
                        :alter-table :account}
                       {:alter-table (list :account
-                                      {:alter-column [:thing :type [field-type 10]]})}]
+                                      {:alter-column
+                                       (list :thing :type [field-type 10]
+                                         :using :thing [:raw "::"] [field-type 10])})}]
               :q-sql [["CREATE TABLE account (id SERIAL)"]
                       [(format "ALTER TABLE account ADD COLUMN thing %s(3)"
-                         (str/upper-case (name field-type)))]
-                      [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s(10)"
-                         (str/upper-case (name field-type)))]]}
+                         type-name-up)]
+                      [(format (str "ALTER TABLE account ALTER COLUMN thing TYPE %s(10)"
+                                 " USING THING :: %s(10)")
+                         type-name-up type-name-up)]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions [{:action :create-table
@@ -154,4 +158,5 @@
     (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
              "Invalid definition bit type of field :account/thing.\n\n"
              "  [:bit]\n\n")
-          (test-util/get-make-migration-output params)))))
+          (with-out-str
+            (test-util/make-migration! params))))))

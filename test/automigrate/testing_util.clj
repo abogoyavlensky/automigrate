@@ -123,7 +123,7 @@
                 :migration-type :edn})))))))
 
 
-(defn get-make-migration-output
+(defn make-migration!
   [{:keys [existing-actions existing-models]
     :or {existing-actions []
          existing-models {}}}]
@@ -132,12 +132,11 @@
                    ; existing models
                    [file-util/read-edn
                     (constantly existing-models)]]
-    (with-out-str
-      (#'migrations/make-migration
-       ; parameters are not involved in test as they are mocked
-       ; passing them here just to be able to run the make-migratoin fn
-       {:models-file (str config/MODELS-DIR "feed_basic.edn")
-        :migrations-dir config/MIGRATIONS-DIR}))))
+    (#'migrations/make-migration
+     ; parameters are not involved in test as they are mocked
+     ; passing them here just to be able to run the make-migration fn
+     {:models-file (str config/MODELS-DIR "feed_basic.edn")
+      :migrations-dir config/MIGRATIONS-DIR})))
 
 
 (defn perform-make-and-migrate!
@@ -147,8 +146,8 @@
   (bond/with-spy [migrations/make-next-migration
                   migrations/action->honeysql]
     ; Generate new actions
-    (get-make-migration-output {:existing-models existing-models
-                                :existing-actions existing-actions})
+    (make-migration! {:existing-models existing-models
+                      :existing-actions existing-actions})
     (let [new-actions (-> #'migrations/make-next-migration
                         (bond/calls)
                         (first)

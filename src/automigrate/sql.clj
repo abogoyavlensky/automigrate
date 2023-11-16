@@ -94,6 +94,14 @@
         (fk-opt->raw fields/ON-UPDATE-OPTION value)))))
 
 
+(s/def :automigrate.sql.option->sql/array
+  (s/and
+    ::fields/array
+    (s/conformer
+      (fn [value]
+        [:raw (str/join "" (repeat value "[]"))]))))
+
+
 (def ^:private options-specs
   [:automigrate.sql.option->sql/null
    :automigrate.sql.option->sql/primary-key
@@ -101,7 +109,8 @@
    :automigrate.sql.option->sql/default
    :automigrate.sql.option->sql/foreign-key
    :automigrate.sql.option->sql/on-delete
-   :automigrate.sql.option->sql/on-update])
+   :automigrate.sql.option->sql/on-update
+   :automigrate.sql.option->sql/array])
 
 
 (s/def ::->foreign-key-complete
@@ -132,29 +141,34 @@
 
 
 (defn field-type->sql
-  [type-value]
-  (cond
-    ; :add-column clause in honeysql converts type name in kebab case into
-    ; two separated words. So, for custom enum types we have to convert
-    ; custom type name to snake case to use it in SQL as a single word.
-    (s/valid? ::fields/enum-type type-value)
-    (-> type-value last model-util/kw->snake-case)
+  [{array-value :array
+    type-value :type}]
+  (let [type-sql (cond
+                   ; :add-column clause in honeysql converts type name in kebab case into
+                   ; two separated words. So, for custom enum types we have to convert
+                   ; custom type name to snake case to use it in SQL as a single word.
+                   (s/valid? ::fields/enum-type type-value)
+                   (-> type-value last model-util/kw->snake-case)
 
-    (s/valid? ::fields/time-types type-value)
-    (let [[type-name precision] type-value]
-      [:raw (format "%s(%s)" (-> type-name name str/upper-case) precision)])
+                   (s/valid? ::fields/time-types type-value)
+                   (let [[type-name precision] type-value]
+                     [:raw (format "%s(%s)" (-> type-name name str/upper-case) precision)])
 
-    :else type-value))
+                   :else type-value)]
+    ; Add array type if it exists
+    (cond-> [type-sql]
+      (some? array-value) (conj array-value))))
 
 
 (defn- fields->columns
   [fields]
   (reduce
     (fn [acc [field-name options]]
-      (conj acc (->> (dissoc options :type :foreign-key)
+      (conj acc (->> (dissoc options :type :foreign-key :array)
                   (vals)
                   (concat
-                    [field-name (-> options :type field-type->sql)]
+                    [field-name]
+                    (field-type->sql options)
                     (:foreign-key options)))))
     []
     fields))
@@ -268,6 +282,21 @@
       true (conj add-constraint))))
 
 
+(defn- ->alter-column
+  [field-name option {:keys [changes options] :as _action}]
+  (if (or (= option :type)
+        (and (not (contains? changes :type))
+          (= option :array)))
+    (let [type-sql (field-type->sql options)]
+      {:alter-column
+       (concat
+         [field-name :type]
+         type-sql
+         ; always add `using` to be able to convert different types
+         [:using field-name [:raw "::"]]
+         type-sql)})))
+
+
 (s/def ::alter-column->sql
   (s/conformer
     (fn [action]
@@ -275,18 +304,19 @@
             changes (for [[option value] changes-to-add
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
-                      (case option
-                        :type {:alter-column [field-name :type (field-type->sql value)]}
-                        :null (let [operation (if (nil? value) :drop :set)]
-                                {:alter-column [field-name operation [:not nil]]})
-                        :default {:alter-column [field-name :set value]}
-                        :unique {:add-index [:unique nil field-name]}
-                        :primary-key {:add-index [:primary-key field-name]}
-                        :foreign-key (sql-changes-for-fk {:model-name model-name
-                                                          :field-name field-name
-                                                          :field-value value
-                                                          :action-changes (:changes action)})))
-
+                      (condp contains? option
+                        #{:type :array} (->alter-column field-name option action)
+                        #{:null} (let [operation (if (nil? value) :drop :set)]
+                                   {:alter-column [field-name operation [:not nil]]})
+                        #{:default} {:alter-column [field-name :set value]}
+                        #{:unique} {:add-index [:unique nil field-name]}
+                        #{:primary-key} {:add-index [:primary-key field-name]}
+                        #{:foreign-key} (sql-changes-for-fk {:model-name model-name
+                                                             :field-name field-name
+                                                             :field-value value
+                                                             :action-changes (:changes action)})))
+            ; remove nil if options type and array have been changed
+            changes* (->> changes (remove nil?) (flatten))
             dropped (for [option changes-to-drop
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
@@ -296,7 +326,7 @@
                         :unique {:drop-constraint (unique-index-name model-name field-name)}
                         :primary-key {:drop-constraint (private-key-index-name model-name)}
                         :foreign-key {:drop-constraint (foreign-key-index-name model-name field-name)}))
-            all-actions (concat (flatten changes) dropped)]
+            all-actions (concat changes* dropped)]
         {:alter-table (cons (:model-name action) all-actions)}))))
 
 

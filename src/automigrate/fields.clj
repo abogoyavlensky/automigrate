@@ -8,6 +8,7 @@
 (def FOREIGN-KEY-OPTION :foreign-key)
 (def ON-DELETE-OPTION :on-delete)
 (def ON-UPDATE-OPTION :on-update)
+(def ^:private MAX-ARRAY-DIMENSION 32)
 
 
 (def fk-actions
@@ -55,7 +56,6 @@
 
 
 (s/def ::keyword-type
-  ; TODO: switch available fields according to db dialect!
   (s/and
     keyword?
     #{:integer
@@ -289,6 +289,10 @@
 (s/def ::on-update fk-actions)
 
 
+(s/def ::array
+  (s/and pos-int? #(<= % MAX-ARRAY-DIMENSION)))
+
+
 (s/def ::options
   (s/keys
     :opt-un [::null
@@ -297,7 +301,8 @@
              ::default
              ::foreign-key
              ::on-delete
-             ::on-update]))
+             ::on-update
+             ::array]))
 
 
 (s/def ::options-strict-keys
