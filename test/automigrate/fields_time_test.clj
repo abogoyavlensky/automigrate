@@ -1,5 +1,9 @@
 (ns automigrate.fields-time-test
-  (:require [clojure.string :as str]
+  (:require [automigrate.migrations :as migrations]
+            [automigrate.schema :as schema]
+            [automigrate.util.file :as file-util]
+            [bond.james :as bond]
+            [clojure.string :as str]
             [clojure.test :refer :all]
             [automigrate.testing-util :as test-util]
             [automigrate.testing-config :as config]))
@@ -477,6 +481,28 @@
                 "account")))))))
 
 
+(deftest test-make-migration*-create-table-with-array-of-interval-restore-ok
+  (let [existing-actions '({:action :create-table
+                            :model-name :account
+                            :fields {:id {:type :serial}
+                                     :times {:type :time
+                                             :array "[]"}}}
+                           {:action :add-column
+                            :field-name :durations
+                            :model-name :account
+                            :options
+                            {:type :interval
+                             :array "[10][10]"}})
+        existing-models {:account
+                         {:fields [[:id :serial]
+                                   [:times :time {:array "[]"}]
+                                   [:durations :interval {:array "[10][10]"}]]}}]
+    (bond/with-stub [[schema/load-migrations-from-files
+                      (constantly existing-actions)]
+                     [file-util/read-edn (constantly existing-models)]]
+      (is (= [] (#'migrations/make-migration* "" []))))))
+
+
 (deftest test-fields-time-uses-existing-enum-type
   (doseq [{:keys [field-type expected-output]}
           [{:field-type [:interval]
@@ -535,3 +561,38 @@
       (is (= expected-output
             (with-out-str
               (test-util/make-migration! params)))))))
+
+
+(deftest test-fields-interval-type-with-wrong-array-option-value-error
+  (testing "not balanced brackets as :array value"
+    (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+             "Option :array of field :account/thing should be string"
+             " showing array dimension: \"[]\", \"[][]\", etc.\n\n"
+             "  {:array \"[][\"}\n\n")
+          (with-out-str
+            (test-util/make-migration!
+              {:existing-models
+               {:account
+                {:fields [[:thing :interval {:array "[]["}]]}}})))))
+
+  (testing "integer instead of string"
+    (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+             "Option :array of field :account/thing should be string"
+             " showing array dimension: \"[]\", \"[][]\", etc.\n\n"
+             "  {:array 2}\n\n")
+          (with-out-str
+            (test-util/make-migration!
+              {:existing-models
+               {:account
+                {:fields [[:thing :interval {:array 2}]]}}})))))
+
+  (testing "array size can't be 0"
+    (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+             "Option :array of field :account/thing should be string"
+             " showing array dimension: \"[]\", \"[][]\", etc.\n\n"
+             "  {:array \"[0]\"}\n\n")
+          (with-out-str
+            (test-util/make-migration!
+              {:existing-models
+               {:account
+                {:fields [[:thing :interval {:array "[0]"}]]}}}))))))
