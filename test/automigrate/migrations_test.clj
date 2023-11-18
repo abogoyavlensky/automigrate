@@ -342,7 +342,7 @@
             "CREATE TABLE account (id SERIAL NULL UNIQUE, name VARCHAR(100) NULL, rate FLOAT)"
             "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"
             "ALTER TABLE account ADD COLUMN day DATE"
-            (str "ALTER TABLE account ALTER COLUMN number TYPE INTEGER USING NUMBER :: INTEGER, ADD UNIQUE(number), "
+            (str "ALTER TABLE account ALTER COLUMN number TYPE INTEGER USING number :: INTEGER, ADD UNIQUE(number), "
               "ALTER COLUMN number SET DEFAULT 0, ALTER COLUMN number DROP NOT NULL, "
               "DROP CONSTRAINT account_pkey")
             "ALTER TABLE feed DROP COLUMN url"
@@ -906,9 +906,9 @@
         expected-q-edn '({:alter-table
                           (:feed {:alter-column
                                   [:name :type [:varchar 200]
-                                   :using :name [:raw "::"] [:varchar 200]]})})
+                                   :using [:raw "name"] [:raw "::"] [:varchar 200]]})})
         expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE VARCHAR(200)"
-                                " USING NAME :: VARCHAR(200)")])]
+                                " USING name :: VARCHAR(200)")])]
     (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
@@ -932,9 +932,9 @@
         expected-q-edn '({:alter-table
                           (:feed {:alter-column
                                   [:name :type [:char 100]
-                                   :using :name [:raw "::"] [:char 100]]})})
+                                   :using [:raw "name"] [:raw "::"] [:char 100]]})})
         expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE CHAR(100)"
-                                " USING NAME :: CHAR(100)")])]
+                                " USING name :: CHAR(100)")])]
     (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
@@ -958,9 +958,9 @@
         expected-q-edn '({:alter-table
                           (:feed {:alter-column
                                   [:name :type :integer
-                                   :using :name [:raw "::"] :integer]})})
+                                   :using [:raw "name"] [:raw "::"] :integer]})})
         expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE INTEGER"
-                                " USING NAME :: INTEGER")])]
+                                " USING name :: INTEGER")])]
     (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
@@ -1008,9 +1008,9 @@
         expected-q-edn '({:alter-table
                           (:feed {:alter-column
                                   [:amount :type [:numeric 10]
-                                   :using :amount [:raw "::"] [:numeric 10]]})})
+                                   :using [:raw "amount"] [:raw "::"] [:numeric 10]]})})
         expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN amount TYPE NUMERIC(10)"
-                                " USING AMOUNT :: NUMERIC(10)")])]
+                                " USING amount :: NUMERIC(10)")])]
     (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models

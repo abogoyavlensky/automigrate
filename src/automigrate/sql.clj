@@ -284,16 +284,17 @@
 
 (defn- ->alter-column
   [field-name option {:keys [changes options] :as _action}]
-  (if (or (= option :type)
-        (and (not (contains? changes :type))
-          (= option :array)))
-    (let [type-sql (field-type->sql options)]
+  (when (or (= option :type)
+          (and (not (contains? changes :type))
+            (= option :array)))
+    (let [type-sql (field-type->sql options)
+          field-name-str (-> field-name (name) (str/replace #"-" "_"))]
       {:alter-column
        (concat
          [field-name :type]
          type-sql
          ; always add `using` to be able to convert different types
-         [:using field-name [:raw "::"]]
+         [:using [:raw field-name-str] [:raw "::"]]
          type-sql)})))
 
 
@@ -317,16 +318,19 @@
                                                              :action-changes (:changes action)})))
             ; remove nil if options type and array have been changed
             changes* (->> changes (remove nil?) (flatten))
+
             dropped (for [option changes-to-drop
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
                       (case option
+                        :array (->alter-column field-name option action)
                         :null {:alter-column [field-name :drop [:not nil]]}
                         :default {:alter-column [field-name :drop :default]}
                         :unique {:drop-constraint (unique-index-name model-name field-name)}
                         :primary-key {:drop-constraint (private-key-index-name model-name)}
                         :foreign-key {:drop-constraint (foreign-key-index-name model-name field-name)}))
-            all-actions (concat changes* dropped)]
+            dropped* (remove nil? dropped)
+            all-actions (concat changes* dropped*)]
         {:alter-table (cons (:model-name action) all-actions)}))))
 
 

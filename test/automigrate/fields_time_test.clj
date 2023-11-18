@@ -181,12 +181,12 @@
                       {:alter-table (list :account
                                       {:alter-column
                                        (list :thing :type [:raw (str type-name-up "(6)")]
-                                         :using :thing [:raw "::"]
+                                         :using [:raw "thing"] [:raw "::"]
                                          [:raw (str type-name-up "(6)")])})}]
               :q-sql [["CREATE TABLE account (id SERIAL)"]
                       [(format "ALTER TABLE account ADD COLUMN thing %s(3)"
                          type-name-up)]
-                      [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s(6) USING THING :: %s(6)"
+                      [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s(6) USING thing :: %s(6)"
                          type-name-up type-name-up)]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
@@ -254,10 +254,10 @@
                        (list :account
                          {:alter-column
                           (list :thing :type field-type [:raw "[][202][1]"]
-                            :using :thing [:raw "::"] field-type [:raw "[][202][1]"])})}]
+                            :using [:raw "thing"] [:raw "::"] field-type [:raw "[][202][1]"])})}]
               :q-sql [["CREATE TABLE account (id SERIAL)"]
                       ["ALTER TABLE account ADD COLUMN thing TEXT"]
-                      [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s [][202][1] USING THING :: %s [][202][1]"
+                      [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s [][202][1] USING thing :: %s [][202][1]"
                          type-name-up
                          type-name-up)]]}
             (test-util/perform-make-and-migrate!

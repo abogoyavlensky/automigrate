@@ -65,12 +65,12 @@
                       {:alter-table (list :account
                                       {:alter-column
                                        (list :thing :type [field-type 10]
-                                         :using :thing [:raw "::"] [field-type 10])})}]
+                                         :using [:raw "thing"] [:raw "::"] [field-type 10])})}]
               :q-sql [["CREATE TABLE account (id SERIAL)"]
                       [(format "ALTER TABLE account ADD COLUMN thing %s(3)"
                          type-name-up)]
                       [(format (str "ALTER TABLE account ALTER COLUMN thing TYPE %s(10)"
-                                 " USING THING :: %s(10)")
+                                 " USING thing :: %s(10)")
                          type-name-up type-name-up)]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
