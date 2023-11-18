@@ -1,7 +1,15 @@
 (ns automigrate.fields-test
-  (:require [clojure.test :refer :all]
-            [clojure.spec.alpha :as s]
-            [automigrate.fields :as fields]))
+  (:require
+    [automigrate.testing-config :as config]
+    [automigrate.testing-util :as test-util]
+    [clojure.test :refer :all]
+    [clojure.spec.alpha :as s]
+    [automigrate.fields :as fields]))
+
+
+(use-fixtures :each
+  (test-util/with-drop-tables config/DATABASE-CONN)
+  (test-util/with-delete-dir config/MIGRATIONS-DIR))
 
 
 (deftest test-validate-fk-options-on-delete
@@ -128,3 +136,52 @@
     (is (false?
           (s/valid? ::fields/validate-fk-options-and-null-on-update {:null false
                                                                      :on-update :set-null})))))
+
+
+(deftest ^:eftest/slow test-fields-alter-column-char-to-int-ok
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :alter-column
+                                :changes {:type {:from [:char 256]
+                                                 :to :integer}}
+                                :field-name :num
+                                :model-name :account
+                                :options {:type :integer}})
+            :q-edn [{:create-table [:account]
+                     :with-columns ['(:id :serial)
+                                    '(:num [:char 256])]}
+                    {:alter-table
+                     (list :account
+                       {:alter-column
+                        (list :num :type :integer :using :num [:raw "::"] :integer)})}]
+
+            :q-sql [["CREATE TABLE account (id SERIAL, num CHAR(256))"]
+                    ["ALTER TABLE account ALTER COLUMN num TYPE INTEGER USING NUM :: INTEGER"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions [{:action :create-table
+                                 :fields {:id {:type :serial}
+                                          :num {:type [:char 256]}}
+                                 :model-name :account}]
+             :existing-models {:account
+                               {:fields [[:id :serial]
+                                         [:num :integer]]}}})))
+
+    (testing "check actual db changes"
+      (testing "test actual db schema after applying the migration"
+        (is (= [{:character_maximum_length nil
+                 :column_default "nextval('account_id_seq'::regclass)"
+                 :column_name "id"
+                 :data_type "integer"
+                 :udt_name "int4"
+                 :is_nullable "NO"
+                 :table_name "account"}
+                {:character_maximum_length nil
+                 :column_default nil
+                 :column_name "num"
+                 :data_type "integer"
+                 :udt_name "int4"
+                 :is_nullable "YES"
+                 :table_name "account"}]
+              (test-util/get-table-schema-from-db
+                config/DATABASE-CONN
+                "account")))))))
