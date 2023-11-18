@@ -268,6 +268,7 @@ Available options are presented in the table below:
 | `:foreign-key` | Set to namespaced keyword to point to a primary key field from another model.                 | `false`   | `:another-model/field-name`                                                                                                    |
 | `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
 | `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
+| `:array`       | Can be added to any field type to make it array.                                              | `false`   | `string?`, examples: `"[]"`, `"[][]"`, `[][10][3]`                                                                             |
 
 
 #### Indexes
@@ -620,15 +621,14 @@ In the future there could be more convenient options for configuration if needed
 ## Roadmap draft
 
 - [x] Support enum type of fields for PostgreSQL.
-- [ ] Support most of the main fields in PostgreSQL.
+- [x] Support all built-in data types in PostgreSQL.
+- [x] Support array data types in PostgreSQL.
 - [ ] Support backward auto-migration.
-- [ ] Support array fields in PostgreSQL.
 - [ ] Support comment for field.
 - [ ] Support custom field checks in PostgreSQL.
-- [ ] Support custom data-migration using Clojure.
 - [ ] Support custom model constraints in PostgreSQL.
+- [ ] Support custom data-migration using Clojure.
 - [ ] Support for SQLite and MySQL.
-- [ ] Support for migrating views.
 - [ ] Optimize auto-generated sql queries.
 - [ ] Test against different versions of db and Clojure.
 - [ ] Add visual representation of db schema by models. 

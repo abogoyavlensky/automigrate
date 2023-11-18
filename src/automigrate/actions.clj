@@ -93,7 +93,8 @@
                                              ::fields/default
                                              ::fields/foreign-key
                                              ::fields/on-delete
-                                             ::fields/on-update])))))
+                                             ::fields/on-update
+                                             ::fields/array])))))
 
 
 (defmethod action ALTER-COLUMN-ACTION

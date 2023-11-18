@@ -530,7 +530,7 @@
   "Return type's migrations for model."
   [{:keys [model-diff model-removals old-model new-model model-name
            type-from-dropped-model?]}]
-  ; TODO: abstract this function for types/indexes/fields
+  ; TODO: try to abstract this function for types/indexes/fields
   (let [types-diff (:types model-diff)
         types-removals (if (or (= DROPPED-ENTITY-VALUE (:types model-removals))
                              type-from-dropped-model?)

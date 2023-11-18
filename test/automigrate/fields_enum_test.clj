@@ -437,4 +437,5 @@
                         :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}}]
     (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
              "There are enum fields with missing enum types: [:feed/status].\n\n")
-          (test-util/get-make-migration-output params)))))
+          (with-out-str
+            (test-util/make-migration! params))))))

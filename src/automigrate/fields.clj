@@ -55,7 +55,6 @@
 
 
 (s/def ::keyword-type
-  ; TODO: switch available fields according to db dialect!
   (s/and
     keyword?
     #{:integer
@@ -289,6 +288,20 @@
 (s/def ::on-update fk-actions)
 
 
+(def ^:private array-regex
+  "Examples of valid values:
+  []
+  [][]
+  [1][34]
+  [][201][]"
+
+  #"^(\[([1-9][0-9]*)?\]){1,32}$")
+
+
+(s/def ::array
+  (s/and string? #(re-matches array-regex %)))
+
+
 (s/def ::options
   (s/keys
     :opt-un [::null
@@ -297,7 +310,8 @@
              ::default
              ::foreign-key
              ::on-delete
-             ::on-update]))
+             ::on-update
+             ::array]))
 
 
 (s/def ::options-strict-keys

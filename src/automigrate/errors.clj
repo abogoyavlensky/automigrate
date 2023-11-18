@@ -695,6 +695,16 @@
       value)))
 
 
+(defmethod ->error-message :automigrate.fields/array
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Option :array of field %s should be string showing array dimension: \"[]\", \"[][]\", etc."
+        fq-field-name)
+      value)))
+
+
 (defmethod ->error-message :automigrate.fields/validate-fk-options-on-delete
   [data]
   (let [fq-field-name (get-fq-field-name data)
