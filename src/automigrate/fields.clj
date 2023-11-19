@@ -101,7 +101,20 @@
       :tsquery
       :tsvector
       :txid_snapshot
-      :xml}))
+      :xml
+      ; Range types
+      :int4range
+      :int4multirange
+      :int8range
+      :int8multirange
+      :numrange
+      :nummultirange
+      :tsrange
+      :tsmultirange
+      :tstzrange
+      :tstzmultirange
+      :daterange
+      :datemultirange}))
 
 
 (defn- field-type-dispatch

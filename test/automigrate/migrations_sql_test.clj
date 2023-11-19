@@ -44,7 +44,7 @@
             (.getName (last files)))))))
 
 
-(deftest test-migrate-sql-migration-ok
+(deftest ^:eftest/slow test-migrate-sql-migration-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
               :migrations-dir config/MIGRATIONS-DIR})
   (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
