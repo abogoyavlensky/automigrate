@@ -18,7 +18,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fix validation of parameter for float data type.
-- Fix alter-column action in case column type changing.   
+- Fix alter-column action in case column type changing.
+- Update check mark for applied migrations in list command output.
 
 ## 0.1.3 - 2023-10-26
 
