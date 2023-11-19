@@ -4,7 +4,7 @@
 
 
 (deftest test-help-output-for-general-help
-  (is (= (str "Database auto-migration tool for Clojure.\n\n"
+  (is (= (str "Database schema auto-migration tool for Clojure.\n\n"
            "Available commands:\n"
            "  make - Create a new migration based on changes to the models.\n"
            "  migrate - Run existing migrations and change the database schema.\n"

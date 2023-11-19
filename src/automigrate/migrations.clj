@@ -39,6 +39,7 @@
 (def EMPTY-SQL-MIGRATION-TYPE :empty-sql)
 (def ^:private FORWARD-MIGRATION-DELIMITER "-- FORWARD")
 (def ^:private BACKWARD-MIGRATION-DELIMITER "-- BACKWARD")
+(def ^:private LIST-SIGN-COMPLETED "x")
 
 
 (def ^:private SQL-MIGRATION-TEMPLATE
@@ -1010,7 +1011,9 @@
           (println "Existing migrations:\n")
           (doseq [file-name migration-names
                   :let [migration-name (get-migration-name file-name)
-                        sign (if (contains? migrated migration-name) "✓" " ")]]
+                        sign (if (contains? migrated migration-name)
+                               LIST-SIGN-COMPLETED
+                               " ")]]
             (file-util/safe-println [(format "[%s] %s" sign file-name)])))
         (println "Migrations not found.")))
     (catch [:type ::s/invalid] e

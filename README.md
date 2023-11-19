@@ -136,7 +136,7 @@ To view status of existing migrations you can run:
 $ clojure -X:migrations list
 Existing migrations:
 
-[✓] 0001_auto_create_table_book.edn
+[x] 0001_auto_create_table_book.edn
 ```
 
 To view raw SQL for existing migration you can run command `explain` with appropriate number: 
@@ -482,7 +482,7 @@ Invalid target migration number.
 
 Print out list of existing migrations with statuses displayed as
 boxes before migration name:
-- `[✓]` - applied;
+- `[x]` - applied;
 - `[ ]` - not applied.
 
 *No specific args.*
@@ -494,7 +494,7 @@ View list of partially applied migrations:
 $ clojure -X:migrations list
 Existing migrations:
 
-[✓] 0001_auto_create_table_book.edn
+[x] 0001_auto_create_table_book.edn
 [ ] 0002_create_table_author.edn
 [ ] 0003_add_custom_trigger.sql
 ```
@@ -638,14 +638,13 @@ In the future there could be more convenient options for configuration if needed
 
 ### Things still in design
 
+- How to handle common configuration conveniently?
 - Should args `:models-file` and `:migrations-dir` are set by default?
 - Should it be possible to set arg `:jdbc-url` as an env var?
-- How to handle common configuration conveniently?
 - More consistent and helpful messages for users.
 - Ability to separate models by multiple files.
-- Move transformations out of conformers. (tech)
-- Add option to disable field types validation in order to be able to use 
-the tool while not every type of database column is supported.
+- Move transformations out of clojure spec conformers. (tech)
+- Disable field types validation at all, or add ability to set arbitrary custom type.
 
 
 ## Inspired by
