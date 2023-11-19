@@ -226,11 +226,11 @@
 
 
 (deftest ^:eftest/slow test-fields-time-alter-column-to-array-ok
-  (doseq [{:keys [field-type data-type]} [{:field-type :interval}
-                                          {:field-type :time}
-                                          {:field-type :timetz}
-                                          {:field-type :timestamp}
-                                          {:field-type :timestamptz}]
+  (doseq [{:keys [field-type]} [{:field-type :interval}
+                                {:field-type :time}
+                                {:field-type :timetz}
+                                {:field-type :timestamp}
+                                {:field-type :timestamptz}]
           :let [type-name (name field-type)
                 type-name-up (str/upper-case type-name)]]
     (test-util/drop-all-tables config/DATABASE-CONN)
@@ -503,7 +503,7 @@
       (is (= [] (#'migrations/make-migration* "" []))))))
 
 
-(deftest test-fields-time-uses-existing-enum-type
+(deftest test-fields-time-error
   (doseq [{:keys [field-type expected-output]}
           [{:field-type [:interval]
             :expected-output (str "-- MODEL ERROR -------------------------------------\n\n"
