@@ -13,12 +13,15 @@ All notable changes to this project will be documented in this file.
 - Add interval data type.
 - Add parameterised time and timestamp data types with time zone.
 - Add char and varchar data types without parameters.
-- Add ability to create a field with any type as array.
+- Add ability to create a field with any type as an array.
 
 ### Fixed
 
 - Fix validation of parameter for float data type.
 - Fix alter-column action in case column type changing.
+
+### Changed
+
 - Update check mark for applied migrations in list command output.
 
 ## 0.1.3 - 2023-10-26
