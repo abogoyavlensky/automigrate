@@ -43,9 +43,9 @@ $ docker compose run --rm demo clojure -X:migrations list
 Creating examples_demo_run ... done
 Existing migrations:
 
-[✓] 0001_auto_create_table_book.edn
-[✓] 0002_auto_create_table_author_etc.edn
-[✓] 0003_auto_add_column_amount_to_book_etc.edn
+[x] 0001_auto_create_table_book.edn
+[x] 0002_auto_create_table_author_etc.edn
+[x] 0003_auto_add_column_amount_to_book_etc.edn
 ```
 
 Now you can open the adminer UI in browser and check newly created tables by link: [http://localhost:8081/](http://localhost:8081/).

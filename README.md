@@ -136,7 +136,7 @@ To view status of existing migrations you can run:
 $ clojure -X:migrations list
 Existing migrations:
 
-[✓] 0001_auto_create_table_book.edn
+[x] 0001_auto_create_table_book.edn
 ```
 
 To view raw SQL for existing migration you can run command `explain` with appropriate number: 
@@ -344,7 +344,7 @@ Limitations:
         
 ### CLI interface
 
-Available commands are: `make`, `migrate`, `list`, `explain`. Let's see them in detail by section.
+Available commands are: `make`, `migrate`, `list`, `explain`, `help`. Let's see them in detail by section.
 
 :information_source: *Assume that args `:models-file`, `:migrations-dir` and `:jdbc-url` are supposed to be set in deps.edn alias.*
 
@@ -357,7 +357,7 @@ Common args for all commands:
 | `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (only for `migrate` and `list`) | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | *not provided*             |
 | `:migrations-table` | Model name for storing applied migrations. | `false`                                | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"` |
 
-#### `make`
+### `make`
 
 Create migration for new changes in models file.
 It detects the creating, updating and deleting of tables, columns and indexes.
@@ -405,7 +405,7 @@ There are no changes in models.
 ```
 
 
-#### `migrate`
+### `migrate`
 
 Applies change described in migration to database.
 Applies all unapplied migrations by number order if arg `:number` is not presented in command.
@@ -478,11 +478,11 @@ $ clojure -X:migrations migrate :number 10
 Invalid target migration number.
 ```
 
-#### `list`
+### `list`
 
 Print out list of existing migrations with statuses displayed as
 boxes before migration name:
-- `[✓]` - applied;
+- `[x]` - applied;
 - `[ ]` - not applied.
 
 *No specific args.*
@@ -494,12 +494,12 @@ View list of partially applied migrations:
 $ clojure -X:migrations list
 Existing migrations:
 
-[✓] 0001_auto_create_table_book.edn
+[x] 0001_auto_create_table_book.edn
 [ ] 0002_create_table_author.edn
 [ ] 0003_add_custom_trigger.sql
 ```
 
-#### `explain`
+### `explain`
 
 Print out actual raw SQL for particular migration by number.
 
@@ -531,26 +531,36 @@ SQL for migration 0001_auto_create_table_book.edn:
 WARNING: backward migration isn't fully implemented yet.
 ```
 
-#### help/doc
+### `help`
 
-You can print docstring for function in the default namespace of the lib by running clojure cli `help/doc` function.
+You can print short doc info for a particular command or the tool itself by running `help` command.
 
-Print doc for all available functions:
+*Args:*
+
+| Argument | Description   | Required? | Possible values                               | Default value                                          |
+|----------|---------------|-----------|-----------------------------------------------|--------------------------------------------------------|
+| `:cmd`   | Command name. | `false`   | `make`, `migrate`, `list`, `explain`, `help`  | *not provided*, by default prints doc for all commands |
+
+
+##### Examples 
+
+Print doc for all available commands:
 
 ```shell
-$ clojure -X:deps:migrations help/doc :ns automigrate.core
-Public interface for lib's users.
+$ clojure -X:migrations help
+Database schema auto-migration tool for Clojure.
 
--------------------------
+Available commands:
 ...
 ```
 
-Print doc for particular function:
+Print doc for a particular command:
 
 ```shell
-$ clojure -X:deps:migrations help/doc :ns automigrate.core :fn make
--------------------------
-automigrate.core/make
+$ clojure -X:migrations help :cmd make
+Create a new migration based on changes to the models.
+
+Available options:
 ...
 ```
 
@@ -638,14 +648,13 @@ In the future there could be more convenient options for configuration if needed
 
 ### Things still in design
 
+- How to handle common configuration conveniently?
 - Should args `:models-file` and `:migrations-dir` are set by default?
 - Should it be possible to set arg `:jdbc-url` as an env var?
-- How to handle common configuration conveniently?
 - More consistent and helpful messages for users.
 - Ability to separate models by multiple files.
-- Move transformations out of conformers. (tech)
-- Add option to disable field types validation in order to be able to use 
-the tool while not every type of database column is supported.
+- Move transformations out of clojure spec conformers. (tech)
+- Disable field types validation at all, or add ability to set arbitrary custom type.
 
 
 ## Inspired by
