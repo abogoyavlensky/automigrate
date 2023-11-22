@@ -18,7 +18,7 @@ and create database schema migrations automatically based on changes to the mode
 
 ### Quick overview
 
-[Overview](/demo/automigrate_demo.mp4)
+![Overview](/demo/automigrate_demo.mp4)
 
 ## State
 
