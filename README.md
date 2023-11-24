@@ -16,6 +16,10 @@ and create database schema migrations automatically based on changes to the mode
 - optionally add a custom SQL migration for specific cases;
 - use with PostgreSQL.
 
+### Quick overview
+
+https://github.com/abogoyavlensky/automigrate/assets/1375411/880db134-f2ed-46b4-9e77-72e326b6bf56
+
 ## State
 
 Project is in **alpha** state till the `1.0.0` version and is not yet ready for production use. 
