@@ -18,7 +18,7 @@ and create database schema migrations automatically based on changes to the mode
 
 ### Quick overview
 
-https://github.com/abogoyavlensky/automigrate/assets/1375411/e1c93804-a6f6-4552-934c-fe5ca99bcebd
+https://github.com/abogoyavlensky/automigrate/assets/1375411/880db134-f2ed-46b4-9e77-72e326b6bf56
 
 ## State
 
