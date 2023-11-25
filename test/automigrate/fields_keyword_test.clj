@@ -18,9 +18,9 @@
       (is (= {:new-actions [{:action :create-table
                              :fields {:id {:type :bigserial}}
                              :model-name :account}]
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns ['(:id :bigserial)]}]
-              :q-sql [["CREATE TABLE account (id BIGSERIAL)"]]}
+              :q-sql [["CREATE TABLE \"account\" (id BIGSERIAL)"]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions []
@@ -52,12 +52,12 @@
                              :model-name :account
                              :options {:type :bigserial
                                        :unique true}}]
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns ['(:id :serial)]}
                       {:add-column '(:number :bigserial :unique)
-                       :alter-table :account}]
-              :q-sql [["CREATE TABLE account (id SERIAL)"]
-                      ["ALTER TABLE account ADD COLUMN number BIGSERIAL UNIQUE"]]}
+                       :alter-table "account"}]
+              :q-sql [["CREATE TABLE \"account\" (id SERIAL)"]
+                      ["ALTER TABLE \"account\" ADD COLUMN number BIGSERIAL UNIQUE"]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions existing-actions
@@ -90,9 +90,9 @@
       (is (= {:new-actions [{:action :create-table
                              :fields {:id {:type :smallserial}}
                              :model-name :account}]
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns ['(:id :smallserial)]}]
-              :q-sql [["CREATE TABLE account (id SMALLSERIAL)"]]}
+              :q-sql [["CREATE TABLE \"account\" (id SMALLSERIAL)"]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions []
@@ -139,9 +139,9 @@
       (is (= {:new-actions (list {:action :create-table
                                   :fields {:thing {:type field-type}}
                                   :model-name :account})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns [(list :thing field-type)]}]
-              :q-sql [[(format "CREATE TABLE account (thing %s)"
+              :q-sql [[(format "CREATE TABLE \"account\" (thing %s)"
                          (str/upper-case
                            (or field-name (name field-type))))]]}
             (test-util/perform-make-and-migrate!
@@ -195,13 +195,13 @@
                                   :model-name :account
                                   :options {:null false
                                             :type field-type}})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns [(list :thing field-type)]}
-                      {:alter-table '(:account
+                      {:alter-table '("account"
                                        {:alter-column [:thing :set [:not nil]]})}]
-              :q-sql [[(format "CREATE TABLE account (thing %s)"
+              :q-sql [[(format "CREATE TABLE \"account\" (thing %s)"
                          (str/upper-case (or field-name (name field-type))))]
-                      ["ALTER TABLE account ALTER COLUMN thing SET NOT NULL"]]}
+                      ["ALTER TABLE \"account\" ALTER COLUMN thing SET NOT NULL"]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions [{:action :create-table

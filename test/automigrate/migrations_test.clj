@@ -338,23 +338,23 @@
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 1})
     (is (= ["BEGIN"
-            "CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
-            "CREATE TABLE account (id SERIAL NULL UNIQUE, name VARCHAR(100) NULL, rate FLOAT)"
-            "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"
-            "ALTER TABLE account ADD COLUMN day DATE"
-            (str "ALTER TABLE account ALTER COLUMN number TYPE INTEGER USING number :: INTEGER, ADD UNIQUE(number), "
+            "CREATE TABLE \"feed\" (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
+            "CREATE TABLE \"account\" (id SERIAL NULL UNIQUE, name VARCHAR(100) NULL, rate FLOAT)"
+            "CREATE TABLE \"role\" (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"
+            "ALTER TABLE \"account\" ADD COLUMN day DATE"
+            (str "ALTER TABLE \"account\" ALTER COLUMN number TYPE INTEGER USING number :: INTEGER, ADD UNIQUE(number), "
               "ALTER COLUMN number SET DEFAULT 0, ALTER COLUMN number DROP NOT NULL, "
               "DROP CONSTRAINT account_pkey")
-            "ALTER TABLE feed DROP COLUMN url"
-            "DROP TABLE IF EXISTS feed"
-            "CREATE TABLE feed (account SERIAL REFERENCES account(id))"
-            "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
-            (str "ALTER TABLE feed"
+            "ALTER TABLE \"feed\" DROP COLUMN url"
+            "DROP TABLE IF EXISTS  \"feed\""
+            "CREATE TABLE \"feed\" (account SERIAL REFERENCES account(id))"
+            "ALTER TABLE \"feed\" DROP CONSTRAINT feed_account_fkey"
+            (str "ALTER TABLE \"feed\""
               " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES account(id)")
-            "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
+            "CREATE INDEX feed_name_idx ON \"feed\" USING BTREE(name)"
             "DROP INDEX feed_name_idx"
             "DROP INDEX feed_name_idx"
-            "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
+            "CREATE INDEX feed_name_idx ON \"feed\" USING BTREE(name)"
             "COMMIT;"]
           (-> (bond/calls file-util/safe-println)
             (last)
@@ -582,14 +582,16 @@
                               :unique true}})
                 actions)))
         (testing "test converting migration actions to sql queries formatted as edn"
-          (is (= '({:create-table [:feed]
+          (is (= '({:create-table ["feed"]
                     :with-columns [(:id :serial [:not nil])
                                    (:name :text)]}
-                   {:create-unique-index [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
+                   {:create-unique-index [:feed-name-id-unique-idx
+                                          :on [:raw "\"feed\""]
+                                          :using (:btree :name)]})
                 queries)))
         (testing "test converting actions to sql"
-          (is (= '(["CREATE TABLE feed (id SERIAL NOT NULL, name TEXT)"]
-                   ["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
+          (is (= '(["CREATE TABLE \"feed\" (id SERIAL NOT NULL, name TEXT)"]
+                   ["CREATE UNIQUE INDEX feed_name_id_unique_idx ON \"feed\" USING BTREE(name)"])
                 (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
@@ -628,10 +630,10 @@
                 actions)))
         (testing "test converting migration actions to sql queries formatted as edn"
           (is (= '({:create-unique-index
-                    [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
+                    [:feed-name-id-unique-idx :on [:raw "\"feed\""] :using (:btree :name)]})
                 queries)))
         (testing "test converting actions to sql"
-          (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
+          (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON \"feed\" USING BTREE(name)"])
                 (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
@@ -717,11 +719,11 @@
         (testing "test converting migration actions to sql queries formatted as edn"
           (is (= '([{:drop-index :feed-name-id-idx}
                     {:create-index
-                     [:feed-name-id-idx :on :feed :using (:btree :name)]}])
+                     [:feed-name-id-idx :on [:raw "\"feed\""] :using (:btree :name)]}])
                 queries)))
         (testing "test converting actions to sql"
           (is (= '((["DROP INDEX feed_name_id_idx"]
-                    ["CREATE INDEX feed_name_id_idx ON FEED USING BTREE(name)"]))
+                    ["CREATE INDEX feed_name_id_idx ON \"feed\" USING BTREE(name)"]))
                 (map #(sql/->sql %) actions))))
         (testing "test running migrations on db"
           (is (every?
@@ -762,8 +764,8 @@
                                         (:references :account :id)
                                         [:raw "on delete"]
                                         [:raw "cascade"]),
-                          :alter-table :feed})
-        expected-q-sql '(["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
+                          :alter-table "feed"})
+        expected-q-sql '(["ALTER TABLE \"feed\" ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
     (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
 
 
@@ -794,7 +796,7 @@
                                       :foreign-key :account/id
                                       :on-delete :set-null}
                             :changes {:on-delete {:from :cascade :to :set-null}}})
-        expected-q-edn '({:alter-table (:feed
+        expected-q-edn '({:alter-table ("feed"
                                          {:drop-constraint [[:raw "IF EXISTS"]
                                                             :feed-account-fkey]}
                                          {:add-constraint (:feed-account-fkey
@@ -802,7 +804,7 @@
                                                             (:references :account :id)
                                                             [:raw "on delete"]
                                                             [:raw "set null"])})})
-        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
+        expected-q-sql (list [(str "ALTER TABLE \"feed\" DROP CONSTRAINT IF EXISTS feed_account_fkey, "
                                 "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
                                 "REFERENCES account(id) on delete set null")])]
     (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)
@@ -856,9 +858,9 @@
                             :options {:type :integer}
                             :changes {:foreign-key {:from :account/id :to :EMPTY}
                                       :on-delete {:from :cascade :to :EMPTY}}})
-        expected-q-edn '({:alter-table (:feed
+        expected-q-edn '({:alter-table ("feed"
                                          {:drop-constraint :feed-account-fkey})})
-        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey")])]
+        expected-q-sql (list [(str "ALTER TABLE \"feed\" DROP CONSTRAINT feed_account_fkey")])]
     (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
 
 
@@ -904,10 +906,10 @@
                             :changes {:type {:from [:varchar 100]
                                              :to [:varchar 200]}}})
         expected-q-edn '({:alter-table
-                          (:feed {:alter-column
-                                  [:name :type [:varchar 200]
-                                   :using [:raw "name"] [:raw "::"] [:varchar 200]]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE VARCHAR(200)"
+                          ("feed" {:alter-column
+                                   [:name :type [:varchar 200]
+                                    :using [:raw "name"] [:raw "::"] [:varchar 200]]})})
+        expected-q-sql (list [(str "ALTER TABLE \"feed\" ALTER COLUMN name TYPE VARCHAR(200)"
                                 " USING name :: VARCHAR(200)")])]
     (test-util/test-make-and-migrate-ok!
       existing-actions
@@ -930,10 +932,10 @@
                             :changes {:type {:from [:varchar 100]
                                              :to [:char 100]}}})
         expected-q-edn '({:alter-table
-                          (:feed {:alter-column
-                                  [:name :type [:char 100]
-                                   :using [:raw "name"] [:raw "::"] [:char 100]]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE CHAR(100)"
+                          ("feed" {:alter-column
+                                   [:name :type [:char 100]
+                                    :using [:raw "name"] [:raw "::"] [:char 100]]})})
+        expected-q-sql (list [(str "ALTER TABLE \"feed\" ALTER COLUMN name TYPE CHAR(100)"
                                 " USING name :: CHAR(100)")])]
     (test-util/test-make-and-migrate-ok!
       existing-actions
@@ -956,10 +958,10 @@
                             :changes {:type {:from [:varchar 100]
                                              :to :integer}}})
         expected-q-edn '({:alter-table
-                          (:feed {:alter-column
-                                  [:name :type :integer
-                                   :using [:raw "name"] [:raw "::"] :integer]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE INTEGER"
+                          ("feed" {:alter-column
+                                   [:name :type :integer
+                                    :using [:raw "name"] [:raw "::"] :integer]})})
+        expected-q-sql (list [(str "ALTER TABLE \"feed\" ALTER COLUMN name TYPE INTEGER"
                                 " USING name :: INTEGER")])]
     (test-util/test-make-and-migrate-ok!
       existing-actions
@@ -980,9 +982,9 @@
                             :field-name :amount
                             :model-name :feed
                             :options {:type [:decimal 10 2]}})
-        expected-q-edn '({:alter-table :feed
+        expected-q-edn '({:alter-table "feed"
                           :add-column (:amount [:decimal 10 2])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2)"])]
+        expected-q-sql (list ["ALTER TABLE \"feed\" ADD COLUMN amount DECIMAL(10, 2)"])]
     (test-util/test-make-and-migrate-ok!
       existing-actions
       changed-models
@@ -1006,10 +1008,10 @@
                             :changes {:type {:from [:numeric 10 2]
                                              :to [:numeric 10]}}})
         expected-q-edn '({:alter-table
-                          (:feed {:alter-column
-                                  [:amount :type [:numeric 10]
-                                   :using [:raw "amount"] [:raw "::"] [:numeric 10]]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN amount TYPE NUMERIC(10)"
+                          ("feed" {:alter-column
+                                   [:amount :type [:numeric 10]
+                                    :using [:raw "amount"] [:raw "::"] [:numeric 10]]})})
+        expected-q-sql (list [(str "ALTER TABLE \"feed\" ALTER COLUMN amount TYPE NUMERIC(10)"
                                 " USING amount :: NUMERIC(10)")])]
     (test-util/test-make-and-migrate-ok!
       existing-actions
@@ -1047,15 +1049,15 @@
                             :model-name :feed
                             :options {:type :decimal
                                       :default 7.77M}})
-        expected-q-edn '({:alter-table :feed
+        expected-q-edn '({:alter-table "feed"
                           :add-column (:tx [:decimal 6] [:default 6.4])}
-                         {:alter-table :feed
+                         {:alter-table "feed"
                           :add-column (:amount [:decimal 10 2] [:default "9.99"])}
-                         {:alter-table :feed
+                         {:alter-table "feed"
                           :add-column (:balance :decimal [:default 7.77M])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
-                         ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
-                         ["ALTER TABLE feed ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
+        expected-q-sql (list ["ALTER TABLE \"feed\" ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
+                         ["ALTER TABLE \"feed\" ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
+                         ["ALTER TABLE \"feed\" ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
 
     (test-util/test-make-and-migrate-ok!
       existing-actions
@@ -1158,9 +1160,9 @@
                             :model-name :feed
                             :options {:type [:varchar 10]
                                       :default "test"}})
-        expected-q-edn '({:alter-table :feed
+        expected-q-edn '({:alter-table "feed"
                           :add-column (:name [:varchar 10] [:default "test"])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
+        expected-q-sql (list ["ALTER TABLE \"feed\" ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
 
     (test-util/test-make-and-migrate-ok!
       existing-actions
@@ -1215,11 +1217,11 @@
                             :changes {:foreign-key {:from :EMPTY
                                                     :to :customer/id}}})
         expected-q-edn '({:alter-table
-                          (:feed
+                          ("feed"
                             {:add-constraint (:feed-account-fkey
                                                [:foreign-key :account]
                                                (:references :customer :id))})})
-        expected-q-sql (list [(str "ALTER TABLE feed"
+        expected-q-sql (list [(str "ALTER TABLE \"feed\""
                                 " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
     (test-util/test-make-and-migrate-ok!
@@ -1286,12 +1288,12 @@
                             :changes {:foreign-key {:from :account/id
                                                     :to :customer/id}}})
         expected-q-edn '({:alter-table
-                          (:feed
+                          ("feed"
                             {:drop-constraint [[:raw "IF EXISTS"] :feed-account-fkey]}
                             {:add-constraint (:feed-account-fkey
                                                [:foreign-key :account]
                                                (:references :customer :id))})})
-        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey"
+        expected-q-sql (list [(str "ALTER TABLE \"feed\" DROP CONSTRAINT IF EXISTS feed_account_fkey"
                                 ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
     (test-util/test-make-and-migrate-ok!

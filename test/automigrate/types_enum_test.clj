@@ -156,12 +156,12 @@
                             :type-name :account-role
                             :options {:type :enum
                                       :choices ["admin" "customer"]}})
-        expected-q-edn '({:create-table [:account]
+        expected-q-edn '({:create-table ["account"]
                           :with-columns [(:id :serial)]}
                          {:create-type
                           [:account-role :as (:enum "admin" "customer")]})
         expected-q-sql (list
-                         ["CREATE TABLE account (id SERIAL)"]
+                         ["CREATE TABLE \"account\" (id SERIAL)"]
                          ["CREATE TYPE account_role AS ENUM('admin', 'customer')"])]
 
     (test-util/test-make-and-migrate-ok!

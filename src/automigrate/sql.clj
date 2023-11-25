@@ -179,8 +179,8 @@
 
 (s/def ::create-table->sql
   (s/conformer
-    (fn [value]
-      {:create-table [(:model-name value)]
+    (fn [{:keys [model-name] :as value}]
+      {:create-table [(model-util/kw->snake-str model-name)]
        :with-columns (fields->columns (:fields value))})))
 
 
@@ -200,8 +200,8 @@
 
 (s/def ::add-column->sql
   (s/conformer
-    (fn [value]
-      {:alter-table (:model-name value)
+    (fn [{:keys [model-name] :as value}]
+      {:alter-table (model-util/kw->snake-str model-name)
        :add-column (first (fields->columns [[(:field-name value) (:options value)]]))})))
 
 
@@ -330,8 +330,9 @@
                         :primary-key {:drop-constraint (private-key-index-name model-name)}
                         :foreign-key {:drop-constraint (foreign-key-index-name model-name field-name)}))
             dropped* (remove nil? dropped)
-            all-actions (concat changes* dropped*)]
-        {:alter-table (cons (:model-name action) all-actions)}))))
+            all-actions (concat changes* dropped*)
+            model-name-raw (-> action :model-name (model-util/kw->snake-str))]
+        {:alter-table (cons model-name-raw all-actions)}))))
 
 
 (defmethod action->sql actions/ALTER-COLUMN-ACTION
@@ -348,8 +349,8 @@
 
 (s/def ::drop-column->sql
   (s/conformer
-    (fn [value]
-      {:alter-table (:model-name value)
+    (fn [{:keys [model-name] :as value}]
+      {:alter-table (model-util/kw->snake-str model-name)
        :drop-column (:field-name value)})))
 
 
@@ -365,8 +366,9 @@
 
 (s/def ::drop-table->sql
   (s/conformer
-    (fn [value]
-      {:drop-table [:if-exists (:model-name value)]})))
+    (fn [{:keys [model-name]}]
+      {:drop-table [:if-exists [[:raw (format "\"%s\""
+                                        (model-util/kw->snake-str model-name))]]]})))
 
 
 (defmethod action->sql actions/DROP-TABLE-ACTION
@@ -380,13 +382,14 @@
 
 (s/def ::create-index->sql
   (s/conformer
-    (fn [value]
+    (fn [{:keys [model-name] :as value}]
       (let [options (:options value)
             index-type (or (:type options) DEFAULT-INDEX)
             index-action (if (true? (:unique options))
                            :create-unique-index
-                           :create-index)]
-        {index-action [(:index-name value) :on (:model-name value)
+                           :create-index)
+            model-name-str (model-util/kw->snake-str model-name)]
+        {index-action [(:index-name value) :on [:raw (format "\"%s\"" model-name-str)]
                        :using (cons index-type (:fields options))]}))))
 
 

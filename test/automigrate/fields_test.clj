@@ -146,16 +146,16 @@
                                 :field-name :num
                                 :model-name :account
                                 :options {:type :integer}})
-            :q-edn [{:create-table [:account]
+            :q-edn [{:create-table ["account"]
                      :with-columns ['(:id :serial)
                                     '(:num [:char 256])]}
                     {:alter-table
-                     (list :account
+                     (list "account"
                        {:alter-column
                         (list :num :type :integer :using [:raw "num"] [:raw "::"] :integer)})}]
 
-            :q-sql [["CREATE TABLE account (id SERIAL, num CHAR(256))"]
-                    ["ALTER TABLE account ALTER COLUMN num TYPE INTEGER USING num :: INTEGER"]]}
+            :q-sql [["CREATE TABLE \"account\" (id SERIAL, num CHAR(256))"]
+                    ["ALTER TABLE \"account\" ALTER COLUMN num TYPE INTEGER USING num :: INTEGER"]]}
           (test-util/perform-make-and-migrate!
             {:jdbc-url config/DATABASE-CONN
              :existing-actions [{:action :create-table
@@ -246,17 +246,17 @@
                                                   :to :EMPTY}
                                           :type {:from :integer
                                                  :to :char}}})
-            :q-edn [{:create-table [:account]
+            :q-edn [{:create-table ["account"]
                      :with-columns ['(:id :serial)
                                     '(:num-val :integer [:raw "[][]"])]}
                     {:alter-table
-                     (list :account
+                     (list "account"
                        {:alter-column
                         (list :num-val :type :char
                           :using [:raw "num_val"] [:raw "::"] :char)})}]
 
-            :q-sql [["CREATE TABLE account (id SERIAL, num_val INTEGER [][])"]
-                    ["ALTER TABLE account ALTER COLUMN num_val TYPE CHAR USING num_val :: CHAR"]]}
+            :q-sql [["CREATE TABLE \"account\" (id SERIAL, num_val INTEGER [][])"]
+                    ["ALTER TABLE \"account\" ALTER COLUMN num_val TYPE CHAR USING num_val :: CHAR"]]}
           (test-util/perform-make-and-migrate!
             {:jdbc-url config/DATABASE-CONN
              :existing-actions [{:action :create-table

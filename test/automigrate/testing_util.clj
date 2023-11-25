@@ -2,6 +2,7 @@
   "Utils for simplifying tests."
   (:require [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [clojure.test :refer :all]
             [eftest.runner :as runner]
             [bond.james :as bond]
@@ -30,9 +31,10 @@
                              [:= :table_schema "public"]
                              [:= :table_type "BASE TABLE"]]}
                  (db-util/exec! db)
-                 (map (comp keyword :table_name)))]
+                 (map (comp #(format "\"%s\"" %) :table_name))
+                 (str/join ", "))]
     (when (seq tables)
-      (->> {:drop-table tables}
+      (->> {:drop-table [[[:raw tables]]]}
         (db-util/exec! db)))))
 
 

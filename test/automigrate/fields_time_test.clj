@@ -66,10 +66,10 @@
       (is (= {:new-actions (list {:action :create-table
                                   :fields {:thing {:type field-type}}
                                   :model-name :account})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns
                        [(list :thing (or edn field-type))]}]
-              :q-sql [[(format "CREATE TABLE account (thing %s)"
+              :q-sql [[(format "CREATE TABLE \"account\" (thing %s)"
                          (or sql (str/upper-case field-name)))]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
@@ -125,10 +125,10 @@
                                   :fields {:thing {:type field-type
                                                    :array "[][]"}}
                                   :model-name :account})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns
                        [(list :thing (or edn field-type) [:raw "[][]"])]}]
-              :q-sql [[(format "CREATE TABLE account (thing %s [][])"
+              :q-sql [[(format "CREATE TABLE \"account\" (thing %s [][])"
                          (or sql (str/upper-case field-name)))]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
@@ -174,19 +174,19 @@
                                   :field-name :thing
                                   :model-name :account
                                   :options {:type [field-type 6]}})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns ['(:id :serial)]}
                       {:add-column (list :thing [:raw (str type-name-up "(3)")])
-                       :alter-table :account}
-                      {:alter-table (list :account
+                       :alter-table "account"}
+                      {:alter-table (list "account"
                                       {:alter-column
                                        (list :thing :type [:raw (str type-name-up "(6)")]
                                          :using [:raw "thing"] [:raw "::"]
                                          [:raw (str type-name-up "(6)")])})}]
-              :q-sql [["CREATE TABLE account (id SERIAL)"]
-                      [(format "ALTER TABLE account ADD COLUMN thing %s(3)"
+              :q-sql [["CREATE TABLE \"account\" (id SERIAL)"]
+                      [(format "ALTER TABLE \"account\" ADD COLUMN thing %s(3)"
                          type-name-up)]
-                      [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s(6) USING thing :: %s(6)"
+                      [(format "ALTER TABLE \"account\" ALTER COLUMN thing TYPE %s(6) USING thing :: %s(6)"
                          type-name-up type-name-up)]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
@@ -246,18 +246,18 @@
                                   :model-name :account
                                   :options {:type field-type
                                             :array "[][202][1]"}})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns ['(:id :serial)]}
                       {:add-column (list :thing :text)
-                       :alter-table :account}
+                       :alter-table "account"}
                       {:alter-table
-                       (list :account
+                       (list "account"
                          {:alter-column
                           (list :thing :type field-type [:raw "[][202][1]"]
                             :using [:raw "thing"] [:raw "::"] field-type [:raw "[][202][1]"])})}]
-              :q-sql [["CREATE TABLE account (id SERIAL)"]
-                      ["ALTER TABLE account ADD COLUMN thing TEXT"]
-                      [(format "ALTER TABLE account ALTER COLUMN thing TYPE %s [][202][1] USING thing :: %s [][202][1]"
+              :q-sql [["CREATE TABLE \"account\" (id SERIAL)"]
+                      ["ALTER TABLE \"account\" ADD COLUMN thing TEXT"]
+                      [(format "ALTER TABLE \"account\" ALTER COLUMN thing TYPE %s [][202][1] USING thing :: %s [][202][1]"
                          type-name-up
                          type-name-up)]]}
             (test-util/perform-make-and-migrate!
@@ -335,15 +335,15 @@
                                   :field-name :thing
                                   :model-name :account
                                   :options {:type field-type}})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns ['(:id :serial)]}
                       {:add-column (list :thing
                                      (if (vector? field-type)
                                        [:raw (format "%s(%s)" type-name-up precision)]
                                        field-type))
-                       :alter-table :account}]
-              :q-sql [["CREATE TABLE account (id SERIAL)"]
-                      [(format "ALTER TABLE account ADD COLUMN thing %s"
+                       :alter-table "account"}]
+              :q-sql [["CREATE TABLE \"account\" (id SERIAL)"]
+                      [(format "ALTER TABLE \"account\" ADD COLUMN thing %s"
                          (if (vector? field-type)
                            (format "%s(%s)" type-name-up precision)
                            type-name-up))]]}
@@ -409,19 +409,19 @@
       (is (= {:new-actions (list {:action :drop-column
                                   :field-name :thing
                                   :model-name :account})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns ['(:id :serial)
                                       (list :thing
                                         (if (vector? field-type)
                                           [:raw (format "%s(%s)" type-name-up precision)]
                                           field-type))]}
                       {:drop-column :thing
-                       :alter-table :account}]
-              :q-sql [[(format "CREATE TABLE account (id SERIAL, thing %s)"
+                       :alter-table "account"}]
+              :q-sql [[(format "CREATE TABLE \"account\" (id SERIAL, thing %s)"
                          (if (vector? field-type)
                            (format "%s(%s)" type-name-up precision)
                            type-name-up))]
-                      ["ALTER TABLE account DROP COLUMN thing"]]}
+                      ["ALTER TABLE \"account\" DROP COLUMN thing"]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions [{:action :create-table
@@ -450,13 +450,13 @@
     (is (= {:new-actions (list {:action :drop-column
                                 :field-name :thing
                                 :model-name :account})
-            :q-edn [{:create-table [:account]
+            :q-edn [{:create-table ["account"]
                      :with-columns ['(:id :serial)
                                     (list :thing :interval [:raw "[][]"])]}
                     {:drop-column :thing
-                     :alter-table :account}]
-            :q-sql [["CREATE TABLE account (id SERIAL, thing INTERVAL [][])"]
-                    ["ALTER TABLE account DROP COLUMN thing"]]}
+                     :alter-table "account"}]
+            :q-sql [["CREATE TABLE \"account\" (id SERIAL, thing INTERVAL [][])"]
+                    ["ALTER TABLE \"account\" DROP COLUMN thing"]]}
           (test-util/perform-make-and-migrate!
             {:jdbc-url config/DATABASE-CONN
              :existing-actions [{:action :create-table

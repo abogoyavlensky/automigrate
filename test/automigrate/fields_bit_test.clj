@@ -21,9 +21,9 @@
       (is (= {:new-actions [{:action :create-table
                              :fields {:thing {:type [field-type 3]}}
                              :model-name :account}]
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns [(list :thing [field-type 3])]}]
-              :q-sql [[(format "CREATE TABLE account (thing %s(3))"
+              :q-sql [[(format "CREATE TABLE \"account\" (thing %s(3))"
                          (str/upper-case (name field-type)))]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
@@ -58,18 +58,18 @@
                                   :field-name :thing
                                   :model-name :account
                                   :options {:type [field-type 10]}})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns ['(:id :serial)]}
                       {:add-column (list :thing [field-type 3])
-                       :alter-table :account}
-                      {:alter-table (list :account
+                       :alter-table "account"}
+                      {:alter-table (list "account"
                                       {:alter-column
                                        (list :thing :type [field-type 10]
                                          :using [:raw "thing"] [:raw "::"] [field-type 10])})}]
-              :q-sql [["CREATE TABLE account (id SERIAL)"]
-                      [(format "ALTER TABLE account ADD COLUMN thing %s(3)"
+              :q-sql [["CREATE TABLE \"account\" (id SERIAL)"]
+                      [(format "ALTER TABLE \"account\" ADD COLUMN thing %s(3)"
                          type-name-up)]
-                      [(format (str "ALTER TABLE account ALTER COLUMN thing TYPE %s(10)"
+                      [(format (str "ALTER TABLE \"account\" ALTER COLUMN thing TYPE %s(10)"
                                  " USING thing :: %s(10)")
                          type-name-up type-name-up)]]}
             (test-util/perform-make-and-migrate!
@@ -116,12 +116,12 @@
                                   :field-name :thing
                                   :model-name :account
                                   :options {:type [field-type 3]}})
-              :q-edn [{:create-table [:account]
+              :q-edn [{:create-table ["account"]
                        :with-columns ['(:id :serial)]}
                       {:add-column (list :thing [field-type 3])
-                       :alter-table :account}]
-              :q-sql [["CREATE TABLE account (id SERIAL)"]
-                      [(format "ALTER TABLE account ADD COLUMN thing %s(3)"
+                       :alter-table "account"}]
+              :q-sql [["CREATE TABLE \"account\" (id SERIAL)"]
+                      [(format "ALTER TABLE \"account\" ADD COLUMN thing %s(3)"
                          (str/upper-case (name field-type)))]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
