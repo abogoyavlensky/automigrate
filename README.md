@@ -637,17 +637,16 @@ In the future there could be more convenient options for configuration if needed
 - [x] Support enum type of fields for PostgreSQL.
 - [x] Support all built-in data types in PostgreSQL.
 - [x] Support array data types in PostgreSQL.
-- [ ] Support backward auto-migration.
 - [ ] Support comment for field.
+- [ ] Support backward auto-migration.
 - [ ] Support custom field checks in PostgreSQL.
 - [ ] Support custom model constraints in PostgreSQL.
 - [ ] Support custom data-migration using Clojure.
-- [ ] Support for SQLite and MySQL.
 - [ ] Optimize auto-generated sql queries.
 - [ ] Test against different versions of db and Clojure.
-- [ ] Add visual representation of db schema by models. 
+- [ ] Support for SQLite and MySQL.
+- [ ] Add visual representation of db schema by models.
 - [ ] Support running with Leiningen.
-- [ ] Handle of model/field renaming.
 
 
 ### Things still in design
@@ -659,6 +658,7 @@ In the future there could be more convenient options for configuration if needed
 - Ability to separate models by multiple files.
 - Move transformations out of clojure spec conformers. (tech)
 - Disable field types validation at all, or add ability to set arbitrary custom type.
+- Handle of model/field renaming.
 
 
 ## Inspired by

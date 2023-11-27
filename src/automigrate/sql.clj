@@ -102,6 +102,12 @@
         [:raw value]))))
 
 
+(s/def :automigrate.sql.option->sql/comment
+  (s/and
+    ::fields/comment
+    (s/conformer identity)))
+
+
 (def ^:private options-specs
   [:automigrate.sql.option->sql/null
    :automigrate.sql.option->sql/primary-key
@@ -110,7 +116,7 @@
    :automigrate.sql.option->sql/foreign-key
    :automigrate.sql.option->sql/on-delete
    :automigrate.sql.option->sql/on-update
-   :automigrate.sql.option->sql/array])
+   :automigrate.sql.option->sql/comment])
 
 
 (s/def ::->foreign-key-complete
@@ -164,7 +170,7 @@
   [fields]
   (reduce
     (fn [acc [field-name options]]
-      (conj acc (->> (dissoc options :type :foreign-key :array)
+      (conj acc (->> (dissoc options :type :foreign-key :array :comment)
                   (vals)
                   (concat
                     [field-name]
@@ -177,11 +183,41 @@
 (defmulti action->sql :action)
 
 
+(defn- create-comment-on-field-raw
+  [{:keys [model-name field-name comment-val]}]
+  (let [obj-str (->> [model-name field-name]
+                  (map #(-> % (name) (model-util/kw->snake-case-str)))
+                  (str/join "."))
+        create-comment-tmp "COMMENT ON COLUMN %s IS %s"
+        comment-val* (if (some? comment-val)
+                       (format "'%s'" comment-val)
+                       "NULL")]
+    [:raw (format create-comment-tmp obj-str comment-val*)]))
+
+
+(defn- fields->comments-sql
+  [model-name fields]
+  (reduce
+    (fn [acc [field-name options]]
+      (if (some? (:comment options))
+        (conj acc (create-comment-on-field-raw
+                    {:model-name model-name
+                     :field-name field-name
+                     :comment-val (:comment options)}))
+        acc))
+    []
+    fields))
+
+
 (s/def ::create-table->sql
   (s/conformer
-    (fn [value]
-      {:create-table [(:model-name value)]
-       :with-columns (fields->columns (:fields value))})))
+    (fn [{:keys [model-name fields]}]
+      (let [create-table-q {:create-table [model-name]
+                            :with-columns (fields->columns fields)}
+            create-comments-q-vec (fields->comments-sql model-name fields)]
+        (if (seq create-comments-q-vec)
+          (concat [create-table-q] (vec create-comments-q-vec))
+          create-table-q)))))
 
 
 (defmethod action->sql actions/CREATE-TABLE-ACTION
@@ -200,9 +236,16 @@
 
 (s/def ::add-column->sql
   (s/conformer
-    (fn [value]
-      {:alter-table (:model-name value)
-       :add-column (first (fields->columns [[(:field-name value) (:options value)]]))})))
+    (fn [{:keys [model-name field-name options]}]
+      (let [add-column {:alter-table model-name
+                        :add-column (first (fields->columns [[field-name options]]))}]
+        (if (some? (:comment options))
+          [add-column
+           (create-comment-on-field-raw
+             {:model-name model-name
+              :field-name field-name
+              :comment-val (:comment options)})]
+          add-column)))))
 
 
 (defmethod action->sql actions/ADD-COLUMN-ACTION
@@ -303,6 +346,7 @@
     (fn [action]
       (let [{:keys [changes-to-add changes-to-drop]} (get-changes action)
             changes (for [[option value] changes-to-add
+                          :when (not= option :comment)
                           :let [field-name (:field-name action)
                                 model-name (:model-name action)]]
                       (condp contains? option

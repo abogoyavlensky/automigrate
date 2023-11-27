@@ -60,6 +60,11 @@
     (keyword)))
 
 
+(defn kw->snake-case-str
+  [kw]
+  (str/replace (name kw) #"-" "_"))
+
+
 (defn- remove-empty-option
   "Remove option key if value by `option-key` direction is empty."
   [option-key m k v]
