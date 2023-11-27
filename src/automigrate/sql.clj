@@ -116,6 +116,7 @@
    :automigrate.sql.option->sql/foreign-key
    :automigrate.sql.option->sql/on-delete
    :automigrate.sql.option->sql/on-update
+   :automigrate.sql.option->sql/array
    :automigrate.sql.option->sql/comment])
 
 
