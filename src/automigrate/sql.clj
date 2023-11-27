@@ -344,12 +344,10 @@
 
 (s/def ::alter-column->sql
   (s/conformer
-    (fn [action]
+    (fn [{:keys [field-name model-name] :as action}]
       (let [{:keys [changes-to-add changes-to-drop]} (get-changes action)
             changes (for [[option value] changes-to-add
-                          :when (not= option :comment)
-                          :let [field-name (:field-name action)
-                                model-name (:model-name action)]]
+                          :when (not= option :comment)]
                       (condp contains? option
                         #{:type :array} (->alter-column field-name option action)
                         #{:null} (let [operation (if (nil? value) :drop :set)]
@@ -365,8 +363,7 @@
             changes* (->> changes (remove nil?) (flatten))
 
             dropped (for [option changes-to-drop
-                          :let [field-name (:field-name action)
-                                model-name (:model-name action)]]
+                          :when (not= option :comment)]
                       (case option
                         :array (->alter-column field-name option action)
                         :null {:alter-column [field-name :drop [:not nil]]}
@@ -375,8 +372,22 @@
                         :primary-key {:drop-constraint (private-key-index-name model-name)}
                         :foreign-key {:drop-constraint (foreign-key-index-name model-name field-name)}))
             dropped* (remove nil? dropped)
-            all-actions (concat changes* dropped*)]
-        {:alter-table (cons (:model-name action) all-actions)}))))
+            all-actions (concat changes* dropped*)
+            alter-table-sql {:alter-table (cons model-name all-actions)}
+
+            new-comment-val (-> action :changes :comment :to)
+            comment-sql (when (some? new-comment-val)
+                          (create-comment-on-field-raw
+                            {:model-name model-name
+                             :field-name field-name
+                             :comment-val (when (not= new-comment-val :EMPTY)
+                                            new-comment-val)}))]
+        (if (and (seq all-actions) (not (seq comment-sql)))
+          ; for compatibility with existing tests
+          alter-table-sql
+          (cond-> []
+            (seq all-actions) (conj alter-table-sql)
+            (seq comment-sql) (conj comment-sql)))))))
 
 
 (defmethod action->sql actions/ALTER-COLUMN-ACTION
