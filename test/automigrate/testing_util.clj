@@ -139,6 +139,13 @@
       :migrations-dir config/MIGRATIONS-DIR})))
 
 
+(defn actions->sql
+  [actions]
+  (if (sequential? actions)
+    (mapv #(db-util/fmt %) actions)
+    (db-util/fmt actions)))
+
+
 (defn perform-make-and-migrate!
   [{:keys [jdbc-url existing-actions existing-models]
     :or {existing-actions []
@@ -170,7 +177,7 @@
         (let [q-edn (->> #'migrations/action->honeysql
                       (bond/calls)
                       (mapv :return))
-              q-sql (mapv #(db-util/fmt %) q-edn)]
+              q-sql (mapv actions->sql q-edn)]
           {:new-actions new-actions
            :q-edn q-edn
            :q-sql q-sql})))))
@@ -189,3 +196,20 @@
         :from [:information-schema.columns]
         :where [:= :table-name model-name]
         :order-by [:ordinal-position]}))))
+
+
+(defn get-column-comment
+  [db model-name field-name]
+  (->> {:select [:c.table_name :c.column_name :pgd.description]
+        :from [[:pg_catalog.pg_statio_all_tables :st]]
+        :inner-join [[:pg_catalog.pg_description :pgd] [:= :pgd.objoid :st.relid]
+
+                     [:information_schema.columns :c]
+                     [:and
+                      [:= :pgd.objsubid :c.ordinal_position]
+                      [:= :c.table_schema :st.schemaname]
+                      [:= :c.table_name :st.relname]]]
+        :where [:and
+                [:= :c.table_name model-name]
+                [:= :c.column_name field-name]]}
+    (db-util/exec! db)))

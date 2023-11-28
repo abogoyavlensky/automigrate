@@ -1,6 +1,7 @@
 (ns automigrate.fields
   "All possible field types with spec validation."
   (:require [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [automigrate.util.spec :as spec-util])
   (:import (clojure.lang PersistentVector)))
 
@@ -315,6 +316,11 @@
   (s/and string? #(re-matches array-regex %)))
 
 
+(s/def ::comment
+  ; Not empty string
+  (s/and string? (complement str/blank?)))
+
+
 (s/def ::options
   (s/keys
     :opt-un [::null
@@ -324,7 +330,8 @@
              ::foreign-key
              ::on-delete
              ::on-update
-             ::array]))
+             ::array
+             ::comment]))
 
 
 (s/def ::options-strict-keys

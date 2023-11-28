@@ -705,6 +705,16 @@
       value)))
 
 
+(defmethod ->error-message :automigrate.fields/comment
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Option :comment of field %s should be string."
+        fq-field-name)
+      value)))
+
+
 (defmethod ->error-message :automigrate.fields/validate-fk-options-on-delete
   [data]
   (let [fq-field-name (get-fq-field-name data)
