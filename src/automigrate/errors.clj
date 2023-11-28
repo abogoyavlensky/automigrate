@@ -710,7 +710,7 @@
   (let [fq-field-name (get-fq-field-name data)
         value (get-options data)]
     (add-error-value
-      (format "Option :comment of field %s should be not empty string."
+      (format "Option :comment of field %s should be string."
         fq-field-name)
       value)))
 
