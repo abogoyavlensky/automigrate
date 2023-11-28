@@ -273,6 +273,7 @@ Available options are presented in the table below:
 | `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
 | `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
 | `:array`       | Can be added to any field type to make it array.                                              | `false`   | `string?`, examples: `"[]"`, `"[][]"`, `[][10][3]`                                                                             |
+| `:comment`     | Add a comment on the field.                                                                   | `false`   | `string?`                                                                                                                      |
 
 
 #### Indexes
@@ -637,7 +638,7 @@ In the future there could be more convenient options for configuration if needed
 - [x] Support enum type of fields for PostgreSQL.
 - [x] Support all built-in data types in PostgreSQL.
 - [x] Support array data types in PostgreSQL.
-- [ ] Support comment for field.
+- [x] Support comment on field.
 - [ ] Support backward auto-migration.
 - [ ] Support custom field checks in PostgreSQL.
 - [ ] Support custom model constraints in PostgreSQL.
