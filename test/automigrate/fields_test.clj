@@ -164,27 +164,26 @@
                                  :model-name :account}]
              :existing-models {:account
                                {:fields [[:id :serial]
-                                         [:num :integer]]}}})))
+                                         [:num :integer]]}}}))))
 
-    (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('account_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "account"}
-                {:character_maximum_length nil
-                 :column_default nil
-                 :column_name "num"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "YES"
-                 :table_name "account"}]
-              (test-util/get-table-schema-from-db
-                config/DATABASE-CONN
-                "account")))))))
+  (testing "check actual db changes"
+    (is (= [{:character_maximum_length nil
+             :column_default "nextval('account_id_seq'::regclass)"
+             :column_name "id"
+             :data_type "integer"
+             :udt_name "int4"
+             :is_nullable "NO"
+             :table_name "account"}
+            {:character_maximum_length nil
+             :column_default nil
+             :column_name "num"
+             :data_type "integer"
+             :udt_name "int4"
+             :is_nullable "YES"
+             :table_name "account"}]
+          (test-util/get-table-schema-from-db
+            config/DATABASE-CONN
+            "account")))))
 
 
 (deftest test-fields-alter-column-array-with-underscore-ok
@@ -213,27 +212,26 @@
                                  :model-name :account}]
              :existing-models {:account
                                {:fields [[:id :serial]
-                                         [:num-val :integer]]}}})))
+                                         [:num-val :integer]]}}}))))
 
-    (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('account_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "account"}
-                {:character_maximum_length nil
-                 :column_default nil
-                 :column_name "num_val"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "YES"
-                 :table_name "account"}]
-              (test-util/get-table-schema-from-db
-                config/DATABASE-CONN
-                "account")))))))
+  (testing "check actual db changes"
+    (is (= [{:character_maximum_length nil
+             :column_default "nextval('account_id_seq'::regclass)"
+             :column_name "id"
+             :data_type "integer"
+             :udt_name "int4"
+             :is_nullable "NO"
+             :table_name "account"}
+            {:character_maximum_length nil
+             :column_default nil
+             :column_name "num_val"
+             :data_type "integer"
+             :udt_name "int4"
+             :is_nullable "YES"
+             :table_name "account"}]
+          (test-util/get-table-schema-from-db
+            config/DATABASE-CONN
+            "account")))))
 
 
 (deftest test-fields-alter-column-array-with-underscore-ok
@@ -266,24 +264,23 @@
                                  :model-name :account}]
              :existing-models {:account
                                {:fields [[:id :serial]
-                                         [:num-val :char]]}}})))
+                                         [:num-val :char]]}}}))))
 
-    (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('account_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "account"}
-                {:character_maximum_length 1
-                 :column_default nil
-                 :column_name "num_val"
-                 :data_type "character"
-                 :udt_name "bpchar"
-                 :is_nullable "YES"
-                 :table_name "account"}]
-              (test-util/get-table-schema-from-db
-                config/DATABASE-CONN
-                "account")))))))
+  (testing "check actual db changes"
+    (is (= [{:character_maximum_length nil
+             :column_default "nextval('account_id_seq'::regclass)"
+             :column_name "id"
+             :data_type "integer"
+             :udt_name "int4"
+             :is_nullable "NO"
+             :table_name "account"}
+            {:character_maximum_length 1
+             :column_default nil
+             :column_name "num_val"
+             :data_type "character"
+             :udt_name "bpchar"
+             :is_nullable "YES"
+             :table_name "account"}]
+          (test-util/get-table-schema-from-db
+            config/DATABASE-CONN
+            "account")))))
