@@ -643,12 +643,13 @@ In the future there could be more convenient options for configuration if needed
 - [x] Support comment on field.
 - [x] Support partial indexes.
 - [ ] Support backward auto-migration.
+- [ ] Support custom data-migration using Clojure.
 - [ ] Support custom field checks in PostgreSQL.
 - [ ] Support custom model constraints in PostgreSQL.
-- [ ] Support custom data-migration using Clojure.
 - [ ] Optimize auto-generated sql queries.
 - [ ] Test against different versions of db and Clojure.
-- [ ] Support for SQLite and MySQL.
+- [ ] Support for SQLite.
+- [ ] Support for MySQL.
 - [ ] Add visual representation of db schema by models.
 - [ ] Support running with Leiningen.
 
