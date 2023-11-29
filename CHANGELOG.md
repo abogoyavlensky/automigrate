@@ -10,7 +10,6 @@ All notable changes to this project will be documented in this file.
 
 - Add ability to manage a comment on field.
 - Add ability to create a partial indexes.
-- Add ability to create an index concurrently.
 
 ## 0.2.0 - 2023-11-24
 

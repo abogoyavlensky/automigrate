@@ -13,8 +13,7 @@
 
 
 (s/def ::unique true?)
-(s/def ::concurrently true?)
-(s/def ::where vector?)
+(s/def ::where (s/and vector? seq))
 
 
 (s/def ::index
@@ -22,7 +21,6 @@
     :req-un [::type
              ::fields]
     :opt-un [::unique
-             ::concurrently
              ::where]))
 
 
@@ -30,7 +28,6 @@
   (s/keys
     :req-un [::fields]
     :opt-un [::unique
-             ::concurrently
              ::where]))
 
 
