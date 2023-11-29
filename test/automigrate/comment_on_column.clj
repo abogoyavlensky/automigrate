@@ -1,4 +1,4 @@
-(ns automigrate.fields-options-comment-on-column
+(ns automigrate.comment-on-column
   (:require [clojure.test :refer :all]
             [automigrate.testing-util :as test-util]
             [automigrate.testing-config :as config]))
@@ -31,22 +31,21 @@
                                          [:name :varchar {:comment "The name of a user"}]]}}})))
 
     (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('users_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "users"}
-                {:character_maximum_length nil
-                 :column_default nil
-                 :column_name "name"
-                 :data_type "character varying"
-                 :udt_name "varchar"
-                 :is_nullable "YES"
-                 :table_name "users"}]
-              (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "name"
+               :data_type "character varying"
+               :udt_name "varchar"
+               :is_nullable "YES"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users")))
 
       (testing "test comment"
         (is (= [{:column_name "name"
@@ -78,13 +77,12 @@
              :existing-models {}})))
 
     (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= []
-              (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+      (is (= []
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
 
-      (testing "test comment"
-        (is (= []
-              (test-util/get-column-comment config/DATABASE-CONN "users" "name")))))))
+    (testing "test comment"
+      (is (= []
+            (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
 (deftest ^:eftest/slow test-action-add-column-with-comment-on-column-ok
@@ -112,28 +110,27 @@
                                          [:name :varchar {:comment "The name of a user"}]]}}})))
 
     (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('users_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "users"}
-                {:character_maximum_length nil
-                 :column_default nil
-                 :column_name "name"
-                 :data_type "character varying"
-                 :udt_name "varchar"
-                 :is_nullable "YES"
-                 :table_name "users"}]
-              (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "name"
+               :data_type "character varying"
+               :udt_name "varchar"
+               :is_nullable "YES"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
 
-      (testing "test comment"
-        (is (= [{:column_name "name"
-                 :description "The name of a user"
-                 :table_name "users"}]
-              (test-util/get-column-comment config/DATABASE-CONN "users" "name")))))))
+    (testing "test comment"
+      (is (= [{:column_name "name"
+               :description "The name of a user"
+               :table_name "users"}]
+            (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
 (deftest ^:eftest/slow test-action-drop-column-with-comment-on-column-ok
@@ -166,19 +163,18 @@
                                {:fields [[:id :serial]]}}})))
 
     (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('users_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "users"}]
-              (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
 
-      (testing "test comment"
-        (is (= []
-              (test-util/get-column-comment config/DATABASE-CONN "users" "name")))))))
+    (testing "test comment"
+      (is (= []
+            (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
 (deftest ^:eftest/slow test-action-alter-column-add-comment-on-column-ok
@@ -207,28 +203,27 @@
                                          [:name :varchar {:comment "The name of a user"}]]}}})))
 
     (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('users_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "users"}
-                {:character_maximum_length nil
-                 :column_default nil
-                 :column_name "name"
-                 :data_type "character varying"
-                 :udt_name "varchar"
-                 :is_nullable "YES"
-                 :table_name "users"}]
-              (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "name"
+               :data_type "character varying"
+               :udt_name "varchar"
+               :is_nullable "YES"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
 
-      (testing "test comment"
-        (is (= [{:column_name "name"
-                 :description "The name of a user"
-                 :table_name "users"}]
-              (test-util/get-column-comment config/DATABASE-CONN "users" "name")))))))
+    (testing "test comment"
+      (is (= [{:column_name "name"
+               :description "The name of a user"
+               :table_name "users"}]
+            (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
 (deftest ^:eftest/slow test-action-alter-column-with-comment-on-column-ok
@@ -261,28 +256,27 @@
                                          [:name :varchar {:comment "Updated comment"}]]}}})))
 
     (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('users_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "users"}
-                {:character_maximum_length nil
-                 :column_default nil
-                 :column_name "name"
-                 :data_type "character varying"
-                 :udt_name "varchar"
-                 :is_nullable "YES"
-                 :table_name "users"}]
-              (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "name"
+               :data_type "character varying"
+               :udt_name "varchar"
+               :is_nullable "YES"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
 
-      (testing "test comment"
-        (is (= [{:column_name "name"
-                 :description "Updated comment"
-                 :table_name "users"}]
-              (test-util/get-column-comment config/DATABASE-CONN "users" "name")))))))
+    (testing "test comment"
+      (is (= [{:column_name "name"
+               :description "Updated comment"
+               :table_name "users"}]
+            (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
 (deftest ^:eftest/slow test-action-alter-column-with-comment-and-another-option-ok
@@ -321,28 +315,27 @@
                                                           :comment "Updated comment"}]]}}})))
 
     (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('users_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "users"}
-                {:character_maximum_length nil
-                 :column_default nil
-                 :column_name "name"
-                 :data_type "character varying"
-                 :udt_name "varchar"
-                 :is_nullable "NO"
-                 :table_name "users"}]
-              (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "name"
+               :data_type "character varying"
+               :udt_name "varchar"
+               :is_nullable "NO"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
 
-      (testing "test comment"
-        (is (= [{:column_name "name"
-                 :description "Updated comment"
-                 :table_name "users"}]
-              (test-util/get-column-comment config/DATABASE-CONN "users" "name")))))))
+    (testing "test comment"
+      (is (= [{:column_name "name"
+               :description "Updated comment"
+               :table_name "users"}]
+            (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
 (deftest ^:eftest/slow test-action-alter-column-drop-comment-on-column-ok
@@ -374,26 +367,25 @@
                                          [:name :varchar]]}}})))
 
     (testing "check actual db changes"
-      (testing "test actual db schema after applying the migration"
-        (is (= [{:character_maximum_length nil
-                 :column_default "nextval('users_id_seq'::regclass)"
-                 :column_name "id"
-                 :data_type "integer"
-                 :udt_name "int4"
-                 :is_nullable "NO"
-                 :table_name "users"}
-                {:character_maximum_length nil
-                 :column_default nil
-                 :column_name "name"
-                 :data_type "character varying"
-                 :udt_name "varchar"
-                 :is_nullable "YES"
-                 :table_name "users"}]
-              (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "name"
+               :data_type "character varying"
+               :udt_name "varchar"
+               :is_nullable "YES"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
 
-      (testing "test comment"
-        (is (= []
-              (test-util/get-column-comment config/DATABASE-CONN "users" "name")))))))
+    (testing "test comment"
+      (is (= []
+            (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
 (deftest test-commment-on-column-errors

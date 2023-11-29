@@ -639,6 +639,7 @@ In the future there could be more convenient options for configuration if needed
 - [x] Support all built-in data types in PostgreSQL.
 - [x] Support array data types in PostgreSQL.
 - [x] Support comment on field.
+- [x] Support partial indexes.
 - [ ] Support backward auto-migration.
 - [ ] Support custom field checks in PostgreSQL.
 - [ ] Support custom model constraints in PostgreSQL.

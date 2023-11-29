@@ -13,19 +13,25 @@
 
 
 (s/def ::unique true?)
+(s/def ::concurrently true?)
+(s/def ::where vector?)
 
 
 (s/def ::index
   (s/keys
     :req-un [::type
              ::fields]
-    :opt-un [::unique]))
+    :opt-un [::unique
+             ::concurrently
+             ::where]))
 
 
 (s/def ::index-vec-options
   (s/keys
     :req-un [::fields]
-    :opt-un [::unique]))
+    :opt-un [::unique
+             ::concurrently
+             ::where]))
 
 
 (s/def ::index-vec-options-strict-keys
