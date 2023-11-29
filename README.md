@@ -174,7 +174,7 @@ As we saw in the previous example:
         [:description :text]]}
 ```
 
-Or it could be a map with two keys `:fields`, `:indexes` (*optional*) and `:types` (*optional*). Each of these is also a vector of vectors. 
+Or it could be a map with keys `:fields`, `:indexes` (*optional*) and `:types` (*optional*). Each of these is also a vector of vectors. 
 The same model from above could be described as a map:
 
 ```clojure
@@ -278,7 +278,8 @@ Available options are presented in the table below:
 
 #### Indexes
 
-Each index is a vector of three elements: `[:name-of-index :type-of-index {:fields [:field-from-model-to-index] :unique boolean?}]`
+Each index is a vector of three elements: 
+`[:name-of-index :type-of-index {:fields [:field-from-model-to-index] :unique boolean? :concurrently boolean? :where [...]}]`
 Name, type and `:fields` in options are required.
 
 The first element is the name of an index and must be a keyword.
@@ -299,14 +300,16 @@ The second element is an index type and must be a keyword of available index typ
 ##### Index options
 
 The options value is a map where key is the name of the option and value is the available option value.
-The option `:fields` is required, others are optional (*for now there is just `:unique` is optional*).  
+The option `:fields` is required, others are optional.  
 Available options are presented in the table below:
 
 
-| Field option | Description                                                           | Required? | Value               |
-|--------------|-----------------------------------------------------------------------|-----------|---------------------|
-| `:fields`    | Vector of fields as keywords. Index will be created for those fields. | `true`    | [`:field-name` ...] |
-| `:unique`    | Set to `true` if index should be unique.                              | `false`   | `true?`             |
+| Field option    | Description                                                           | Required? | Value                      |
+|-----------------|-----------------------------------------------------------------------|-----------|----------------------------|
+| `:fields`       | Vector of fields as keywords. Index will be created for those fields. | `true`    | [`:field-name` ...]        |
+| `:unique`       | Set to `true` if index should be unique.                              | `false`   | `true?`                    |
+| `:concurrently` | Set to `true` to create the index without any locks.                  | `false`   | `true?`                    |
+| `:where`        | Set condition in Honeysql format to create partial index.             | `false`   | Example: `[:> amount 10]`  |
 
 #### Types
 
