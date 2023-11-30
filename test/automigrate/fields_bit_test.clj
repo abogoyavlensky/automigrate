@@ -29,18 +29,17 @@
               {:jdbc-url config/DATABASE-CONN
                :existing-actions []
                :existing-models {:account
-                                 {:fields [[:thing [field-type 3]]]}}})))
+                                 {:fields [[:thing [field-type 3]]]}}}))))
 
-      (testing "check actual db changes"
-        (testing "test actual db schema after applying the migration"
-          (is (= [{:character_maximum_length 3
-                   :column_default nil
-                   :column_name "thing"
-                   :data_type (or field-name (name field-type))
-                   :udt_name (name field-type)
-                   :is_nullable "YES"
-                   :table_name "account"}]
-                (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))))
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length 3
+               :column_default nil
+               :column_name "thing"
+               :data_type (or field-name (name field-type))
+               :udt_name (name field-type)
+               :is_nullable "YES"
+               :table_name "account"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
 
 
 (deftest test-fields-bit-alter-column-ok
@@ -83,25 +82,24 @@
                                    :options {:type [field-type 3]}}]
                :existing-models {:account
                                  {:fields [[:id :serial]
-                                           [:thing [field-type 10]]]}}})))
+                                           [:thing [field-type 10]]]}}}))))
 
-      (testing "check actual db changes"
-        (testing "test actual db schema after applying the migration"
-          (is (= [{:character_maximum_length nil
-                   :column_default "nextval('account_id_seq'::regclass)"
-                   :column_name "id"
-                   :data_type "integer"
-                   :udt_name "int4"
-                   :is_nullable "NO"
-                   :table_name "account"}
-                  {:character_maximum_length 10
-                   :column_default nil
-                   :column_name "thing"
-                   :data_type (or field-name (name field-type))
-                   :udt_name (name field-type)
-                   :is_nullable "YES"
-                   :table_name "account"}]
-                (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))))
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('account_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "account"}
+              {:character_maximum_length 10
+               :column_default nil
+               :column_name "thing"
+               :data_type (or field-name (name field-type))
+               :udt_name (name field-type)
+               :is_nullable "YES"
+               :table_name "account"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
 
 
 (deftest ^:eftest/slow test-fields-bit-add-column-ok
@@ -130,25 +128,24 @@
                                    :model-name :account}]
                :existing-models {:account
                                  {:fields [[:id :serial]
-                                           [:thing [field-type 3]]]}}})))
+                                           [:thing [field-type 3]]]}}}))))
 
-      (testing "check actual db changes"
-        (testing "test actual db schema after applying the migration"
-          (is (= [{:character_maximum_length nil
-                   :column_default "nextval('account_id_seq'::regclass)"
-                   :column_name "id"
-                   :data_type "integer"
-                   :udt_name "int4"
-                   :is_nullable "NO"
-                   :table_name "account"}
-                  {:character_maximum_length 3
-                   :column_default nil
-                   :column_name "thing"
-                   :data_type (or field-name (name field-type))
-                   :udt_name (name field-type)
-                   :is_nullable "YES"
-                   :table_name "account"}]
-                (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))))
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('account_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "account"}
+              {:character_maximum_length 3
+               :column_default nil
+               :column_name "thing"
+               :data_type (or field-name (name field-type))
+               :udt_name (name field-type)
+               :is_nullable "YES"
+               :table_name "account"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "account"))))))
 
 
 (deftest test-fields-bit-uses-existing-bit-type

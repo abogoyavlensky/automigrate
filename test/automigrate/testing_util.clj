@@ -199,7 +199,7 @@
 
 
 (defn get-column-comment
-  [db model-name field-name]
+  [db table-name-str column-name-str]
   (->> {:select [:c.table_name :c.column_name :pgd.description]
         :from [[:pg_catalog.pg_statio_all_tables :st]]
         :inner-join [[:pg_catalog.pg_description :pgd] [:= :pgd.objoid :st.relid]
@@ -210,6 +210,16 @@
                       [:= :c.table_schema :st.schemaname]
                       [:= :c.table_name :st.relname]]]
         :where [:and
-                [:= :c.table_name model-name]
-                [:= :c.column_name field-name]]}
+                [:= :c.table_name table-name-str]
+                [:= :c.column_name column-name-str]]}
     (db-util/exec! db)))
+
+
+(defn get-indexes
+  [db table-name-str]
+  (db-util/exec!
+    db
+    {:select [:*]
+     :from [:pg-indexes]
+     :where [:= :tablename table-name-str]
+     :order-by [:indexname]}))

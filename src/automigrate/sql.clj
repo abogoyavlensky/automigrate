@@ -442,8 +442,10 @@
             index-action (if (true? (:unique options))
                            :create-unique-index
                            :create-index)]
-        {index-action [(:index-name value) :on (:model-name value)
-                       :using (cons index-type (:fields options))]}))))
+        {index-action (cond-> [(:index-name value)
+                               :on (:model-name value)
+                               :using (cons index-type (:fields options))]
+                        (seq (:where options)) (concat [:where (:where options)]))}))))
 
 
 (defmethod action->sql actions/CREATE-INDEX-ACTION

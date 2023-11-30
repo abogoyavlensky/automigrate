@@ -380,6 +380,12 @@
     (format "Option :unique of index %s should satisfy: `true?`." fq-index-name)))
 
 
+(defmethod ->error-message :automigrate.indexes/where
+  [data]
+  (let [fq-index-name (get-fq-index-name data)]
+    (format "Option :where of index %s should a not empty vector." fq-index-name)))
+
+
 (defmethod ->error-message :automigrate.indexes/index-name
   [data]
   (let [model-name (get-model-name data)]

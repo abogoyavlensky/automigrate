@@ -13,19 +13,22 @@
 
 
 (s/def ::unique true?)
+(s/def ::where (s/and vector? seq))
 
 
 (s/def ::index
   (s/keys
     :req-un [::type
              ::fields]
-    :opt-un [::unique]))
+    :opt-un [::unique
+             ::where]))
 
 
 (s/def ::index-vec-options
   (s/keys
     :req-un [::fields]
-    :opt-un [::unique]))
+    :opt-un [::unique
+             ::where]))
 
 
 (s/def ::index-vec-options-strict-keys
