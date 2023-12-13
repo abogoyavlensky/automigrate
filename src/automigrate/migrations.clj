@@ -54,6 +54,7 @@
     (keyword)))
 
 
+; TODO: remove!
 (defmulti read-migration #(get-migration-type (:file-name %)))
 
 
@@ -566,10 +567,8 @@
 
 
 (defn- make-migration*
-  [models-file migrations-files]
-  (let [old-schema (schema/current-db-schema migrations-files)
-        new-schema (read-models models-file)
-        [alterations removals] (differ/diff old-schema new-schema)
+  [old-schema new-schema]
+  (let [[alterations removals] (differ/diff old-schema new-schema)
         changed-models (-> (set (keys alterations))
                          (set/union (set (keys removals))))
         actions (for [model-name changed-models
@@ -605,6 +604,49 @@
       (actions/->migrations))))
 
 
+(defmulti migration->actions (juxt :migration-type :direction))
+
+
+(defmethod migration->actions [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
+  [{:keys [file-name migrations-dir]}]
+  (let [migration-file-path (file-util/join-path migrations-dir file-name)]
+    (file-util/read-edn migration-file-path)))
+
+
+(defn- ->file
+  [file-name migrations-dir]
+  (io/file (file-util/join-path migrations-dir file-name)))
+
+
+(defmethod migration->actions [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
+  [{:keys [migrations-dir number-int all-migrations] :as context}]
+  (let [migrations-from (->> all-migrations
+                          (take-while #(<= (:number-int %) number-int))
+                          (filterv #(= AUTO-MIGRATION-EXT (:migration-type %)))
+                          (map #(-> % :file-name (->file migrations-dir))))
+        schema-from (schema/current-db-schema migrations-from)
+
+        migrations-to (butlast migrations-from)
+        schema-to (schema/current-db-schema migrations-to)]
+    (make-migration* schema-from schema-to)))
+
+
+(defmethod migration->actions [SQL-MIGRATION-EXT FORWARD-DIRECTION]
+  [{:keys [file-name migrations-dir]}]
+  (-> (file-util/join-path migrations-dir file-name)
+    (slurp)
+    (vector)
+    (get-forward-sql-migration)))
+
+
+(defmethod migration->actions [SQL-MIGRATION-EXT BACKWARD-DIRECTION]
+  [{:keys [file-name migrations-dir]}]
+  (-> (file-util/join-path migrations-dir file-name)
+    (slurp)
+    (vector)
+    (get-backward-sql-migration)))
+
+
 (defn- get-next-migration-file-name
   "Return next migration file name based on existing migrations."
   [{:keys [migration-type migrations-dir next-migration-name]}]
@@ -624,11 +666,13 @@
 (defn- make-next-migration
   "Return actions for next migration."
   [{:keys [models-file migrations-dir]}]
-  (->> (file-util/list-files migrations-dir)
-    (filter auto-migration?)
-    (make-migration* models-file)
-    (flatten)
-    (seq)))
+  (let [auto-migration-files (->> (file-util/list-files migrations-dir)
+                               (filter auto-migration?))
+        old-schema (schema/current-db-schema auto-migration-files)
+        new-schema (read-models models-file)]
+    (-> (make-migration* old-schema new-schema)
+      (flatten)
+      (seq))))
 
 
 (defn- get-action-name-verbose
@@ -748,7 +792,7 @@
 
 
 (defmethod explain* [AUTO-MIGRATION-EXT FORWARD-DIRECTION EXPLAIN-FORMAT-HUMAN]
-  ; Generate raw sql from migration.
+  ; Generate human-readable text from migration.
   [{:keys [file-name migrations-dir] :as _args}]
   (let [actions-explained (->> (read-migration {:file-name file-name
                                                 :migrations-dir migrations-dir})
@@ -851,7 +895,7 @@
                    :message "Unexpected db error."}))))))
 
 
-(defmulti exec-action! (juxt :migration-type :direction))
+(defmulti exec-action! :migration-type)
 
 
 (defn- action->honeysql
@@ -859,7 +903,7 @@
   (su/conform ::sql/->sql action))
 
 
-(defmethod exec-action! [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
+(defmethod exec-action! AUTO-MIGRATION-EXT
   [{:keys [db action]}]
   (let [formatted-action (action->honeysql action)]
     (if (sequential? formatted-action)
@@ -868,36 +912,17 @@
       (db-util/exec! db formatted-action))))
 
 
-(defmethod exec-action! [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
-  ; TODO: implement backward migration!
-  [_])
-
-
-(defmethod exec-action! [SQL-MIGRATION-EXT FORWARD-DIRECTION]
+(defmethod exec-action! SQL-MIGRATION-EXT
   [{:keys [db action]}]
-  (->> action
-    (get-forward-sql-migration)
-    (db-util/exec-raw! db)))
-
-
-(defmethod exec-action! [SQL-MIGRATION-EXT BACKWARD-DIRECTION]
-  [{:keys [db action]}]
-  (->> action
-    (get-backward-sql-migration)
-    (db-util/exec-raw! db)))
+  (db-util/exec-raw! db action))
 
 
 (defn- exec-actions!
   "Perform list of actions on a database."
-  [{:keys [db actions direction migration-type]}]
-  (when (and (= AUTO-MIGRATION-EXT migration-type)
-          (= BACKWARD-DIRECTION direction))
-    (println (str "WARNING: backward migration isn't fully implemented yet. "
-               "Database schema has not been changed!")))
+  [{:keys [db actions migration-type]}]
   (doseq [action actions]
     (exec-action! {:db db
                    :action action
-                   :direction direction
                    :migration-type migration-type})))
 
 
@@ -925,8 +950,7 @@
   [all-migrations migrated target-number]
   (if-not (seq all-migrations)
     {}
-    (let [all-migrations-detailed (map detailed-migration all-migrations)
-          all-numbers (set (map :number-int all-migrations-detailed))
+    (let [all-numbers (set (map :number-int all-migrations))
           last-number (apply max all-numbers)
           target-number* (or target-number last-number)
           current-number (current-migration-number migrated)
@@ -941,11 +965,11 @@
       (if (= target-number* current-number)
         []
         (condp contains? direction
-          #{FORWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
+          #{FORWARD-DIRECTION} {:to-migrate (->> all-migrations
                                               (drop-while #(>= current-number (:number-int %)))
                                               (take-while #(>= target-number* (:number-int %))))
                                 :direction direction}
-          #{BACKWARD-DIRECTION} {:to-migrate (->> all-migrations-detailed
+          #{BACKWARD-DIRECTION} {:to-migrate (->> all-migrations
                                                (drop-while #(>= target-number* (:number-int %)))
                                                (take-while #(>= current-number (:number-int %)))
                                                (sort-by :number-int >))
@@ -961,19 +985,23 @@
           _ (db-util/create-migrations-table db migrations-table)
           migrated (already-migrated db migrations-table)
           all-migrations (migrations-list migrations-dir)
+          all-migrations-detailed (map detailed-migration all-migrations)
           {:keys [to-migrate direction]}
-          (get-detailed-migrations-to-migrate all-migrations migrated number)]
+          (get-detailed-migrations-to-migrate all-migrations-detailed migrated number)]
       (if (seq to-migrate)
-        (doseq [{:keys [migration-name file-name migration-type]} to-migrate]
+        (doseq [{:keys [migration-name file-name migration-type number-int]} to-migrate]
           (if (= direction FORWARD-DIRECTION)
             (println (str "Applying " migration-name "..."))
             (println (str "Reverting " migration-name "...")))
           (jdbc/with-transaction [tx db]
-            (let [actions (read-migration {:file-name file-name
-                                           :migrations-dir migrations-dir})]
+            (let [actions (migration->actions {:file-name file-name
+                                               :migrations-dir migrations-dir
+                                               :migration-type migration-type
+                                               :number-int number-int
+                                               :direction direction
+                                               :all-migrations all-migrations-detailed})]
               (exec-actions! {:db tx
                               :actions actions
-                              :direction direction
                               :migration-type migration-type}))
             (if (= direction FORWARD-DIRECTION)
               (save-migration! db migration-name migrations-table)

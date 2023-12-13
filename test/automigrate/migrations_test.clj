@@ -154,14 +154,40 @@
               :migrations-dir config/MIGRATIONS-DIR})
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
-  (is (= #{"0001_auto_create_table_feed"
-           "0002_auto_add_column_created_at_to_feed_etc"
-           "0003_auto_alter_column_id_in_feed_etc"}
-        (->> {:select [:*]
-              :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/exec! config/DATABASE-CONN)
-          (map :name)
-          (set))))
+  (testing "test migrations have been applied"
+    (is (= #{"0001_auto_create_table_feed"
+             "0002_auto_add_column_created_at_to_feed_etc"
+             "0003_auto_alter_column_id_in_feed_etc"}
+          (->> {:select [:*]
+                :from [db-util/MIGRATIONS-TABLE]}
+            (db-util/exec! config/DATABASE-CONN)
+            (map :name)
+            (set))))
+    ; check actual db changes
+    (is (= [{:character_maximum_length nil
+             :column_default "nextval('feed_id_seq'::regclass)"
+             :column_name "id"
+             :data_type "integer"
+             :is_nullable "NO"
+             :table_name "feed"
+             :udt_name "int4"}
+            {:character_maximum_length nil
+             :column_default "now()"
+             :column_name "created_at"
+             :data_type "timestamp without time zone"
+             :is_nullable "YES"
+             :table_name "feed"
+             :udt_name "timestamp"}
+            {:character_maximum_length nil
+             :column_default nil
+             :column_name "name"
+             :data_type "text"
+             :is_nullable "YES"
+             :table_name "feed"
+             :udt_name "text"}]
+          (test-util/get-table-schema-from-db
+            config/DATABASE-CONN
+            "feed"))))
   (testing "test migrate backward to specific number"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                    :jdbc-url config/DATABASE-URL
@@ -172,7 +198,33 @@
                 :from [db-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
-            (set)))))
+            (set))))
+    ; check actual db changes
+    (is (= [{:character_maximum_length nil
+             :column_default "nextval('feed_id_seq'::regclass)"
+             :column_name "id"
+             :data_type "integer"
+             :is_nullable "NO"
+             :table_name "feed"
+             :udt_name "int4"}
+            {:character_maximum_length nil
+             :column_default "now()"
+             :column_name "created_at"
+             :data_type "timestamp without time zone"
+             :is_nullable "YES"
+             :table_name "feed"
+             :udt_name "timestamp"}
+            {:character_maximum_length 100
+             :column_default nil
+             :column_name "name"
+             :data_type "character varying"
+             :udt_name "varchar"
+             :is_nullable "YES"
+             :table_name "feed"}]
+          (test-util/get-table-schema-from-db
+            config/DATABASE-CONN
+            "feed"))))
+
   (testing "test to revert all migrations"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                    :jdbc-url config/DATABASE-URL
@@ -182,7 +234,11 @@
                 :from [db-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
-            (set))))))
+            (set))))
+    (is (= []
+          (test-util/get-table-schema-from-db
+            config/DATABASE-CONN
+            "feed")))))
 
 
 (deftest test-migrate-migrations-with-alter-columns-ok
