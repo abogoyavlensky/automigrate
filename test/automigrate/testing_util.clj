@@ -139,6 +139,28 @@
       :migrations-dir config/MIGRATIONS-DIR})))
 
 
+(defn make-migration-spy!
+  [{:keys [existing-actions existing-models]
+    :or {existing-actions []
+         existing-models {}}}]
+  (bond/with-stub [[schema/load-migrations-from-files
+                    (constantly existing-actions)]
+                   ; existing models
+                   [file-util/read-edn
+                    (constantly existing-models)]]
+    (bond/with-spy [migrations/make-next-migration]
+      (#'migrations/make-migration
+       ; parameters are not involved in test as they are mocked
+       ; passing them here just to be able to run the make-migration fn
+       {:models-file (str config/MODELS-DIR "feed_basic.edn")
+        :migrations-dir config/MIGRATIONS-DIR})
+      ; Return generated new migration actions.
+      (-> #'migrations/make-next-migration
+        (bond/calls)
+        (first)
+        :return))))
+
+
 (defn actions->sql
   [actions]
   (if (sequential? actions)
@@ -167,8 +189,8 @@
                                         :migration-type :edn
                                         :number-int 1})
                                      :direction :forward})]
-                       [migrations/read-migration
-                        (constantly all-actions)]]
+
+                       [migrations/migration->actions (constantly all-actions)]]
         ; Migrate all actions
         (#'migrations/migrate
          {:jdbc-url jdbc-url

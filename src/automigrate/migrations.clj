@@ -54,17 +54,6 @@
     (keyword)))
 
 
-; TODO: remove!
-(defmulti read-migration #(get-migration-type (:file-name %)))
-
-
-(defmethod read-migration :default
-  ;"Return models' definitions."
-  [{:keys [file-name migrations-dir]}]
-  (let [migration-file-path (file-util/join-path migrations-dir file-name)]
-    (file-util/read-edn migration-file-path)))
-
-
 (defn- get-forward-sql-migration
   [migration]
   (-> (str/split migration (re-pattern BACKWARD-MIGRATION-DELIMITER))
@@ -77,14 +66,6 @@
   [migration]
   (-> (str/split migration (re-pattern BACKWARD-MIGRATION-DELIMITER))
     (last)
-    (vector)))
-
-
-(defmethod read-migration SQL-MIGRATION-EXT
-  ; Return model definitions.
-  [{:keys [file-name migrations-dir]}]
-  (-> (file-util/join-path migrations-dir file-name)
-    (slurp)
     (vector)))
 
 
@@ -619,7 +600,7 @@
 
 
 (defmethod migration->actions [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
-  [{:keys [migrations-dir number-int all-migrations] :as context}]
+  [{:keys [migrations-dir number-int all-migrations]}]
   (let [migrations-from (->> all-migrations
                           (take-while #(<= (:number-int %) number-int))
                           (filterv #(= AUTO-MIGRATION-EXT (:migration-type %)))
@@ -772,7 +753,7 @@
 
 
 (defmulti explain*
-  (juxt #(get-migration-type (:file-name %)) :direction :explain-format))
+  (juxt :migration-type :explain-format))
 
 
 (defn- add-transaction-to-explain
@@ -780,62 +761,36 @@
   (concat ["BEGIN"] actions ["COMMIT;"]))
 
 
-(defmethod explain* [AUTO-MIGRATION-EXT FORWARD-DIRECTION EXPLAIN-FORMAT-SQL]
-  ; Generate raw sql from migration.
-  [{:keys [file-name migrations-dir] :as _args}]
-  (->> (read-migration {:file-name file-name
-                        :migrations-dir migrations-dir})
+(defn- detailed-migration
+  "Return detailed info for each migration file."
+  [file-name]
+  {:file-name file-name
+   :migration-name (get-migration-name file-name)
+   :number-int (get-migration-number file-name)
+   :migration-type (get-migration-type file-name)})
+
+
+(defmethod explain* [AUTO-MIGRATION-EXT EXPLAIN-FORMAT-SQL]
+  [{:keys [actions]}]
+  (->> actions
     (mapv sql/->sql)
     (flatten)
     (add-transaction-to-explain)
     (file-util/safe-println)))
 
 
-(defmethod explain* [AUTO-MIGRATION-EXT FORWARD-DIRECTION EXPLAIN-FORMAT-HUMAN]
-  ; Generate human-readable text from migration.
-  [{:keys [file-name migrations-dir] :as _args}]
-  (let [actions-explained (->> (read-migration {:file-name file-name
-                                                :migrations-dir migrations-dir})
-                            (mapv get-action-name-verbose))]
+(defmethod explain* [AUTO-MIGRATION-EXT EXPLAIN-FORMAT-HUMAN]
+  [{:keys [actions]}]
+  (let [actions-explained (mapv get-action-name-verbose actions)]
     (file-util/safe-println actions-explained "")))
 
 
-(defmethod explain* [AUTO-MIGRATION-EXT BACKWARD-DIRECTION EXPLAIN-FORMAT-SQL]
-  [_]
-  (println "WARNING: backward auto-migration isn't fully supported yet."))
+(defmethod explain* [SQL-MIGRATION-EXT EXPLAIN-FORMAT-SQL]
+  [{:keys [actions]}]
+  (file-util/safe-println actions))
 
 
-(defmethod explain* [AUTO-MIGRATION-EXT BACKWARD-DIRECTION EXPLAIN-FORMAT-HUMAN]
-  [_]
-  (println "WARNING: backward auto-migration isn't fully supported yet."))
-
-
-(defmethod explain* [SQL-MIGRATION-EXT FORWARD-DIRECTION EXPLAIN-FORMAT-SQL]
-  ; Generate raw sql from migration for forward direction.
-  [{:keys [file-name migrations-dir] :as _args}]
-  (->> (read-migration {:file-name file-name
-                        :migrations-dir migrations-dir})
-    (first)
-    (get-forward-sql-migration)
-    (file-util/safe-println)))
-
-
-(defmethod explain* [SQL-MIGRATION-EXT FORWARD-DIRECTION EXPLAIN-FORMAT-HUMAN]
-  [_]
-  (println "Explain in human-readable format is not supported for custom SQL migration."))
-
-
-(defmethod explain* [SQL-MIGRATION-EXT BACKWARD-DIRECTION EXPLAIN-FORMAT-SQL]
-  ; Generate raw sql from migration for backward direction.
-  [{:keys [file-name migrations-dir] :as _args}]
-  (->> (read-migration {:file-name file-name
-                        :migrations-dir migrations-dir})
-    (first)
-    (get-backward-sql-migration)
-    (file-util/safe-println)))
-
-
-(defmethod explain* [SQL-MIGRATION-EXT BACKWARD-DIRECTION EXPLAIN-FORMAT-HUMAN]
+(defmethod explain* [SQL-MIGRATION-EXT EXPLAIN-FORMAT-HUMAN]
   [_]
   (println "Explain in human-readable format is not supported for custom SQL migration."))
 
@@ -845,14 +800,13 @@
   [{:keys [migrations-dir number direction]
     explain-format :format
     :or {direction FORWARD-DIRECTION
-         explain-format EXPLAIN-FORMAT-SQL} :as _args}]
+         explain-format EXPLAIN-FORMAT-SQL}}]
   (try+
     (let [migration-names (migrations-list migrations-dir)
           file-name (get-migration-by-number migration-names number)
           format-title (condp = explain-format
                          :sql "SQL"
                          :human "Actions")]
-
 
       (when-not (some? file-name)
         (throw+ {:type ::no-migration-by-number
@@ -862,10 +816,18 @@
       (file-util/safe-println
         [(format "%s for migration %s:\n" format-title file-name)])
 
-      (explain* {:file-name file-name
-                 :migrations-dir migrations-dir
-                 :direction direction
-                 :explain-format explain-format}))
+      (let [all-migrations (migrations-list migrations-dir)
+            all-migrations-detailed (map detailed-migration all-migrations)
+            migration-type (get-migration-type file-name)
+            actions (migration->actions {:file-name file-name
+                                         :migrations-dir migrations-dir
+                                         :migration-type migration-type
+                                         :direction direction
+                                         :number-int (get-migration-number file-name)
+                                         :all-migrations all-migrations-detailed})]
+        (explain* {:actions actions
+                   :migration-type (get-migration-type file-name)
+                   :explain-format explain-format})))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
     (catch #(contains? #{::no-migration-by-number
@@ -934,15 +896,6 @@
                 (get-migration-number))]
       res)
     0))
-
-
-(defn- detailed-migration
-  "Return detailed info for each migration file."
-  [file-name]
-  {:file-name file-name
-   :migration-name (get-migration-name file-name)
-   :number-int (get-migration-number file-name)
-   :migration-type (get-migration-type file-name)})
 
 
 (defn- get-detailed-migrations-to-migrate
