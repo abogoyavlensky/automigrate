@@ -99,6 +99,7 @@
     (map #(dissoc % :problem))))
 
 
+; TODO: remove and replace with `perform-make-and-migrate!`
 (defn test-make-and-migrate-ok!
   [existing-actions changed-models expected-actions expected-q-edn expected-q-sql]
   (bond/with-stub [[schema/load-migrations-from-files
@@ -140,25 +141,14 @@
 
 
 (defn make-migration-spy!
-  [{:keys [existing-actions existing-models]
-    :or {existing-actions []
-         existing-models {}}}]
-  (bond/with-stub [[schema/load-migrations-from-files
-                    (constantly existing-actions)]
-                   ; existing models
-                   [file-util/read-edn
-                    (constantly existing-models)]]
-    (bond/with-spy [migrations/make-next-migration]
-      (#'migrations/make-migration
-       ; parameters are not involved in test as they are mocked
-       ; passing them here just to be able to run the make-migration fn
-       {:models-file (str config/MODELS-DIR "feed_basic.edn")
-        :migrations-dir config/MIGRATIONS-DIR})
-      ; Return generated new migration actions.
-      (-> #'migrations/make-next-migration
-        (bond/calls)
-        (first)
-        :return))))
+  [params]
+  (bond/with-spy [migrations/make-next-migration]
+    (make-migration! params)
+    ; Return generated new migration actions.
+    (some-> #'migrations/make-next-migration
+      (bond/calls)
+      (first)
+      :return)))
 
 
 (defn actions->sql

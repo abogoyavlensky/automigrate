@@ -1,9 +1,5 @@
 (ns automigrate.fields-time-test
-  (:require [automigrate.migrations :as migrations]
-            [automigrate.schema :as schema]
-            [automigrate.util.file :as file-util]
-            [bond.james :as bond]
-            [clojure.string :as str]
+  (:require [clojure.string :as str]
             [clojure.test :refer :all]
             [automigrate.testing-util :as test-util]
             [automigrate.testing-config :as config]))
@@ -490,10 +486,10 @@
                          {:fields [[:id :serial]
                                    [:times :time {:array "[]"}]
                                    [:durations :interval {:array "[10][10]"}]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= [] (#'migrations/make-migration* "" []))))))
+    (is (= "There are no changes in models.\n"
+          (with-out-str
+            (test-util/make-migration! {:existing-actions existing-actions
+                                        :existing-models existing-models}))))))
 
 
 (deftest test-fields-time-error

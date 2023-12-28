@@ -2,7 +2,6 @@
   (:require
     [clojure.test :refer :all]
     [bond.james :as bond]
-    [automigrate.migrations :as migrations]
     [automigrate.schema :as schema]
     [automigrate.util.db :as db-util]
     [automigrate.util.file :as file-util]
@@ -45,10 +44,10 @@
         existing-models {:account
                          {:fields [[:id :serial]]
                           :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= [] (#'migrations/make-migration* "" []))))))
+    (is (= "There are no changes in models.\n"
+          (with-out-str
+            (test-util/make-migration! {:existing-actions existing-actions
+                                        :existing-models existing-models}))))))
 
 
 (deftest test-make-and-migrate-create-type-enum-ok
@@ -151,10 +150,10 @@
                             :type-name :account-role})
         existing-models {:account
                          {:fields [[:id :serial]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= [] (#'migrations/make-migration* "" []))))))
+    (is (= "There are no changes in models.\n"
+          (with-out-str
+            (test-util/make-migration! {:existing-actions existing-actions
+                                        :existing-models existing-models}))))))
 
 
 (deftest test-make-and-migrate-create-type-enum-with-creating-table-ok

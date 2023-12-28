@@ -1,10 +1,6 @@
 (ns automigrate.fields-enum-test
   (:require [clojure.test :refer :all]
-            [bond.james :as bond]
             [automigrate.util.db :as db-util]
-            [automigrate.migrations :as migrations]
-            [automigrate.schema :as schema]
-            [automigrate.util.file :as file-util]
             [automigrate.testing-util :as test-util]
             [automigrate.testing-config :as config]))
 
@@ -22,19 +18,17 @@
                          {:fields [[:id :serial]
                                    [:role [:enum :account-role]]]
                           :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= '({:action :create-type
-                :model-name :account
-                :type-name :account-role
-                :options {:type :enum
-                          :choices ["admin" "customer"]}}
-               {:action :add-column
-                :model-name :account
-                :field-name :role
-                :options {:type [:enum :account-role]}})
-            (#'migrations/make-migration* "" []))))))
+    (is (= '({:action :create-type
+              :model-name :account
+              :type-name :account-role
+              :options {:type :enum
+                        :choices ["admin" "customer"]}}
+             {:action :add-column
+              :model-name :account
+              :field-name :role
+              :options {:type [:enum :account-role]}})
+          (test-util/make-migration-spy! {:existing-actions existing-actions
+                                          :existing-models existing-models})))))
 
 
 (deftest test-make-migration*-add-column-enum-restore-ok
@@ -54,10 +48,10 @@
                          {:fields [[:id :serial]
                                    [:role [:enum :account-role]]]
                           :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= [] (#'migrations/make-migration* "" []))))))
+    (is (= "There are no changes in models.\n"
+          (with-out-str
+            (test-util/make-migration! {:existing-actions existing-actions
+                                        :existing-models existing-models}))))))
 
 
 (deftest test-make-migration*-create-table-with-enum-column-ok
@@ -66,19 +60,17 @@
                          {:fields [[:id :serial]
                                    [:role [:enum :account-role]]]
                           :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= '({:action :create-type
-                :model-name :account
-                :type-name :account-role
-                :options {:type :enum
-                          :choices ["admin" "customer"]}}
-               {:action :create-table
-                :model-name :account
-                :fields {:id {:type :serial}
-                         :role {:type [:enum :account-role]}}})
-            (#'migrations/make-migration* "" []))))))
+    (is (= '({:action :create-type
+              :model-name :account
+              :type-name :account-role
+              :options {:type :enum
+                        :choices ["admin" "customer"]}}
+             {:action :create-table
+              :model-name :account
+              :fields {:id {:type :serial}
+                       :role {:type [:enum :account-role]}}})
+          (test-util/make-migration-spy! {:existing-actions existing-actions
+                                          :existing-models existing-models})))))
 
 
 (deftest test-make-migration*-create-table-with-enum-column-restore-ok
@@ -95,10 +87,10 @@
                          {:fields [[:id :serial]
                                    [:role [:enum :account-role]]]
                           :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= [] (#'migrations/make-migration* "" []))))))
+    (is (= "There are no changes in models.\n"
+          (with-out-str
+            (test-util/make-migration! {:existing-actions existing-actions
+                                        :existing-models existing-models}))))))
 
 
 (deftest test-make-migration*-drop-table-with-enum-column-ok
@@ -112,15 +104,13 @@
                             :fields {:id {:type :serial}
                                      :role {:type [:enum :account-role]}}})
         existing-models {}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= '({:action :drop-table
-                :model-name :account}
-               {:action :drop-type
-                :model-name :account
-                :type-name :account-role})
-            (#'migrations/make-migration* "" []))))))
+    (is (= '({:action :drop-table
+              :model-name :account}
+             {:action :drop-type
+              :model-name :account
+              :type-name :account-role})
+          (test-util/make-migration-spy! {:existing-actions existing-actions
+                                          :existing-models existing-models})))))
 
 
 (deftest test-make-and-migrate-add-column-enum-ok
