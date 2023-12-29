@@ -805,14 +805,28 @@
                             :options {:type :integer
                                       :foreign-key :account/id
                                       :on-delete :cascade}})
-        expected-q-edn '({:add-column (:account
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id :serial :unique [:primary-key])]}
+                         {:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:name :text)]}
+                         {:add-column (:account
                                         :integer
                                         (:references :account :id)
                                         [:raw "on delete"]
                                         [:raw "cascade"]),
                           :alter-table :feed})
-        expected-q-sql '(["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
-    (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
+        expected-q-sql '(["CREATE TABLE account (id SERIAL UNIQUE PRIMARY KEY)"]
+                         ["CREATE TABLE feed (id SERIAL, name TEXT)"]
+                         ["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-alter-fk-field-on-delete-ok
@@ -842,7 +856,16 @@
                                       :foreign-key :account/id
                                       :on-delete :set-null}
                             :changes {:on-delete {:from :cascade :to :set-null}}})
-        expected-q-edn '({:alter-table (:feed
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id :serial :unique [:primary-key])]}
+                         {:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:name :text)
+                                         (:account :integer
+                                           (:references :account :id)
+                                           [:raw "on delete"]
+                                           [:raw "cascade"])]}
+                         {:alter-table (:feed
                                          {:drop-constraint [[:raw "IF EXISTS"]
                                                             :feed-account-fkey]}
                                          {:add-constraint (:feed-account-fkey
@@ -850,10 +873,21 @@
                                                             (:references :account :id)
                                                             [:raw "on delete"]
                                                             [:raw "set null"])})})
-        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
-                                "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
-                                "REFERENCES account(id) on delete set null")])]
-    (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)
+        expected-q-sql (list
+                         ["CREATE TABLE account (id SERIAL UNIQUE PRIMARY KEY)"]
+                         ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER REFERENCES account(id) on delete cascade)"]
+                         [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
+                            "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
+                            "REFERENCES account(id) on delete set null")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
+
     (testing "test constraints [another option to test constraints]"
       (is (= [{:colname "id"
                :constraint_name "account_pkey"
@@ -904,10 +938,29 @@
                             :options {:type :integer}
                             :changes {:foreign-key {:from :account/id :to :EMPTY}
                                       :on-delete {:from :cascade :to :EMPTY}}})
-        expected-q-edn '({:alter-table (:feed
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id :serial :unique [:primary-key])]}
+                         {:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:name :text)
+                                         (:account :integer
+                                           (:references :account :id)
+                                           [:raw "on delete"]
+                                           [:raw "cascade"])]}
+                         {:alter-table (:feed
                                          {:drop-constraint :feed-account-fkey})})
-        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey")])]
-    (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE account (id SERIAL UNIQUE PRIMARY KEY)"]
+                         ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER REFERENCES account(id) on delete cascade)"]
+                         [(str "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-validate-migration-numbers
@@ -951,18 +1004,26 @@
                             :options {:type [:varchar 200]}
                             :changes {:type {:from [:varchar 100]
                                              :to [:varchar 200]}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name
+                                           [:varchar
+                                            100])]}
+                         {:alter-table
                           (:feed {:alter-column
                                   [:name :type [:varchar 200]
                                    :using [:raw "name"] [:raw "::"] [:varchar 200]]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE VARCHAR(200)"
-                                " USING name :: VARCHAR(200)")])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100))"]
+                         [(str "ALTER TABLE feed ALTER COLUMN name TYPE VARCHAR(200)"
+                            " USING name :: VARCHAR(200)")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-alter-varchar-type-field-ok
@@ -977,18 +1038,26 @@
                             :options {:type [:char 100]}
                             :changes {:type {:from [:varchar 100]
                                              :to [:char 100]}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name
+                                           [:varchar
+                                            100])]}
+                         {:alter-table
                           (:feed {:alter-column
                                   [:name :type [:char 100]
                                    :using [:raw "name"] [:raw "::"] [:char 100]]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE CHAR(100)"
-                                " USING name :: CHAR(100)")])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100))"]
+                         [(str "ALTER TABLE feed ALTER COLUMN name TYPE CHAR(100)"
+                            " USING name :: CHAR(100)")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-alter-varchar-type-to-integer-field-ok
@@ -1003,18 +1072,24 @@
                             :options {:type :integer}
                             :changes {:type {:from [:varchar 100]
                                              :to :integer}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name [:varchar 100])]}
+                         {:alter-table
                           (:feed {:alter-column
                                   [:name :type :integer
                                    :using [:raw "name"] [:raw "::"] :integer]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE INTEGER"
-                                " USING name :: INTEGER")])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100))"]
+                         [(str "ALTER TABLE feed ALTER COLUMN name TYPE INTEGER"
+                            " USING name :: INTEGER")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-add-decimal-field-ok
@@ -1028,15 +1103,21 @@
                             :field-name :amount
                             :model-name :feed
                             :options {:type [:decimal 10 2]}})
-        expected-q-edn '({:alter-table :feed
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name [:varchar 100])]}
+                         {:alter-table :feed
                           :add-column (:amount [:decimal 10 2])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2)"])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100))"]
+                         ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2)"])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-alter-numeric-field-ok
@@ -1053,18 +1134,25 @@
                             :options {:type [:numeric 10]}
                             :changes {:type {:from [:numeric 10 2]
                                              :to [:numeric 10]}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name [:varchar 100])
+                                         (:amount [:numeric 10 2])]}
+                         {:alter-table
                           (:feed {:alter-column
                                   [:amount :type [:numeric 10]
                                    :using [:raw "amount"] [:raw "::"] [:numeric 10]]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN amount TYPE NUMERIC(10)"
-                                " USING amount :: NUMERIC(10)")])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100), amount NUMERIC(10, 2))"]
+                         [(str "ALTER TABLE feed ALTER COLUMN amount TYPE NUMERIC(10)"
+                            " USING amount :: NUMERIC(10)")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-add-decimal-field-with-default-value-ok
@@ -1095,22 +1183,28 @@
                             :model-name :feed
                             :options {:type :decimal
                                       :default 7.77M}})
-        expected-q-edn '({:alter-table :feed
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:id :serial [:primary-key])
+                                         (:name [:varchar 100])]}
+                         {:alter-table :feed
                           :add-column (:tx [:decimal 6] [:default 6.4])}
                          {:alter-table :feed
                           :add-column (:amount [:decimal 10 2] [:default "9.99"])}
                          {:alter-table :feed
                           :add-column (:balance :decimal [:default 7.77M])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
+        expected-q-sql (list
+                         ["CREATE TABLE feed (id SERIAL PRIMARY KEY, name VARCHAR(100))"]
+                         ["ALTER TABLE feed ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
                          ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
                          ["ALTER TABLE feed ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= [{:character_maximum_length nil
@@ -1206,16 +1300,21 @@
                             :model-name :feed
                             :options {:type [:varchar 10]
                                       :default "test"}})
-        expected-q-edn '({:alter-table :feed
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:id :serial [:primary-key])]}
+                         {:alter-table :feed
                           :add-column (:name [:varchar 10] [:default "test"])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
+        expected-q-sql (list
+                         ["CREATE TABLE feed (id SERIAL PRIMARY KEY)"]
+                         ["ALTER TABLE feed ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= [{:character_maximum_length nil
@@ -1262,20 +1361,29 @@
                                       :foreign-key :customer/id}
                             :changes {:foreign-key {:from :EMPTY
                                                     :to :customer/id}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:account :integer)]}
+                         {:create-table [:customer]
+                          :with-columns [(:id :serial :unique)]}
+                         {:alter-table
                           (:feed
                             {:add-constraint (:feed-account-fkey
                                                [:foreign-key :account]
                                                (:references :customer :id))})})
-        expected-q-sql (list [(str "ALTER TABLE feed"
-                                " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
+        expected-q-sql (list
+                         ["CREATE TABLE feed (id SERIAL, account INTEGER)"]
+                         ["CREATE TABLE customer (id SERIAL UNIQUE)"]
+                         [(str "ALTER TABLE feed"
+                            " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test constraints"
       (is (= [{:colname "id"
@@ -1333,18 +1441,30 @@
                                       :foreign-key :customer/id}
                             :changes {:foreign-key {:from :account/id
                                                     :to :customer/id}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id :serial :unique)]}
+                         {:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:account :integer (:references :account :id))]}
+                         {:create-table [:customer]
+                          :with-columns [(:id :serial :unique)]}
+                         {:alter-table
                           (:feed
                             {:drop-constraint [[:raw "IF EXISTS"] :feed-account-fkey]}
                             {:add-constraint (:feed-account-fkey
                                                [:foreign-key :account]
                                                (:references :customer :id))})})
-        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey"
-                                ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
+        expected-q-sql (list
+                         ["CREATE TABLE account (id SERIAL UNIQUE)"]
+                         ["CREATE TABLE feed (id SERIAL, account INTEGER REFERENCES account(id))"]
+                         ["CREATE TABLE customer (id SERIAL UNIQUE)"]
+                         [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey"
+                            ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))

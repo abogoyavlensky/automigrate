@@ -616,7 +616,6 @@
   [{:keys [file-name migrations-dir]}]
   (-> (file-util/join-path migrations-dir file-name)
     (slurp)
-    (vector)
     (get-forward-sql-migration)))
 
 
@@ -624,7 +623,6 @@
   [{:keys [file-name migrations-dir]}]
   (-> (file-util/join-path migrations-dir file-name)
     (slurp)
-    (vector)
     (get-backward-sql-migration)))
 
 

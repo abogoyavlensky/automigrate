@@ -99,31 +99,6 @@
     (map #(dissoc % :problem))))
 
 
-; TODO: remove and replace with `perform-make-and-migrate!`
-(defn test-make-and-migrate-ok!
-  [existing-actions changed-models expected-actions expected-q-edn expected-q-sql]
-  (bond/with-stub [[schema/load-migrations-from-files
-                    (constantly existing-actions)]
-                   [file-util/read-edn (constantly changed-models)]]
-    (let [db config/DATABASE-CONN
-          actions (#'migrations/make-migration* "" [])
-          queries (map #(spec-util/conform ::sql/->sql %) actions)]
-      (testing "test make-migration for model changes"
-        (is (= expected-actions actions)))
-      (testing "test converting migration actions to sql queries formatted as edn"
-        (is (= expected-q-edn queries)))
-      (testing "test converting actions to sql"
-        (is (= expected-q-sql (map #(sql/->sql %) actions))))
-      (testing "test running migrations on db"
-        (is (every?
-              #(= [#:next.jdbc{:update-count 0}] %)
-              (#'migrations/exec-actions!
-               {:db db
-                :actions (concat existing-actions actions)
-                :direction :forward
-                :migration-type :edn})))))))
-
-
 (defn make-migration!
   [{:keys [existing-actions existing-models]
     :or {existing-actions []

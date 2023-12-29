@@ -130,19 +130,24 @@
                             :model-name :account
                             :field-name :role
                             :options {:type [:enum :account-role]}})
-        expected-q-edn '({:create-type
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id
+                                           :serial)]}
+                         {:create-type
                           [:account-role :as (:enum "admin" "customer")]}
                          {:alter-table :account
                           :add-column (:role :account_role)})
-        expected-q-sql (list ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
-                         ["ALTER TABLE account ADD COLUMN role ACCOUNT_ROLE"])]
+        expected-q-sql [["CREATE TABLE account (id SERIAL)"]
+                        ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
+                        ["ALTER TABLE account ADD COLUMN role ACCOUNT_ROLE"]]]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= [{:character_maximum_length nil
@@ -185,22 +190,27 @@
                             :model-name :account
                             :field-name :role
                             :options {:type [:enum :account-role]}})
-        expected-q-edn '({:create-type
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id
+                                           :serial)]}
+                         {:create-type
                           [:account-role :as (:enum "admin" "customer")]}
                          {:create-table [:feed]
                           :with-columns [(:id :serial)]}
                          {:alter-table :account
                           :add-column (:role :account_role)})
-        expected-q-sql (list ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
-                         ["CREATE TABLE feed (id SERIAL)"]
-                         ["ALTER TABLE account ADD COLUMN role ACCOUNT_ROLE"])]
+        expected-q-sql [["CREATE TABLE account (id SERIAL)"]
+                        ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
+                        ["CREATE TABLE feed (id SERIAL)"]
+                        ["ALTER TABLE account ADD COLUMN role ACCOUNT_ROLE"]]]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= [{:character_maximum_length nil
@@ -238,19 +248,25 @@
                             :field-name :role
                             :options {:type [:enum :account-role]
                                       :default "customer"}})
-        expected-q-edn '({:create-type
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id
+                                           :serial)]}
+                         {:create-type
                           [:account-role :as (:enum "admin" "customer")]}
                          {:alter-table :account
                           :add-column (:role :account_role [:default "customer"])})
-        expected-q-sql (list ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
+        expected-q-sql (list
+                         ["CREATE TABLE account (id SERIAL)"]
+                         ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
                          ["ALTER TABLE account ADD COLUMN role ACCOUNT_ROLE DEFAULT 'customer'"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= [{:character_maximum_length nil
@@ -290,17 +306,31 @@
                             :options {:type [:enum :account-role]
                                       :null false}
                             :changes {:null {:from :EMPTY :to false}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-type [:account-role
+                                        :as
+                                        (:enum
+                                          "admin"
+                                          "customer")]}
+                         {:create-table [:account]
+                          :with-columns [(:id
+                                           :serial)
+                                         (:role
+                                           :account_role)]}
+                         {:alter-table
                           (:account
                             {:alter-column [:role :set [:not nil]]})})
-        expected-q-sql (list ["ALTER TABLE account ALTER COLUMN role SET NOT NULL"])]
+        expected-q-sql (list
+                         ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
+                         ["CREATE TABLE account (id SERIAL, role ACCOUNT_ROLE)"]
+                         ["ALTER TABLE account ALTER COLUMN role SET NOT NULL"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= [{:character_maximum_length nil
@@ -338,18 +368,32 @@
                            {:action :drop-type
                             :model-name :account
                             :type-name :account-role})
-        expected-q-edn '({:alter-table :account
+        expected-q-edn '({:create-type [:account-role
+                                        :as
+                                        (:enum
+                                          "admin"
+                                          "customer")]}
+                         {:create-table [:account]
+                          :with-columns [(:id
+                                           :serial)
+                                         (:role
+                                           :account_role)]}
+                         {:alter-table :account
                           :drop-column :role}
                          {:drop-type [:account-role]})
-        expected-q-sql (list ["ALTER TABLE account DROP COLUMN role"]
+        expected-q-sql (list
+                         ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
+                         ["CREATE TABLE account (id SERIAL, role ACCOUNT_ROLE)"]
+                         ["ALTER TABLE account DROP COLUMN role"]
                          ["DROP TYPE account_role"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= [{:character_maximum_length nil
@@ -387,17 +431,31 @@
                            {:action :drop-type
                             :model-name :account
                             :type-name :account-role})
-        expected-q-edn '({:drop-table [:if-exists :account]}
+        expected-q-edn '({:create-type [:account-role
+                                        :as
+                                        (:enum
+                                          "admin"
+                                          "customer")]}
+                         {:create-table [:account]
+                          :with-columns [(:id
+                                           :serial)
+                                         (:role
+                                           :account_role)]}
+                         {:drop-table [:if-exists :account]}
                          {:drop-type [:account-role]})
-        expected-q-sql (list ["DROP TABLE IF EXISTS account"]
+        expected-q-sql (list
+                         ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
+                         ["CREATE TABLE account (id SERIAL, role ACCOUNT_ROLE)"]
+                         ["DROP TABLE IF EXISTS account"]
                          ["DROP TYPE account_role"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= []

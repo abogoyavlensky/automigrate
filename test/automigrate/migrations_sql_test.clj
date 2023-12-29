@@ -56,22 +56,23 @@
       "ALTER TABLE feed ADD COLUMN description text;\n"
       "-- BACKWARD\n"
       "ALTER TABLE feed DROP COLUMN description;\n"))
+
   (testing "check forward migration"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                    :jdbc-url config/DATABASE-URL})
-    (is (= '({:id 1
-              :name "0001_auto_create_table_feed"}
-             {:id 2
-              :name "0002_add_description_field"})
-          (->> {:select [:*]
+    (is (= [{:id 1
+             :name "0001_auto_create_table_feed"}
+            {:id 2
+             :name "0002_add_description_field"}]
+          (->> {:select [:id :name]
                 :from [db-util/MIGRATIONS-TABLE]}
-            (db-util/exec! config/DATABASE-CONN)
-            (map #(dissoc % :created_at)))))
+            (db-util/exec! config/DATABASE-CONN))))
     (is (= "text"
           (->> (test-util/get-table-fields config/DATABASE-CONN :feed)
             (filter #(= "description" (:column_name %)))
             (first)
             :data_type))))
+
   (testing "check backward migration"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                    :jdbc-url config/DATABASE-URL
