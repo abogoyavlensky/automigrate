@@ -812,7 +812,7 @@
                  :message (format "Missing migration by number %s" (str number))}))
 
       (file-util/safe-println
-        [(format "%s for migration %s:\n" format-title file-name)])
+        [(format "%s for %s migration %s:\n" format-title (name direction) file-name)])
 
       (let [all-migrations (migrations-list migrations-dir)
             all-migrations-detailed (map detailed-migration all-migrations)

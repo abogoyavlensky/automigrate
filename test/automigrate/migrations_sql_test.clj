@@ -102,14 +102,14 @@
       "-- BACKWARD\n"
       "ALTER TABLE feed DROP COLUMN description;\n"))
   (testing "explain forward migration"
-    (is (= (str "SQL for migration 0002_add_description_field.sql:\n\n\n"
+    (is (= (str "SQL for forward migration 0002_add_description_field.sql:\n\n\n"
              "ALTER TABLE feed ADD COLUMN description text;\n\n")
           (with-out-str
             (core/explain {:migrations-dir config/MIGRATIONS-DIR
                            :jdbc-url config/DATABASE-URL
                            :number 2})))))
   (testing "explain backward migration"
-    (is (= (str "SQL for migration 0002_add_description_field.sql:\n\n\n"
+    (is (= (str "SQL for backward migration 0002_add_description_field.sql:\n\n\n"
              "ALTER TABLE feed DROP COLUMN description;\n\n")
           (with-out-str
             (core/explain {:migrations-dir config/MIGRATIONS-DIR
