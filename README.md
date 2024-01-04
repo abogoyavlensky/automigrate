@@ -15,7 +15,7 @@ and create database schema migrations automatically based on changes to the mode
 - manage migrations for: tables, indexes, constraints, enum types;
 - view actual SQL or human-readable description for a migration;
 - optionally add a custom SQL migration for specific cases;
-- use with PostgreSQL (:information_source: *other databases are planned*).
+- use with PostgreSQL :information_source: [*other databases are planned*] .
 
 ### Quick overview
 
