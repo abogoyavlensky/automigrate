@@ -15,7 +15,7 @@ and create database schema migrations automatically based on changes to the mode
 - manage migrations for: tables, indexes, constraints, enum types;
 - view actual SQL or human-readable description for a migration;
 - optionally add a custom SQL migration for specific cases;
-- use with PostgreSQL :construction: *[other databases are planned]*.
+- use with PostgreSQL [:construction: *other databases are planned*].
 
 ### Quick overview
 
@@ -83,7 +83,7 @@ clojure -T:migrations make
 
 #### Leiningen
 
-:construction: *Leiningen support is under development.*
+:construction: *Leiningen support is planned.*
 
 ### Getting started
 
