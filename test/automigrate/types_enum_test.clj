@@ -284,13 +284,7 @@
                :typtype "e"
                :enumlabel "other"
                :enumsortorder 4.0}]
-            (db-util/exec!
-              config/DATABASE-CONN
-              {:select [:t.typname :t.typtype :e.enumlabel :e.enumsortorder]
-               :from [[:pg_type :t]]
-               :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
-               :where [:= :t.typname "account_role"]
-               :order-by [[:e.enumsortorder :asc]]}))))))
+            (test-util/get-enum-type-choices config/DATABASE-CONN "account_role"))))))
 
 
 ; ERRORS

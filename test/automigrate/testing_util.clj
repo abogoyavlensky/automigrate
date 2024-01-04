@@ -8,11 +8,9 @@
             [slingshot.slingshot :refer [try+]]
             [automigrate.migrations :as migrations]
             [automigrate.schema :as schema]
-            [automigrate.sql :as sql]
             [automigrate.testing-config :as config]
             [automigrate.util.db :as db-util]
-            [automigrate.util.file :as file-util]
-            [automigrate.util.spec :as spec-util]))
+            [automigrate.util.file :as file-util]))
 
 
 (defn run-eftest
@@ -133,12 +131,38 @@
     (db-util/fmt actions)))
 
 
+(defn perform-migrate!
+  [{:keys [jdbc-url all-actions direction]
+    :or {all-actions []
+         direction :forward}}]
+  (bond/with-spy [migrations/action->honeysql]
+    (bond/with-stub [[migrations/get-detailed-migrations-to-migrate
+                      (constantly {:to-migrate
+                                   '({:file-name "0001_test_migration.edn"
+                                      :migration-name "0001_test_migration"
+                                      :migration-type :edn
+                                      :number-int 1})
+                                   :direction direction})]
+
+                     [migrations/migration->actions (constantly all-actions)]]
+      ; Migrate all actions
+      (#'migrations/migrate
+       {:jdbc-url jdbc-url
+        :migrations-dir config/MIGRATIONS-DIR})
+      ; Response
+      (let [q-edn (->> #'migrations/action->honeysql
+                    (bond/calls)
+                    (mapv :return))
+            q-sql (mapv actions->sql q-edn)]
+        {:q-edn q-edn
+         :q-sql q-sql}))))
+
+
 (defn perform-make-and-migrate!
-  [{:keys [jdbc-url existing-actions existing-models]
+  [{:keys [jdbc-url existing-actions existing-models direction]
     :or {existing-actions []
          existing-models {}}}]
-  (bond/with-spy [migrations/make-next-migration
-                  migrations/action->honeysql]
+  (bond/with-spy [migrations/make-next-migration]
     ; Generate new actions
     (make-migration! {:existing-models existing-models
                       :existing-actions existing-actions})
@@ -146,28 +170,11 @@
                         (bond/calls)
                         (first)
                         :return)
-          all-actions (concat (vec existing-actions) (vec new-actions))]
-      (bond/with-stub [[migrations/get-detailed-migrations-to-migrate
-                        (constantly {:to-migrate
-                                     '({:file-name "0001_test_migration.edn"
-                                        :migration-name "0001_test_migration"
-                                        :migration-type :edn
-                                        :number-int 1})
-                                     :direction :forward})]
-
-                       [migrations/migration->actions (constantly all-actions)]]
-        ; Migrate all actions
-        (#'migrations/migrate
-         {:jdbc-url jdbc-url
-          :migrations-dir config/MIGRATIONS-DIR})
-        ; Response
-        (let [q-edn (->> #'migrations/action->honeysql
-                      (bond/calls)
-                      (mapv :return))
-              q-sql (mapv actions->sql q-edn)]
-          {:new-actions new-actions
-           :q-edn q-edn
-           :q-sql q-sql})))))
+          all-actions (concat (vec existing-actions) (vec new-actions))
+          result (perform-migrate! {:jdbc-url jdbc-url
+                                    :all-actions all-actions
+                                    :direction direction})]
+      (assoc result :new-actions new-actions))))
 
 
 (defn get-table-schema-from-db
@@ -210,3 +217,23 @@
      :from [:pg-indexes]
      :where [:= :tablename table-name-str]
      :order-by [:indexname]}))
+
+
+(defn get-all-migrations-set
+  [db]
+  (->> {:select [:*]
+        :from [db-util/MIGRATIONS-TABLE]}
+    (db-util/exec! db)
+    (map :name)
+    (set)))
+
+
+(defn get-enum-type-choices
+  [db type-name]
+  (db-util/exec!
+    db
+    {:select [:t.typname :t.typtype :e.enumlabel :e.enumsortorder]
+     :from [[:pg_type :t]]
+     :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
+     :where [:= :t.typname type-name]
+     :order-by [[:e.enumsortorder :asc]]}))
