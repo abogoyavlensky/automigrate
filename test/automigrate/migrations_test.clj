@@ -154,14 +154,40 @@
               :migrations-dir config/MIGRATIONS-DIR})
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
-  (is (= #{"0001_auto_create_table_feed"
-           "0002_auto_add_column_created_at_to_feed_etc"
-           "0003_auto_alter_column_id_in_feed_etc"}
-        (->> {:select [:*]
-              :from [db-util/MIGRATIONS-TABLE]}
-          (db-util/exec! config/DATABASE-CONN)
-          (map :name)
-          (set))))
+  (testing "test migrations have been applied"
+    (is (= #{"0001_auto_create_table_feed"
+             "0002_auto_add_column_created_at_to_feed_etc"
+             "0003_auto_alter_column_id_in_feed_etc"}
+          (->> {:select [:*]
+                :from [db-util/MIGRATIONS-TABLE]}
+            (db-util/exec! config/DATABASE-CONN)
+            (map :name)
+            (set))))
+    ; check actual db changes
+    (is (= [{:character_maximum_length nil
+             :column_default "nextval('feed_id_seq'::regclass)"
+             :column_name "id"
+             :data_type "integer"
+             :is_nullable "NO"
+             :table_name "feed"
+             :udt_name "int4"}
+            {:character_maximum_length nil
+             :column_default "now()"
+             :column_name "created_at"
+             :data_type "timestamp without time zone"
+             :is_nullable "YES"
+             :table_name "feed"
+             :udt_name "timestamp"}
+            {:character_maximum_length nil
+             :column_default nil
+             :column_name "name"
+             :data_type "text"
+             :is_nullable "YES"
+             :table_name "feed"
+             :udt_name "text"}]
+          (test-util/get-table-schema-from-db
+            config/DATABASE-CONN
+            "feed"))))
   (testing "test migrate backward to specific number"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                    :jdbc-url config/DATABASE-URL
@@ -172,7 +198,33 @@
                 :from [db-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
-            (set)))))
+            (set))))
+    ; check actual db changes
+    (is (= [{:character_maximum_length nil
+             :column_default "nextval('feed_id_seq'::regclass)"
+             :column_name "id"
+             :data_type "integer"
+             :is_nullable "NO"
+             :table_name "feed"
+             :udt_name "int4"}
+            {:character_maximum_length nil
+             :column_default "now()"
+             :column_name "created_at"
+             :data_type "timestamp without time zone"
+             :is_nullable "YES"
+             :table_name "feed"
+             :udt_name "timestamp"}
+            {:character_maximum_length 100
+             :column_default nil
+             :column_name "name"
+             :data_type "character varying"
+             :udt_name "varchar"
+             :is_nullable "YES"
+             :table_name "feed"}]
+          (test-util/get-table-schema-from-db
+            config/DATABASE-CONN
+            "feed"))))
+
   (testing "test to revert all migrations"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                    :jdbc-url config/DATABASE-URL
@@ -182,7 +234,11 @@
                 :from [db-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
-            (set))))))
+            (set))))
+    (is (= []
+          (test-util/get-table-schema-from-db
+            config/DATABASE-CONN
+            "feed")))))
 
 
 (deftest test-migrate-migrations-with-alter-columns-ok
@@ -264,77 +320,77 @@
 (deftest test-explain-basic-migration-sql-ok
   (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed_etc.edn"])]
                    [file-util/safe-println (constantly nil)]
-                   [migrations/read-migration (constantly
-                                                '({:model-name :feed
-                                                   :fields {:id {:type :serial
-                                                                 :null false
-                                                                 :primary-key true}
-                                                            :number {:type :integer
-                                                                     :default 0}
-                                                            :info {:type :text}}
-                                                   :action :create-table}
-                                                  {:model-name :account
-                                                   :fields {:id {:null true
+                   [migrations/migration->actions (constantly
+                                                    '({:model-name :feed
+                                                       :fields {:id {:type :serial
+                                                                     :null false
+                                                                     :primary-key true}
+                                                                :number {:type :integer
+                                                                         :default 0}
+                                                                :info {:type :text}}
+                                                       :action :create-table}
+                                                      {:model-name :account
+                                                       :fields {:id {:null true
+                                                                     :unique true
+                                                                     :type :serial}
+                                                                :name {:null true
+                                                                       :type [:varchar 100]}
+                                                                :rate {:type :float}}
+                                                       :action :create-table}
+                                                      {:model-name :role
+                                                       :fields {:is-active {:type :boolean}
+                                                                :created-at {:type :timestamp
+                                                                             :default [:now]}}
+                                                       :action :create-table}
+                                                      {:field-name :day
+                                                       :model-name :account
+                                                       :options {:type :date}
+                                                       :action :add-column}
+                                                      {:field-name :number
+                                                       :model-name :account
+                                                       :changes {:type {:to :integer :from :text}
+                                                                 :unique {:to true :from :EMPTY}
+                                                                 :default {:to 0 :from :EMPTY}
+                                                                 :primary-key {:to :EMPTY :from true}
+                                                                 :null {:to :EMPTY :from true}}
+                                                       :options {:type :integer
                                                                  :unique true
-                                                                 :type :serial}
-                                                            :name {:null true
-                                                                   :type [:varchar 100]}
-                                                            :rate {:type :float}}
-                                                   :action :create-table}
-                                                  {:model-name :role
-                                                   :fields {:is-active {:type :boolean}
-                                                            :created-at {:type :timestamp
-                                                                         :default [:now]}}
-                                                   :action :create-table}
-                                                  {:field-name :day
-                                                   :model-name :account
-                                                   :options {:type :date}
-                                                   :action :add-column}
-                                                  {:field-name :number
-                                                   :model-name :account
-                                                   :changes {:type {:to :integer :from :text}
-                                                             :unique {:to true :from :EMPTY}
-                                                             :default {:to 0 :from :EMPTY}
-                                                             :primary-key {:to :EMPTY :from true}
-                                                             :null {:to :EMPTY :from true}}
-                                                   :options {:type :integer
-                                                             :unique true
-                                                             :default 0}
-                                                   :action :alter-column}
-                                                  {:field-name :url
-                                                   :model-name :feed
-                                                   :action :drop-column}
-                                                  {:model-name :feed
-                                                   :action :drop-table}
-                                                  {:model-name :feed
-                                                   :fields {:account {:type :serial
-                                                                      :foreign-key :account/id}}
-                                                   :action :create-table}
-                                                  {:field-name :account
-                                                   :model-name :feed
-                                                   :changes {:foreign-key {:to :EMPTY :from :account/id}}
-                                                   :options {:type :serial
-                                                             :foreign-key :account/id}
-                                                   :action :alter-column}
-                                                  {:field-name :account
-                                                   :model-name :feed
-                                                   :changes {:foreign-key {:to :account/id :from :EMPTY}}
-                                                   :options {:type :integer
-                                                             :foreign-key :account/id}
-                                                   :action :alter-column}
-                                                  {:index-name :feed_name_idx
-                                                   :model-name :feed
-                                                   :options {:type :btree
-                                                             :fields [:name]}
-                                                   :action :create-index}
-                                                  {:index-name :feed_name_idx
-                                                   :model-name :feed
-                                                   :action :drop-index}
-                                                  {:index-name :feed_name_idx
-                                                   :model-name :feed
-                                                   :options {:type :btree
-                                                             :fields [:name]}
-                                                   :action :alter-index}))]]
+                                                                 :default 0}
+                                                       :action :alter-column}
+                                                      {:field-name :url
+                                                       :model-name :feed
+                                                       :action :drop-column}
+                                                      {:model-name :feed
+                                                       :action :drop-table}
+                                                      {:model-name :feed
+                                                       :fields {:account {:type :serial
+                                                                          :foreign-key :account/id}}
+                                                       :action :create-table}
+                                                      {:field-name :account
+                                                       :model-name :feed
+                                                       :changes {:foreign-key {:to :EMPTY :from :account/id}}
+                                                       :options {:type :serial
+                                                                 :foreign-key :account/id}
+                                                       :action :alter-column}
+                                                      {:field-name :account
+                                                       :model-name :feed
+                                                       :changes {:foreign-key {:to :account/id :from :EMPTY}}
+                                                       :options {:type :integer
+                                                                 :foreign-key :account/id}
+                                                       :action :alter-column}
+                                                      {:index-name :feed_name_idx
+                                                       :model-name :feed
+                                                       :options {:type :btree
+                                                                 :fields [:name]}
+                                                       :action :create-index}
+                                                      {:index-name :feed_name_idx
+                                                       :model-name :feed
+                                                       :action :drop-index}
+                                                      {:index-name :feed_name_idx
+                                                       :model-name :feed
+                                                       :options {:type :btree
+                                                                 :fields [:name]}
+                                                       :action :alter-index}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 1})
     (is (= ["BEGIN"
@@ -365,77 +421,77 @@
 (deftest test-explain-basic-migration-human-ok
   (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed_etc.edn"])]
                    [file-util/safe-println (constantly nil)]
-                   [migrations/read-migration (constantly
-                                                '({:model-name :feed
-                                                   :fields {:id {:type :serial
-                                                                 :null false
-                                                                 :primary-key true}
-                                                            :number {:type :integer
-                                                                     :default 0}
-                                                            :info {:type :text}}
-                                                   :action :create-table}
-                                                  {:model-name :account
-                                                   :fields {:id {:null true
+                   [migrations/migration->actions (constantly
+                                                    '({:model-name :feed
+                                                       :fields {:id {:type :serial
+                                                                     :null false
+                                                                     :primary-key true}
+                                                                :number {:type :integer
+                                                                         :default 0}
+                                                                :info {:type :text}}
+                                                       :action :create-table}
+                                                      {:model-name :account
+                                                       :fields {:id {:null true
+                                                                     :unique true
+                                                                     :type :serial}
+                                                                :name {:null true
+                                                                       :type [:varchar 100]}
+                                                                :rate {:type :float}}
+                                                       :action :create-table}
+                                                      {:model-name :role
+                                                       :fields {:is-active {:type :boolean}
+                                                                :created-at {:type :timestamp
+                                                                             :default [:now]}}
+                                                       :action :create-table}
+                                                      {:field-name :day
+                                                       :model-name :account
+                                                       :options {:type :date}
+                                                       :action :add-column}
+                                                      {:field-name :number
+                                                       :model-name :account
+                                                       :changes {:type {:to :integer :from :text}
+                                                                 :unique {:to true :from :EMPTY}
+                                                                 :default {:to 0 :from :EMPTY}
+                                                                 :primary-key {:to :EMPTY :from true}
+                                                                 :null {:to :EMPTY :from true}}
+                                                       :options {:type :integer
                                                                  :unique true
-                                                                 :type :serial}
-                                                            :name {:null true
-                                                                   :type [:varchar 100]}
-                                                            :rate {:type :float}}
-                                                   :action :create-table}
-                                                  {:model-name :role
-                                                   :fields {:is-active {:type :boolean}
-                                                            :created-at {:type :timestamp
-                                                                         :default [:now]}}
-                                                   :action :create-table}
-                                                  {:field-name :day
-                                                   :model-name :account
-                                                   :options {:type :date}
-                                                   :action :add-column}
-                                                  {:field-name :number
-                                                   :model-name :account
-                                                   :changes {:type {:to :integer :from :text}
-                                                             :unique {:to true :from :EMPTY}
-                                                             :default {:to 0 :from :EMPTY}
-                                                             :primary-key {:to :EMPTY :from true}
-                                                             :null {:to :EMPTY :from true}}
-                                                   :options {:type :integer
-                                                             :unique true
-                                                             :default 0}
-                                                   :action :alter-column}
-                                                  {:field-name :url
-                                                   :model-name :feed
-                                                   :action :drop-column}
-                                                  {:model-name :feed
-                                                   :action :drop-table}
-                                                  {:model-name :feed
-                                                   :fields {:account {:type :serial
-                                                                      :foreign-key :account/id}}
-                                                   :action :create-table}
-                                                  {:field-name :account
-                                                   :model-name :feed
-                                                   :changes {:foreign-key {:to :EMPTY :from :account/id}}
-                                                   :options {:type :serial
-                                                             :foreign-key :account/id}
-                                                   :action :alter-column}
-                                                  {:field-name :account
-                                                   :model-name :feed
-                                                   :changes {:foreign-key {:to :account/id :from :EMPTY}}
-                                                   :options {:type :integer
-                                                             :foreign-key :account/id}
-                                                   :action :alter-column}
-                                                  {:index-name :feed_name_idx
-                                                   :model-name :feed
-                                                   :options {:type :btree
-                                                             :fields [:name]}
-                                                   :action :create-index}
-                                                  {:index-name :feed_name_idx
-                                                   :model-name :feed
-                                                   :action :drop-index}
-                                                  {:index-name :feed_name_idx
-                                                   :model-name :feed
-                                                   :options {:type :btree
-                                                             :fields [:name]}
-                                                   :action :alter-index}))]]
+                                                                 :default 0}
+                                                       :action :alter-column}
+                                                      {:field-name :url
+                                                       :model-name :feed
+                                                       :action :drop-column}
+                                                      {:model-name :feed
+                                                       :action :drop-table}
+                                                      {:model-name :feed
+                                                       :fields {:account {:type :serial
+                                                                          :foreign-key :account/id}}
+                                                       :action :create-table}
+                                                      {:field-name :account
+                                                       :model-name :feed
+                                                       :changes {:foreign-key {:to :EMPTY :from :account/id}}
+                                                       :options {:type :serial
+                                                                 :foreign-key :account/id}
+                                                       :action :alter-column}
+                                                      {:field-name :account
+                                                       :model-name :feed
+                                                       :changes {:foreign-key {:to :account/id :from :EMPTY}}
+                                                       :options {:type :integer
+                                                                 :foreign-key :account/id}
+                                                       :action :alter-column}
+                                                      {:index-name :feed_name_idx
+                                                       :model-name :feed
+                                                       :options {:type :btree
+                                                                 :fields [:name]}
+                                                       :action :create-index}
+                                                      {:index-name :feed_name_idx
+                                                       :model-name :feed
+                                                       :action :drop-index}
+                                                      {:index-name :feed_name_idx
+                                                       :model-name :feed
+                                                       :options {:type :btree
+                                                                 :fields [:name]}
+                                                       :action :alter-index}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 1
                          :format :human})
@@ -557,48 +613,47 @@
 
 
 (deftest test-make-and-migrate-create-index-on-new-model-ok
-  (let [existing-actions '()]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly {:feed
-                                                      {:fields [[:id :serial {:null false}]
-                                                                [:name :text]]
-                                                       :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
-                                                                                                   :unique true}]]}})]]
-      (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migration* "" [])
-            queries (map #(spec-util/conform ::sql/->sql %) actions)]
-        (testing "test make-migration for model changes"
-          (is (= '({:action :create-table
-                    :model-name :feed
-                    :fields {:id {:type :serial
-                                  :null false}
-                             :name {:type :text}}}
-                   {:action :create-index
-                    :index-name :feed-name-id-unique-idx
-                    :model-name :feed
-                    :options {:type :btree
-                              :fields [:name]
-                              :unique true}})
-                actions)))
-        (testing "test converting migration actions to sql queries formatted as edn"
-          (is (= '({:create-table [:feed]
-                    :with-columns [(:id :serial [:not nil])
-                                   (:name :text)]}
-                   {:create-unique-index [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
-                queries)))
-        (testing "test converting actions to sql"
-          (is (= '(["CREATE TABLE feed (id SERIAL NOT NULL, name TEXT)"]
-                   ["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
-                (map #(sql/->sql %) actions))))
-        (testing "test running migrations on db"
-          (is (every?
-                #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions!
-                 {:db db
-                  :actions (concat existing-actions actions)
-                  :direction :forward
-                  :migration-type :edn}))))))))
+  (let [existing-actions '()
+        existing-models {:feed
+                         {:fields [[:id :serial {:null false}]
+                                   [:name :text]]
+                          :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
+                                                                      :unique true}]]}}
+        db config/DATABASE-CONN
+        actions (test-util/make-migration-spy! {:existing-actions existing-actions
+                                                :existing-models existing-models})
+        queries (map #(spec-util/conform ::sql/->sql %) actions)]
+    (testing "test make-migration for model changes"
+      (is (= '({:action :create-table
+                :model-name :feed
+                :fields {:id {:type :serial
+                              :null false}
+                         :name {:type :text}}}
+               {:action :create-index
+                :index-name :feed-name-id-unique-idx
+                :model-name :feed
+                :options {:type :btree
+                          :fields [:name]
+                          :unique true}})
+            actions)))
+    (testing "test converting migration actions to sql queries formatted as edn"
+      (is (= '({:create-table [:feed]
+                :with-columns [(:id :serial [:not nil])
+                               (:name :text)]}
+               {:create-unique-index [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
+            queries)))
+    (testing "test converting actions to sql"
+      (is (= '(["CREATE TABLE feed (id SERIAL NOT NULL, name TEXT)"]
+               ["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
+            (map #(sql/->sql %) actions))))
+    (testing "test running migrations on db"
+      (is (every?
+            #(= [#:next.jdbc{:update-count 0}] %)
+            (#'migrations/exec-actions!
+             {:db db
+              :actions (concat existing-actions actions)
+              :direction :forward
+              :migration-type :edn}))))))
 
 
 (deftest test-make-and-migrate-create-index-on-existing-model-ok
@@ -606,45 +661,42 @@
                             :model-name :feed
                             :fields {:id {:type :serial
                                           :null false}
-                                     :name {:type :text}}})]
-    #_{:clj-kondo/ignore [:private-call]}
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly {:feed
-                                                      {:fields [[:id :serial {:null false}]
-                                                                [:name :text]]
-                                                       :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
-                                                                                                   :unique true}]]}})]]
-      (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migration* "" [])
-            queries (map #(spec-util/conform ::sql/->sql %) actions)]
-        (testing "test make-migration for model changes"
-          (is (= '({:action :create-index
-                    :index-name :feed-name-id-unique-idx
-                    :model-name :feed
-                    :options {:type :btree
-                              :fields [:name]
-                              :unique true}})
-                actions)))
-        (testing "test converting migration actions to sql queries formatted as edn"
-          (is (= '({:create-unique-index
-                    [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
-                queries)))
-        (testing "test converting actions to sql"
-          (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
-                (map #(sql/->sql %) actions))))
-        (testing "test running migrations on db"
-          (is (every?
-                #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions!
-                 {:db db
-                  :actions (concat existing-actions actions)
-                  :direction :forward
-                  :migration-type :edn}))))))))
+                                     :name {:type :text}}})
+        existing-models {:feed
+                         {:fields [[:id :serial {:null false}]
+                                   [:name :text]]
+                          :indexes [[:feed-name-id-unique-idx :btree {:fields [:name]
+                                                                      :unique true}]]}}
+        db config/DATABASE-CONN
+        actions (test-util/make-migration-spy! {:existing-actions existing-actions
+                                                :existing-models existing-models})
+        queries (map #(spec-util/conform ::sql/->sql %) actions)]
+    (testing "test make-migration for model changes"
+      (is (= '({:action :create-index
+                :index-name :feed-name-id-unique-idx
+                :model-name :feed
+                :options {:type :btree
+                          :fields [:name]
+                          :unique true}})
+            actions)))
+    (testing "test converting migration actions to sql queries formatted as edn"
+      (is (= '({:create-unique-index
+                [:feed-name-id-unique-idx :on :feed :using (:btree :name)]})
+            queries)))
+    (testing "test converting actions to sql"
+      (is (= '(["CREATE UNIQUE INDEX feed_name_id_unique_idx ON FEED USING BTREE(name)"])
+            (map #(sql/->sql %) actions))))
+    (testing "test running migrations on db"
+      (is (every?
+            #(= [#:next.jdbc{:update-count 0}] %)
+            (#'migrations/exec-actions!
+             {:db db
+              :actions (concat existing-actions actions)
+              :direction :forward
+              :migration-type :edn}))))))
 
 
 (deftest test-make-and-migrate-drop-index-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (let [existing-actions '({:action :create-table
                             :model-name :feed
                             :fields {:id {:type :serial
@@ -655,38 +707,36 @@
                             :model-name :feed
                             :options {:type :btree
                                       :fields [:name :id]
-                                      :unique true}})]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly {:feed
-                                                      [[:id :serial {:null false}]
-                                                       [:name :text]]})]]
-      (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migration* "" [])
-            queries (map #(spec-util/conform ::sql/->sql %) actions)]
-        (testing "test make-migration for model changes"
-          (is (= '({:action :drop-index
-                    :index-name :feed-name-id-idx
-                    :model-name :feed})
-                actions)))
-        (testing "test converting migration actions to sql queries formatted as edn"
-          (is (= '({:drop-index :feed-name-id-idx})
-                queries)))
-        (testing "test converting actions to sql"
-          (is (= '(["DROP INDEX feed_name_id_idx"])
-                (map #(sql/->sql %) actions))))
-        (testing "test running migrations on db"
-          (is (every?
-                #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions!
-                 {:db db
-                  :actions (concat existing-actions actions)
-                  :direction :forward
-                  :migration-type :edn}))))))))
+                                      :unique true}})
+        existing-models {:feed
+                         [[:id :serial {:null false}]
+                          [:name :text]]}
+        db config/DATABASE-CONN
+        actions (test-util/make-migration-spy! {:existing-actions existing-actions
+                                                :existing-models existing-models})
+        queries (map #(spec-util/conform ::sql/->sql %) actions)]
+    (testing "test make-migration for model changes"
+      (is (= '({:action :drop-index
+                :index-name :feed-name-id-idx
+                :model-name :feed})
+            actions)))
+    (testing "test converting migration actions to sql queries formatted as edn"
+      (is (= '({:drop-index :feed-name-id-idx})
+            queries)))
+    (testing "test converting actions to sql"
+      (is (= '(["DROP INDEX feed_name_id_idx"])
+            (map #(sql/->sql %) actions))))
+    (testing "test running migrations on db"
+      (is (every?
+            #(= [#:next.jdbc{:update-count 0}] %)
+            (#'migrations/exec-actions!
+             {:db db
+              :actions (concat existing-actions actions)
+              :direction :forward
+              :migration-type :edn}))))))
 
 
 (deftest test-make-and-migrate-alter-index-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (let [existing-actions '({:action :create-table
                             :model-name :feed
                             :fields {:id {:type :serial
@@ -697,44 +747,42 @@
                             :model-name :feed
                             :options {:type :btree
                                       :fields [:name :id]
-                                      :unique true}})]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly {:feed
-                                                      {:fields [[:id :serial {:null false}]
-                                                                [:name :text]]
-                                                       :indexes [[:feed_name_id_idx :btree {:fields [:name]}]]}})]]
-      (let [db config/DATABASE-CONN
-            actions (#'migrations/make-migration* "" [])
-            queries (map #(spec-util/conform ::sql/->sql %) actions)]
-        (testing "test make-migration for model changes"
-          (is (= '({:action :alter-index
-                    :index-name :feed-name-id-idx
-                    :options {:fields [:name]
-                              :type :btree}
-                    :model-name :feed})
-                actions)))
-        (testing "test converting migration actions to sql queries formatted as edn"
-          (is (= '([{:drop-index :feed-name-id-idx}
-                    {:create-index
-                     [:feed-name-id-idx :on :feed :using (:btree :name)]}])
-                queries)))
-        (testing "test converting actions to sql"
-          (is (= '((["DROP INDEX feed_name_id_idx"]
-                    ["CREATE INDEX feed_name_id_idx ON FEED USING BTREE(name)"]))
-                (map #(sql/->sql %) actions))))
-        (testing "test running migrations on db"
-          (is (every?
-                #(= [#:next.jdbc{:update-count 0}] %)
-                (#'migrations/exec-actions!
-                 {:db db
-                  :actions (concat existing-actions actions)
-                  :direction :forward
-                  :migration-type :edn}))))))))
+                                      :unique true}})
+        existing-models {:feed
+                         {:fields [[:id :serial {:null false}]
+                                   [:name :text]]
+                          :indexes [[:feed_name_id_idx :btree {:fields [:name]}]]}}
+        db config/DATABASE-CONN
+        actions (test-util/make-migration-spy! {:existing-actions existing-actions
+                                                :existing-models existing-models})
+        queries (map #(spec-util/conform ::sql/->sql %) actions)]
+    (testing "test make-migration for model changes"
+      (is (= '({:action :alter-index
+                :index-name :feed-name-id-idx
+                :options {:fields [:name]
+                          :type :btree}
+                :model-name :feed})
+            actions)))
+    (testing "test converting migration actions to sql queries formatted as edn"
+      (is (= '([{:drop-index :feed-name-id-idx}
+                {:create-index
+                 [:feed-name-id-idx :on :feed :using (:btree :name)]}])
+            queries)))
+    (testing "test converting actions to sql"
+      (is (= '((["DROP INDEX feed_name_id_idx"]
+                ["CREATE INDEX feed_name_id_idx ON FEED USING BTREE(name)"]))
+            (map #(sql/->sql %) actions))))
+    (testing "test running migrations on db"
+      (is (every?
+            #(= [#:next.jdbc{:update-count 0}] %)
+            (#'migrations/exec-actions!
+             {:db db
+              :actions (concat existing-actions actions)
+              :direction :forward
+              :migration-type :edn}))))))
 
 
 (deftest test-make-and-migrate-add-fk-field-on-delete-ok
-  #_{:clj-kondo/ignore [:private-call]}
   (let [existing-actions '({:action :create-table
                             :model-name :account
                             :fields {:id {:type :serial
@@ -757,14 +805,28 @@
                             :options {:type :integer
                                       :foreign-key :account/id
                                       :on-delete :cascade}})
-        expected-q-edn '({:add-column (:account
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id :serial :unique [:primary-key])]}
+                         {:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:name :text)]}
+                         {:add-column (:account
                                         :integer
                                         (:references :account :id)
                                         [:raw "on delete"]
                                         [:raw "cascade"]),
                           :alter-table :feed})
-        expected-q-sql '(["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
-    (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
+        expected-q-sql '(["CREATE TABLE account (id SERIAL UNIQUE PRIMARY KEY)"]
+                         ["CREATE TABLE feed (id SERIAL, name TEXT)"]
+                         ["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-alter-fk-field-on-delete-ok
@@ -794,7 +856,16 @@
                                       :foreign-key :account/id
                                       :on-delete :set-null}
                             :changes {:on-delete {:from :cascade :to :set-null}}})
-        expected-q-edn '({:alter-table (:feed
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id :serial :unique [:primary-key])]}
+                         {:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:name :text)
+                                         (:account :integer
+                                           (:references :account :id)
+                                           [:raw "on delete"]
+                                           [:raw "cascade"])]}
+                         {:alter-table (:feed
                                          {:drop-constraint [[:raw "IF EXISTS"]
                                                             :feed-account-fkey]}
                                          {:add-constraint (:feed-account-fkey
@@ -802,10 +873,21 @@
                                                             (:references :account :id)
                                                             [:raw "on delete"]
                                                             [:raw "set null"])})})
-        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
-                                "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
-                                "REFERENCES account(id) on delete set null")])]
-    (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)
+        expected-q-sql (list
+                         ["CREATE TABLE account (id SERIAL UNIQUE PRIMARY KEY)"]
+                         ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER REFERENCES account(id) on delete cascade)"]
+                         [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
+                            "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
+                            "REFERENCES account(id) on delete set null")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
+
     (testing "test constraints [another option to test constraints]"
       (is (= [{:colname "id"
                :constraint_name "account_pkey"
@@ -856,10 +938,29 @@
                             :options {:type :integer}
                             :changes {:foreign-key {:from :account/id :to :EMPTY}
                                       :on-delete {:from :cascade :to :EMPTY}}})
-        expected-q-edn '({:alter-table (:feed
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id :serial :unique [:primary-key])]}
+                         {:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:name :text)
+                                         (:account :integer
+                                           (:references :account :id)
+                                           [:raw "on delete"]
+                                           [:raw "cascade"])]}
+                         {:alter-table (:feed
                                          {:drop-constraint :feed-account-fkey})})
-        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey")])]
-    (test-util/test-make-and-migrate-ok! existing-actions changed-models expected-actions expected-q-edn expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE account (id SERIAL UNIQUE PRIMARY KEY)"]
+                         ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER REFERENCES account(id) on delete cascade)"]
+                         [(str "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-validate-migration-numbers
@@ -903,18 +1004,26 @@
                             :options {:type [:varchar 200]}
                             :changes {:type {:from [:varchar 100]
                                              :to [:varchar 200]}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name
+                                           [:varchar
+                                            100])]}
+                         {:alter-table
                           (:feed {:alter-column
                                   [:name :type [:varchar 200]
                                    :using [:raw "name"] [:raw "::"] [:varchar 200]]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE VARCHAR(200)"
-                                " USING name :: VARCHAR(200)")])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100))"]
+                         [(str "ALTER TABLE feed ALTER COLUMN name TYPE VARCHAR(200)"
+                            " USING name :: VARCHAR(200)")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-alter-varchar-type-field-ok
@@ -929,18 +1038,26 @@
                             :options {:type [:char 100]}
                             :changes {:type {:from [:varchar 100]
                                              :to [:char 100]}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name
+                                           [:varchar
+                                            100])]}
+                         {:alter-table
                           (:feed {:alter-column
                                   [:name :type [:char 100]
                                    :using [:raw "name"] [:raw "::"] [:char 100]]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE CHAR(100)"
-                                " USING name :: CHAR(100)")])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100))"]
+                         [(str "ALTER TABLE feed ALTER COLUMN name TYPE CHAR(100)"
+                            " USING name :: CHAR(100)")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-alter-varchar-type-to-integer-field-ok
@@ -955,18 +1072,24 @@
                             :options {:type :integer}
                             :changes {:type {:from [:varchar 100]
                                              :to :integer}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name [:varchar 100])]}
+                         {:alter-table
                           (:feed {:alter-column
                                   [:name :type :integer
                                    :using [:raw "name"] [:raw "::"] :integer]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN name TYPE INTEGER"
-                                " USING name :: INTEGER")])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100))"]
+                         [(str "ALTER TABLE feed ALTER COLUMN name TYPE INTEGER"
+                            " USING name :: INTEGER")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-add-decimal-field-ok
@@ -980,15 +1103,21 @@
                             :field-name :amount
                             :model-name :feed
                             :options {:type [:decimal 10 2]}})
-        expected-q-edn '({:alter-table :feed
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name [:varchar 100])]}
+                         {:alter-table :feed
                           :add-column (:amount [:decimal 10 2])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2)"])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100))"]
+                         ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2)"])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-alter-numeric-field-ok
@@ -1005,18 +1134,25 @@
                             :options {:type [:numeric 10]}
                             :changes {:type {:from [:numeric 10 2]
                                              :to [:numeric 10]}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:name [:varchar 100])
+                                         (:amount [:numeric 10 2])]}
+                         {:alter-table
                           (:feed {:alter-column
                                   [:amount :type [:numeric 10]
                                    :using [:raw "amount"] [:raw "::"] [:numeric 10]]})})
-        expected-q-sql (list [(str "ALTER TABLE feed ALTER COLUMN amount TYPE NUMERIC(10)"
-                                " USING amount :: NUMERIC(10)")])]
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+        expected-q-sql (list
+                         ["CREATE TABLE feed (name VARCHAR(100), amount NUMERIC(10, 2))"]
+                         [(str "ALTER TABLE feed ALTER COLUMN amount TYPE NUMERIC(10)"
+                            " USING amount :: NUMERIC(10)")])]
+
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))
 
 
 (deftest test-make-and-migrate-add-decimal-field-with-default-value-ok
@@ -1047,22 +1183,28 @@
                             :model-name :feed
                             :options {:type :decimal
                                       :default 7.77M}})
-        expected-q-edn '({:alter-table :feed
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:id :serial [:primary-key])
+                                         (:name [:varchar 100])]}
+                         {:alter-table :feed
                           :add-column (:tx [:decimal 6] [:default 6.4])}
                          {:alter-table :feed
                           :add-column (:amount [:decimal 10 2] [:default "9.99"])}
                          {:alter-table :feed
                           :add-column (:balance :decimal [:default 7.77M])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
+        expected-q-sql (list
+                         ["CREATE TABLE feed (id SERIAL PRIMARY KEY, name VARCHAR(100))"]
+                         ["ALTER TABLE feed ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
                          ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
                          ["ALTER TABLE feed ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= [{:character_maximum_length nil
@@ -1158,16 +1300,21 @@
                             :model-name :feed
                             :options {:type [:varchar 10]
                                       :default "test"}})
-        expected-q-edn '({:alter-table :feed
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:id :serial [:primary-key])]}
+                         {:alter-table :feed
                           :add-column (:name [:varchar 10] [:default "test"])})
-        expected-q-sql (list ["ALTER TABLE feed ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
+        expected-q-sql (list
+                         ["CREATE TABLE feed (id SERIAL PRIMARY KEY)"]
+                         ["ALTER TABLE feed ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test actual db schema after applying the migration"
       (is (= [{:character_maximum_length nil
@@ -1214,20 +1361,29 @@
                                       :foreign-key :customer/id}
                             :changes {:foreign-key {:from :EMPTY
                                                     :to :customer/id}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:account :integer)]}
+                         {:create-table [:customer]
+                          :with-columns [(:id :serial :unique)]}
+                         {:alter-table
                           (:feed
                             {:add-constraint (:feed-account-fkey
                                                [:foreign-key :account]
                                                (:references :customer :id))})})
-        expected-q-sql (list [(str "ALTER TABLE feed"
-                                " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
+        expected-q-sql (list
+                         ["CREATE TABLE feed (id SERIAL, account INTEGER)"]
+                         ["CREATE TABLE customer (id SERIAL UNIQUE)"]
+                         [(str "ALTER TABLE feed"
+                            " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "test constraints"
       (is (= [{:colname "id"
@@ -1285,18 +1441,30 @@
                                       :foreign-key :customer/id}
                             :changes {:foreign-key {:from :account/id
                                                     :to :customer/id}}})
-        expected-q-edn '({:alter-table
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id :serial :unique)]}
+                         {:create-table [:feed]
+                          :with-columns [(:id :serial)
+                                         (:account :integer (:references :account :id))]}
+                         {:create-table [:customer]
+                          :with-columns [(:id :serial :unique)]}
+                         {:alter-table
                           (:feed
                             {:drop-constraint [[:raw "IF EXISTS"] :feed-account-fkey]}
                             {:add-constraint (:feed-account-fkey
                                                [:foreign-key :account]
                                                (:references :customer :id))})})
-        expected-q-sql (list [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey"
-                                ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
+        expected-q-sql (list
+                         ["CREATE TABLE account (id SERIAL UNIQUE)"]
+                         ["CREATE TABLE feed (id SERIAL, account INTEGER REFERENCES account(id))"]
+                         ["CREATE TABLE customer (id SERIAL UNIQUE)"]
+                         [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey"
+                            ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)))
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))))

@@ -2,7 +2,6 @@
   (:require
     [clojure.test :refer :all]
     [bond.james :as bond]
-    [automigrate.migrations :as migrations]
     [automigrate.schema :as schema]
     [automigrate.util.db :as db-util]
     [automigrate.util.file :as file-util]
@@ -22,15 +21,15 @@
         existing-models {:account
                          {:fields [[:id :serial]]
                           :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
+    (bond/with-stub [[schema/load-migrations-from-files (constantly existing-actions)]
                      [file-util/read-edn (constantly existing-models)]]
       (is (= '({:action :create-type
                 :model-name :account
                 :type-name :account-role
                 :options {:type :enum
                           :choices ["admin" "customer"]}})
-            (#'migrations/make-migration* "" []))))))
+            (test-util/make-migration-spy! {:existing-actions existing-actions
+                                            :existing-models existing-models}))))))
 
 
 (deftest test-make-migration*-create-type-enum-restore-ok
@@ -45,10 +44,10 @@
         existing-models {:account
                          {:fields [[:id :serial]]
                           :types [[:account-role :enum {:choices ["admin" "customer"]}]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= [] (#'migrations/make-migration* "" []))))))
+    (is (= "There are no changes in models.\n"
+          (with-out-str
+            (test-util/make-migration! {:existing-actions existing-actions
+                                        :existing-models existing-models}))))))
 
 
 (deftest test-make-and-migrate-create-type-enum-ok
@@ -63,16 +62,20 @@
                             :type-name :account-role
                             :options {:type :enum
                                       :choices ["admin" "customer"]}})
-        expected-q-edn '({:create-type
-                          [:account-role :as (:enum "admin" "customer")]})
-        expected-q-sql (list ["CREATE TYPE account_role AS ENUM('admin', 'customer')"])]
+        expected-q-edn [{:create-table [:account]
+                         :with-columns ['(:id :serial)]}
+                        {:create-type
+                         [:account-role :as '(:enum "admin" "customer")]}]
+        expected-q-sql (list ["CREATE TABLE account (id SERIAL)"]
+                         ["CREATE TYPE account_role AS ENUM('admin', 'customer')"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "check created type in db"
       (is (= [{:typname "account_role"
@@ -103,15 +106,25 @@
         expected-actions '({:action :drop-type
                             :model-name :account
                             :type-name :account-role})
-        expected-q-edn '({:drop-type [:account-role]})
-        expected-q-sql (list ["DROP TYPE account_role"])]
+        expected-q-edn [{:create-table [:account]
+                         :with-columns ['(:id :serial)]}
+                        {:create-type [:account-role
+                                       :as
+                                       '(:enum
+                                          "admin"
+                                          "customer")]}
+                        {:drop-type [:account-role]}]
+        expected-q-sql (list ["CREATE TABLE account (id SERIAL)"]
+                         ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
+                         ["DROP TYPE account_role"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "check type has been dropped in db"
       (is (= []
@@ -137,10 +150,10 @@
                             :type-name :account-role})
         existing-models {:account
                          {:fields [[:id :serial]]}}]
-    (bond/with-stub [[schema/load-migrations-from-files
-                      (constantly existing-actions)]
-                     [file-util/read-edn (constantly existing-models)]]
-      (is (= [] (#'migrations/make-migration* "" []))))))
+    (is (= "There are no changes in models.\n"
+          (with-out-str
+            (test-util/make-migration! {:existing-actions existing-actions
+                                        :existing-models existing-models}))))))
 
 
 (deftest test-make-and-migrate-create-type-enum-with-creating-table-ok
@@ -156,20 +169,21 @@
                             :type-name :account-role
                             :options {:type :enum
                                       :choices ["admin" "customer"]}})
-        expected-q-edn '({:create-table [:account]
-                          :with-columns [(:id :serial)]}
-                         {:create-type
-                          [:account-role :as (:enum "admin" "customer")]})
+        expected-q-edn [{:create-table [:account]
+                         :with-columns ['(:id :serial)]}
+                        {:create-type
+                         [:account-role :as '(:enum "admin" "customer")]}]
         expected-q-sql (list
                          ["CREATE TABLE account (id SERIAL)"]
                          ["CREATE TYPE account_role AS ENUM('admin', 'customer')"])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "check created type in db"
       (is (= [{:typname "account_role"
@@ -217,7 +231,11 @@
                                       :choices ["basic" "admin" "developer" "customer" "support" "other"]}
                             :changes {:choices {:from ["admin" "customer"]
                                                 :to ["basic" "admin" "developer" "customer" "support" "other"]}}})
-        expected-q-edn '([{:alter-type
+        expected-q-edn '({:create-table [:account]
+                          :with-columns [(:id :serial)]}
+                         {:create-type [:account-role
+                                        :as (:enum "admin" "customer")]}
+                         [{:alter-type
                            [:account-role :add-value "basic" :before "admin"]}
                           {:alter-type
                            [:account-role :add-value "developer" :before "customer"]}
@@ -226,17 +244,20 @@
                           {:alter-type
                            [:account-role :add-value "other" :after "support"]}])
         expected-q-sql (list
+                         ["CREATE TABLE account (id SERIAL)"]
+                         ["CREATE TYPE account_role AS ENUM('admin', 'customer')"]
                          [["ALTER TYPE account_role ADD VALUE 'basic' BEFORE 'admin'"]
                           ["ALTER TYPE account_role ADD VALUE 'developer' BEFORE 'customer'"]
                           ["ALTER TYPE account_role ADD VALUE 'support' AFTER 'customer'"]
                           ["ALTER TYPE account_role ADD VALUE 'other' AFTER 'support'"]])]
 
-    (test-util/test-make-and-migrate-ok!
-      existing-actions
-      changed-models
-      expected-actions
-      expected-q-edn
-      expected-q-sql)
+    (is (= {:new-actions expected-actions
+            :q-edn expected-q-edn
+            :q-sql expected-q-sql}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions existing-actions
+             :existing-models changed-models})))
 
     (testing "check created type in db"
       (is (= [{:typname "account_role"
@@ -263,13 +284,7 @@
                :typtype "e"
                :enumlabel "other"
                :enumsortorder 4.0}]
-            (db-util/exec!
-              config/DATABASE-CONN
-              {:select [:t.typname :t.typtype :e.enumlabel :e.enumsortorder]
-               :from [[:pg_type :t]]
-               :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
-               :where [:= :t.typname "account_role"]
-               :order-by [[:e.enumsortorder :asc]]}))))))
+            (test-util/get-enum-type-choices config/DATABASE-CONN "account_role"))))))
 
 
 ; ERRORS

@@ -11,10 +11,11 @@ and create database schema migrations automatically based on changes to the mode
 
 - **declaratively** define db schema as **models** in EDN;
 - create migrations **automatically** based on model changes;
-- **migrate** db schema to any migration in forward or backward *[:construction: under development]* directions;
+- **migrate** db schema in forward and backward directions;
+- manage migrations for: tables, indexes, constraints, enum types;
 - view actual SQL or human-readable description for a migration;
 - optionally add a custom SQL migration for specific cases;
-- use with PostgreSQL.
+- use with PostgreSQL :information_source: [*other databases are planned*] .
 
 ### Quick overview
 
@@ -82,7 +83,7 @@ clojure -T:migrations make
 
 #### Leiningen
 
-[:construction: *Leiningen support is under development.*]
+:construction: *Leiningen support is planned.*
 
 ### Getting started
 
@@ -147,7 +148,7 @@ To view raw SQL for existing migration you can run command `explain` with approp
 
 ```shell
 $ clojure -X:migrations explain :number 1
-SQL for migration 0001_auto_create_table_book.edn:
+SQL for forward migration 0001_auto_create_table_book.edn:
 
 BEGIN;
 CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, description TEXT);
@@ -418,15 +419,19 @@ Applies change described in migration to database.
 Applies all unapplied migrations by number order if arg `:number` is not presented in command.
 Throws error for same migration number.
 
-:warning: *Backward migration is not yet fully implemented for auto-migrations, but already works for custom SQL migrations.
-For auto-migrations, it is possible to revert migration and to delete appropriate entry from migrations table.
-But database changes will not be reverted for now.*
+Backward migration is fully implemented. For auto-generated and SQL migrations, it is possible to revert migration and to delete appropriate entry from migrations table.
+Database changes will be reverted. 
+
+In forward direction if specified migration `:number` is **included**, meaning if, for example, `:number 3` the migration with number 3 **will be applied**.
+In backward migration the `:number` is **excluded**, so all migrations until the specified number will be reverted but not the target one. 
+For instance if we have 3 migrations as applied, and want to revert just the 3d and 2d ones, we can run `migrate` command with `:number 1`. 
+3d and 3d migrations will be reverted, but the first one will stay applied.     
 
 *Specific args:*
 
-| Argument  | Description                                                                                                                                                                    | Required? | Possible values                                 | Default value                                    |
-|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------------------------------------------|--------------------------------------------------|
-| `:number` | Number of migration which should be a target point. In forward direction, migration by number will by applied. In backward direction, migration by number will not be applied. | `false`   | integer (example: `1` for migration `0001_...`) | *not provided*, last migration number by default |
+| Argument  | Description                                                                                                                                                                 | Required? | Possible values                                 | Default value                                    |
+|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------------------------------------------|--------------------------------------------------|
+| `:number` | Number of migration which should be a target point. In forward direction, migration by number will by applied. In backward direction, migration by number will be reverted. | `false`   | integer (example: `1` for migration `0001_...`) | *not provided*, last migration number by default |
 
 ##### Examples
 
@@ -450,11 +455,10 @@ Appyling 0002_create_table_author...
 0002_create_table_author successfully applied.
 ```
 
-Migrate backward up to particular migration number (*excluded*):
+Migrate backward down to particular migration number (*excluded*):
 ```shell
 $ clojure -X:migrations migrate :number 1
 Reverting 0002_create_table_author...
-WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
 0002_create_table_author successfully reverted.
 ```
 
@@ -464,10 +468,8 @@ $ clojure -X:migrations migrate :number 0
 Reverting 0003_add_custom_trigger...
 0003_add_custom_trigger successfully reverted.
 Reverting 0002_create_table_author...
-WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
 0002_create_table_author successfully reverted.
 Reverting 0001_auto_create_table_book...
-WARNING: backward migration isn't fully implemented yet. Database schema has not been changed!
 0001_auto_create_table_book successfully reverted.
 ```
 
@@ -523,7 +525,7 @@ Print out actual raw SQL for particular migration by number.
 View raw SQL for migration in forward direction:
 ```shell
 $ clojure -X:migrations explain :number 1
-SQL for migration 0001_auto_create_table_book.edn:
+SQL for forward migration 0001_auto_create_table_book.edn:
 
 BEGIN;
 CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, description TEXT);
@@ -532,10 +534,12 @@ COMMIT;
 
 View raw SQL for migration in backward direction:
 ```shell
-$ clojure -X:migrations explain :number 1 :direction :backward
-SQL for migration 0001_auto_create_table_book.edn:
+$ clojure -X:migrations explain :number 1 :direction backward
+SQL for backward migration 0001_auto_create_table_book.edn:
 
-WARNING: backward migration isn't fully implemented yet.
+BEGIN;
+DROP TABLE IF EXISTS book;
+COMMIT;
 ```
 
 ### `help`
@@ -594,7 +598,9 @@ The newly created file will look like:
 
 ```
 
-You can fill it with two block of queries for forward and backward migration. For example:
+You can fill it with two block of queries for forward and backward migration. 
+Backward migration block is not mandatory and can be empty. 
+For example:
 
 ```sql
 -- FORWARD
@@ -642,12 +648,12 @@ In the future there could be more convenient options for configuration if needed
 - [x] Support array data types in PostgreSQL.
 - [x] Support comment on field.
 - [x] Support partial indexes.
-- [ ] Support backward auto-migration.
-- [ ] Support custom data-migration using Clojure.
+- [x] Support auto-generated backward migration.
 - [ ] Support custom field checks in PostgreSQL.
 - [ ] Support custom model constraints in PostgreSQL.
+- [ ] Support custom data-migration using Clojure.
 - [ ] Optimize auto-generated sql queries.
-- [ ] Test against different versions of db and Clojure.
+- [ ] Test against different versions of Clojure in CI pipeline.
 - [ ] Support for SQLite.
 - [ ] Support for MySQL.
 - [ ] Add visual representation of db schema by models.

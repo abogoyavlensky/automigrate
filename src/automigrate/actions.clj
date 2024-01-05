@@ -174,10 +174,6 @@
       (d/->opt (model-util/generate-changes [::types/choices])))))
 
 
-(s/def :automigrate.actions.types/options
-  ::types/type)
-
-
 (s/def ::validate-type-choices-not-allow-to-remove
   (fn [action-data]
     (let [choices-from (-> action-data :changes :choices :from set)
