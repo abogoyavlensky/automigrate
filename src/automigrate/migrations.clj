@@ -941,9 +941,9 @@
           (get-detailed-migrations-to-migrate all-migrations-detailed migrated number)]
       (if (seq to-migrate)
         (doseq [{:keys [migration-name file-name migration-type number-int]} to-migrate]
-          (if (= direction FORWARD-DIRECTION)
-            (println (str "Applying " migration-name "..."))
-            (println (str "Reverting " migration-name "...")))
+          (condp = direction
+            FORWARD-DIRECTION (println (str "Applying " migration-name "..."))
+            BACKWARD-DIRECTION (println (str "Reverting " migration-name "...")))
           (jdbc/with-transaction [tx db]
             (let [actions (migration->actions {:file-name file-name
                                                :migrations-dir migrations-dir

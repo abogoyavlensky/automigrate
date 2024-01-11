@@ -161,7 +161,8 @@
 (defn perform-make-and-migrate!
   [{:keys [jdbc-url existing-actions existing-models direction]
     :or {existing-actions []
-         existing-models {}}}]
+         existing-models {}
+         direction :forward}}]
   (bond/with-spy [migrations/make-next-migration]
     ; Generate new actions
     (make-migration! {:existing-models existing-models
