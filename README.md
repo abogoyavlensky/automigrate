@@ -3,7 +3,7 @@
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 [![cljdoc badge](https://cljdoc.org/badge/net.clojars.abogoyavlensky/automigrate)](https://cljdoc.org/jump/release/net.clojars.abogoyavlensky/automigrate)
 
-Database schema auto-migration tool for Clojure. Define models as plain EDN data 
+Auto-generated database schema migrations for Clojure. Define models as plain EDN data 
 and create database schema migrations automatically based on changes to the models.
 
 
@@ -559,7 +559,7 @@ Print doc for all available commands:
 
 ```shell
 $ clojure -X:migrations help
-Database schema auto-migration tool for Clojure.
+Auto-generated database migrations for Clojure.
 
 Available commands:
 ...
