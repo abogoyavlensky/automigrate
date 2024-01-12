@@ -28,7 +28,7 @@
     (str/join
       "\n"
       (concat
-        ["Database schema auto-migration tool for Clojure.\n"
+        ["Auto-generated database migrations for Clojure.\n"
          "Available commands:"]
         all-cmd-descs
         ["\nRun 'help :cmd COMMAND' for more information on a command.\n"
