@@ -580,7 +580,8 @@
   (testing "check referenced field is not unique error"
     (let [data {:bar [[:id :integer]]
                 :foo {:fields [[:bar-id :integer {:foreign-key :bar/id}]]}}]
-      (is (= "Foreign key :foo/bar-id has reference on the not unique field :bar/id."
+      (is (= (str "Foreign key :foo/bar-id there is no unique or primary key constraint"
+               " on the referenced field :bar/id.")
             (:message (test-util/thrown-with-slingshot-data?
                         [:type ::models/referenced-field-is-not-unique]
                         (models/->internal-models data))))))))

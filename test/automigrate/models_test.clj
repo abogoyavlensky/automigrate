@@ -59,7 +59,7 @@
                 :account
                 {:fields {:id {:type :serial}}}}]
     (is (thrown-with-msg? ExceptionInfo
-          #"Foreign key :feed/account has reference on the not unique field :account/id."
+          #"Foreign key :feed/account there is no unique or primary key constraint on the referenced field :account/id."
           (#'models/validate-foreign-key models)))))
 
 
