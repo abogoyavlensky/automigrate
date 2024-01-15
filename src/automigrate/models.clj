@@ -109,15 +109,17 @@
   Also check that field should have `:unique` option enabled, and
   it has the same type as origin field."
   [qualified-field-name field-options fk-field-options fk-model-name fk-field-name]
-  (when-not (true? (:unique fk-field-options))
+  (when-not (or (true? (:unique fk-field-options))
+              (true? (:primary-key fk-field-options)))
     (let [qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
       (throw+ {:type ::referenced-field-is-not-unique
                :title "MODEL ERROR"
                :data {:referenced-model fk-model-name
                       :referenced-field fk-field-name}
-               :message (format "Foreign key %s has reference on the not unique field %s."
+               :message (format "Foreign key %s there is no unique or primary key constraint on the referenced field %s."
                           qualified-field-name
                           qualified-fk-field-name)})))
+
   (let [field-type-group (fields/check-type-group (:type field-options))
         fk-field-type-group (fields/check-type-group (:type fk-field-options))
         qualified-fk-field-name (keyword (name fk-model-name) (name fk-field-name))]
