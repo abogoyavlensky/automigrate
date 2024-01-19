@@ -238,3 +238,21 @@
      :join [[:pg_enum :e] [:= :e.enumtypid :t.oid]]
      :where [:= :t.typname type-name]
      :order-by [[:e.enumsortorder :asc]]}))
+
+
+(defn get-constraints
+  [model-name-str]
+  (db-util/exec!
+    config/DATABASE-CONN
+    {:select [:tc.constraint_name
+              :tc.constraint_type
+              :tc.table_name
+              [:ccu.column_name :colname]]
+     :from [[:information_schema.table_constraints :tc]]
+     :join [[:information_schema.key_column_usage :kcu]
+            [:= :tc.constraint_name :kcu.constraint_name]
+
+            [:information_schema.constraint_column_usage :ccu]
+            [:= :ccu.constraint_name :tc.constraint_name]]
+     :where [:in :ccu.table_name [model-name-str]]
+     :order-by [:tc.constraint_name]}))

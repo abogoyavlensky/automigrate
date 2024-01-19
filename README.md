@@ -398,7 +398,7 @@ Actions:
   ...
 ```
 
-Create empty sql migration with custom name:
+Create empty SQL migration with custom name:
 
 ```shell
 $ clojure -X:migrations make :type :empty-sql :name add_custom_trigger
@@ -641,23 +641,21 @@ Appyling ...
 In the future there could be more convenient options for configuration if needed.* 
 
 
-## Roadmap draft
+## Roadmap
 
-- [x] Support enum type of fields for PostgreSQL.
-- [x] Support all built-in data types in PostgreSQL.
-- [x] Support array data types in PostgreSQL.
-- [x] Support comment on field.
-- [x] Support partial indexes.
-- [x] Support auto-generated backward migration.
-- [ ] Support field checks in PostgreSQL.
-- [ ] Support model constraints in PostgreSQL.
-- [ ] Support data-migration using Clojure.
-- [ ] Optimize auto-generated sql queries.
+- [x] Enum type of fields.
+- [x] All built-in data types.
+- [x] Array data types.
+- [x] Comment on field.
+- [x] Partial indexes.
+- [x] Auto-generated backward migration.
+- [ ] Field level checks.
+- [ ] Model level constraints.
+- [ ] Data-migration using Clojure.
+- [ ] Optimized auto-generated SQL queries.
 - [ ] Support for SQLite.
 - [ ] Support for MySQL.
-- [ ] Support running with Leiningen.
-- [ ] Test against different versions of Clojure in CI pipeline.
-- [ ] Add visual representation of db schema by models.
+- [ ] Visual representation of db schema by models.
 
 
 ### Things still in design

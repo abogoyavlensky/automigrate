@@ -8,13 +8,13 @@
     [spec-dict :as d]
     [automigrate.actions :as actions]
     [automigrate.fields :as fields]
+    [automigrate.constraints :as constraints]
     [automigrate.util.db :as db-util]
     [automigrate.util.model :as model-util]
     [automigrate.util.spec :as spec-util]))
 
 
 (def ^:private UNIQUE-INDEX-POSTFIX "key")
-(def ^:private PRIVATE-KEY-INDEX-POSTFIX "pkey")
 (def ^:private FOREIGN-KEY-INDEX-POSTFIX "fkey")
 (def ^:private DEFAULT-INDEX :btree)
 
@@ -167,16 +167,30 @@
       (some? array-value) (conj array-value))))
 
 
+(defn ->primary-key-constraint
+  [{:keys [model-name primary-key]}]
+  (when (seq primary-key)
+    (concat
+      [[:constraint (constraints/primary-key-constraint-name model-name)]]
+      primary-key)))
+
+
 (defn- fields->columns
-  [fields]
+  [{:keys [fields model-name]}]
   (reduce
-    (fn [acc [field-name options]]
-      (conj acc (->> (dissoc options :type :foreign-key :array :comment)
-                  (vals)
-                  (concat
+    (fn [acc [field-name {:keys [primary-key foreign-key] :as options}]]
+      (let [rest-options (remove #(= :EMPTY %) [(:on-delete options :EMPTY)
+                                                (:on-update options :EMPTY)
+                                                (:null options :EMPTY)
+                                                (:unique options :EMPTY)
+                                                (:default options :EMPTY)])]
+        (conj acc (concat
                     [field-name]
                     (field-type->sql options)
-                    (:foreign-key options)))))
+                    (->primary-key-constraint {:model-name model-name
+                                               :primary-key primary-key})
+                    foreign-key
+                    rest-options))))
     []
     fields))
 
@@ -214,7 +228,8 @@
   (s/conformer
     (fn [{:keys [model-name fields]}]
       (let [create-table-q {:create-table [model-name]
-                            :with-columns (fields->columns fields)}
+                            :with-columns (fields->columns {:fields fields
+                                                            :model-name model-name})}
             create-comments-q-vec (fields->comments-sql model-name fields)]
         (if (seq create-comments-q-vec)
           (concat [create-table-q] (vec create-comments-q-vec))
@@ -239,7 +254,8 @@
   (s/conformer
     (fn [{:keys [model-name field-name options]}]
       (let [add-column {:alter-table model-name
-                        :add-column (first (fields->columns [[field-name options]]))}]
+                        :add-column (first (fields->columns {:model-name model-name
+                                                             :fields [[field-name options]]}))}]
         (if (some? (:comment options))
           [add-column
            (create-comment-on-field-raw
@@ -275,13 +291,6 @@
     (keyword)))
 
 
-(defn- private-key-index-name
-  [model-name]
-  (->> [(name model-name) PRIVATE-KEY-INDEX-POSTFIX]
-    (str/join #"-")
-    (keyword)))
-
-
 (defn- foreign-key-index-name
   [model-name field-name]
   (->> [(name model-name) (name field-name) FOREIGN-KEY-INDEX-POSTFIX]
@@ -311,7 +320,7 @@
      :changes-to-drop (disj changes-to-drop :on-delete :on-update)}))
 
 
-(defn- sql-changes-for-fk
+(defn- alter-foreign-key->edn
   [{:keys [model-name field-name field-value action-changes]}]
   (let [from-value-empty? (= :EMPTY (get-in action-changes [:foreign-key :from]))
         drop-constraint {:drop-constraint
@@ -342,6 +351,13 @@
          type-sql)})))
 
 
+(defn- alter-primary-key->edn
+  [model-name field-name]
+  {:add-constraint
+   [(constraints/primary-key-constraint-name model-name)
+    [:primary-key field-name]]})
+
+
 (s/def ::alter-column->sql
   (s/conformer
     (fn [{:keys [field-name model-name] :as action}]
@@ -354,11 +370,12 @@
                                    {:alter-column [field-name operation [:not nil]]})
                         #{:default} {:alter-column [field-name :set value]}
                         #{:unique} {:add-index [:unique nil field-name]}
-                        #{:primary-key} {:add-index [:primary-key field-name]}
-                        #{:foreign-key} (sql-changes-for-fk {:model-name model-name
-                                                             :field-name field-name
-                                                             :field-value value
-                                                             :action-changes (:changes action)})))
+                        #{:primary-key} (alter-primary-key->edn model-name field-name)
+                        #{:foreign-key} (alter-foreign-key->edn
+                                          {:model-name model-name
+                                           :field-name field-name
+                                           :field-value value
+                                           :action-changes (:changes action)})))
             ; remove nil if options type and array have been changed
             changes* (->> changes (remove nil?) (flatten))
 
@@ -369,7 +386,7 @@
                         :null {:alter-column [field-name :drop [:not nil]]}
                         :default {:alter-column [field-name :drop :default]}
                         :unique {:drop-constraint (unique-index-name model-name field-name)}
-                        :primary-key {:drop-constraint (private-key-index-name model-name)}
+                        :primary-key {:drop-constraint (constraints/primary-key-constraint-name model-name)}
                         :foreign-key {:drop-constraint (foreign-key-index-name model-name field-name)}))
             dropped* (remove nil? dropped)
             all-actions (concat changes* dropped*)

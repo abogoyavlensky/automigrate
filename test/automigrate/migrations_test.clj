@@ -394,7 +394,7 @@
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                          :number 1})
     (is (= ["BEGIN"
-            "CREATE TABLE feed (id SERIAL NOT NULL PRIMARY KEY, number INTEGER DEFAULT 0, info TEXT)"
+            "CREATE TABLE feed (id SERIAL CONSTRAINT feed_pkey PRIMARY KEY NOT NULL, number INTEGER DEFAULT 0, info TEXT)"
             "CREATE TABLE account (id SERIAL NULL UNIQUE, name VARCHAR(100) NULL, rate FLOAT)"
             "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"
             "ALTER TABLE account ADD COLUMN day DATE"
@@ -806,7 +806,7 @@
                                       :foreign-key :account/id
                                       :on-delete :cascade}})
         expected-q-edn '({:create-table [:account]
-                          :with-columns [(:id :serial :unique [:primary-key])]}
+                          :with-columns [(:id :serial [:constraint :account-pkey] :primary-key :unique)]}
                          {:create-table [:feed]
                           :with-columns [(:id :serial)
                                          (:name :text)]}
@@ -816,7 +816,7 @@
                                         [:raw "on delete"]
                                         [:raw "cascade"]),
                           :alter-table :feed})
-        expected-q-sql '(["CREATE TABLE account (id SERIAL UNIQUE PRIMARY KEY)"]
+        expected-q-sql '(["CREATE TABLE account (id SERIAL CONSTRAINT account_pkey PRIMARY KEY UNIQUE)"]
                          ["CREATE TABLE feed (id SERIAL, name TEXT)"]
                          ["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
 
@@ -857,7 +857,10 @@
                                       :on-delete :set-null}
                             :changes {:on-delete {:from :cascade :to :set-null}}})
         expected-q-edn '({:create-table [:account]
-                          :with-columns [(:id :serial :unique [:primary-key])]}
+                          :with-columns [(:id :serial
+                                           [:constraint :account-pkey]
+                                           :primary-key
+                                           :unique)]}
                          {:create-table [:feed]
                           :with-columns [(:id :serial)
                                          (:name :text)
@@ -874,7 +877,7 @@
                                                             [:raw "on delete"]
                                                             [:raw "set null"])})})
         expected-q-sql (list
-                         ["CREATE TABLE account (id SERIAL UNIQUE PRIMARY KEY)"]
+                         ["CREATE TABLE account (id SERIAL CONSTRAINT account_pkey PRIMARY KEY UNIQUE)"]
                          ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER REFERENCES account(id) on delete cascade)"]
                          [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
                             "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
@@ -888,7 +891,7 @@
              :existing-actions existing-actions
              :existing-models changed-models})))
 
-    (testing "test constraints [another option to test constraints]"
+    (testing "test constraints in db"
       (is (= [{:colname "id"
                :constraint_name "account_pkey"
                :constraint_type "PRIMARY KEY"
@@ -939,7 +942,7 @@
                             :changes {:foreign-key {:from :account/id :to :EMPTY}
                                       :on-delete {:from :cascade :to :EMPTY}}})
         expected-q-edn '({:create-table [:account]
-                          :with-columns [(:id :serial :unique [:primary-key])]}
+                          :with-columns [(:id :serial [:constraint :account-pkey] :primary-key :unique)]}
                          {:create-table [:feed]
                           :with-columns [(:id :serial)
                                          (:name :text)
@@ -950,7 +953,7 @@
                          {:alter-table (:feed
                                          {:drop-constraint :feed-account-fkey})})
         expected-q-sql (list
-                         ["CREATE TABLE account (id SERIAL UNIQUE PRIMARY KEY)"]
+                         ["CREATE TABLE account (id SERIAL CONSTRAINT account_pkey PRIMARY KEY UNIQUE)"]
                          ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER REFERENCES account(id) on delete cascade)"]
                          [(str "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey")])]
 
@@ -1184,7 +1187,7 @@
                             :options {:type :decimal
                                       :default 7.77M}})
         expected-q-edn '({:create-table [:feed]
-                          :with-columns [(:id :serial [:primary-key])
+                          :with-columns [(:id :serial [:constraint :feed-pkey] :primary-key)
                                          (:name [:varchar 100])]}
                          {:alter-table :feed
                           :add-column (:tx [:decimal 6] [:default 6.4])}
@@ -1193,7 +1196,7 @@
                          {:alter-table :feed
                           :add-column (:balance :decimal [:default 7.77M])})
         expected-q-sql (list
-                         ["CREATE TABLE feed (id SERIAL PRIMARY KEY, name VARCHAR(100))"]
+                         ["CREATE TABLE feed (id SERIAL CONSTRAINT feed_pkey PRIMARY KEY, name VARCHAR(100))"]
                          ["ALTER TABLE feed ADD COLUMN tx DECIMAL(6) DEFAULT 6.4"]
                          ["ALTER TABLE feed ADD COLUMN amount DECIMAL(10, 2) DEFAULT '9.99'"]
                          ["ALTER TABLE feed ADD COLUMN balance DECIMAL DEFAULT 7.77"])]
@@ -1301,11 +1304,11 @@
                             :options {:type [:varchar 10]
                                       :default "test"}})
         expected-q-edn '({:create-table [:feed]
-                          :with-columns [(:id :serial [:primary-key])]}
+                          :with-columns [(:id :serial [:constraint :feed-pkey] :primary-key)]}
                          {:alter-table :feed
                           :add-column (:name [:varchar 10] [:default "test"])})
         expected-q-sql (list
-                         ["CREATE TABLE feed (id SERIAL PRIMARY KEY)"]
+                         ["CREATE TABLE feed (id SERIAL CONSTRAINT feed_pkey PRIMARY KEY)"]
                          ["ALTER TABLE feed ADD COLUMN name VARCHAR(10) DEFAULT 'test'"])]
 
     (is (= {:new-actions expected-actions
