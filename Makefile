@@ -67,11 +67,15 @@ check:
 	@$(MAKE) lint
 
 
-.PHONY: test  # Run tests with coverage
+.PHONY: test  # Run tests
 test:
 	@$(INFO) "Running tests..."
 	@clojure -X:dev:test
 
+.PHONY: test-ci  # Run tests in CI in fail fast mode
+test-ci:
+	@$(INFO) "Running tests..."
+	@clojure -X:dev:test :fail-fast? true
 
 # Docker-compose
 
