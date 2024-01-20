@@ -9,6 +9,8 @@
   (test-util/with-delete-dir config/MIGRATIONS-DIR))
 
 
+; PRIMARY KEY
+
 (deftest ^:eftest/slow test-create-table-with-primary-key-constraint
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :create-table
@@ -42,7 +44,7 @@
             (test-util/get-constraints "users"))))))
 
 
-(deftest ^:eftest/slow test-alter-table-with-primary-key-constraint-added
+(deftest ^:eftest/slow test-alter-primary-key-constraint-added
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :serial
@@ -100,6 +102,119 @@
              :existing-actions [{:action :create-table
                                  :fields {:id {:type :serial
                                                :primary-key true}}
+                                 :model-name :users}]
+             :existing-models {:users
+                               {:fields [[:id :serial]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+
+    (testing "test constraints in db"
+      (is (= []
+            (test-util/get-constraints "users"))))))
+
+
+; UNIQUE
+
+(deftest ^:eftest/slow test-create-table-with-unique-constraint
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :create-table
+                                :fields {:id {:type :serial
+                                              :unique true}}
+                                :model-name :users})
+            :q-edn [{:create-table [:users]
+                     :with-columns ['(:id :serial [:constraint :users-id-key] :unique)]}]
+            :q-sql [["CREATE TABLE users (id SERIAL CONSTRAINT users_id_key UNIQUE)"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions []
+             :existing-models {:users
+                               {:fields [[:id :serial {:unique true}]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+
+    (testing "test constraints in db"
+      (is (= [{:colname "id"
+               :constraint_name "users_id_key"
+               :constraint_type "UNIQUE"
+               :table_name "users"}]
+            (test-util/get-constraints "users"))))))
+
+
+(deftest ^:eftest/slow test-alter-unique-constraint
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :alter-column
+                                :options {:type :serial
+                                          :unique true}
+                                :changes {:unique {:from :EMPTY
+                                                   :to true}}
+                                :field-name :id
+                                :model-name :users})
+            :q-edn [{:create-table [:users]
+                     :with-columns ['(:id :serial)]}
+                    {:alter-table '(:users {:add-constraint
+                                            [:users-id-key [:unique nil :id]]})}]
+            :q-sql [["CREATE TABLE users (id SERIAL)"]
+                    ["ALTER TABLE users ADD CONSTRAINT users_id_key UNIQUE(id)"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions [{:action :create-table
+                                 :fields {:id {:type :serial}}
+                                 :model-name :users}]
+             :existing-models {:users
+                               {:fields [[:id :serial {:unique true}]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users"))))
+
+    (testing "test constraints in db"
+      (is (= [{:colname "id"
+               :constraint_name "users_id_key"
+               :constraint_type "UNIQUE"
+               :table_name "users"}]
+            (test-util/get-constraints "users"))))))
+
+
+(deftest ^:eftest/slow test-drop-unique-constraint
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :alter-column
+                                :options {:type :serial}
+                                :changes {:unique {:from true
+                                                   :to :EMPTY}}
+                                :field-name :id
+                                :model-name :users})
+            :q-edn [{:create-table [:users]
+                     :with-columns ['(:id :serial [:constraint :users-id-key] :unique)]}
+                    {:alter-table '(:users {:drop-constraint :users-id-key})}]
+            :q-sql [["CREATE TABLE users (id SERIAL CONSTRAINT users_id_key UNIQUE)"]
+                    ["ALTER TABLE users DROP CONSTRAINT users_id_key"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions [{:action :create-table
+                                 :fields {:id {:type :serial
+                                               :unique true}}
                                  :model-name :users}]
              :existing-models {:users
                                {:fields [[:id :serial]]}}})))

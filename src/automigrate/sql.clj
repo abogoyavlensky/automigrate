@@ -14,7 +14,6 @@
     [automigrate.util.spec :as spec-util]))
 
 
-(def ^:private UNIQUE-INDEX-POSTFIX "key")
 (def ^:private FOREIGN-KEY-INDEX-POSTFIX "fkey")
 (def ^:private DEFAULT-INDEX :btree)
 
@@ -175,20 +174,29 @@
       primary-key)))
 
 
+(defn ->unique-constraint
+  [{:keys [model-name field-name unique]}]
+  (when (some? unique)
+    [[:constraint (constraints/unique-constraint-name model-name field-name)]
+     unique]))
+
+
 (defn- fields->columns
   [{:keys [fields model-name]}]
   (reduce
-    (fn [acc [field-name {:keys [primary-key foreign-key] :as options}]]
+    (fn [acc [field-name {:keys [unique primary-key foreign-key] :as options}]]
       (let [rest-options (remove #(= :EMPTY %) [(:on-delete options :EMPTY)
                                                 (:on-update options :EMPTY)
                                                 (:null options :EMPTY)
-                                                (:unique options :EMPTY)
                                                 (:default options :EMPTY)])]
         (conj acc (concat
                     [field-name]
                     (field-type->sql options)
                     (->primary-key-constraint {:model-name model-name
                                                :primary-key primary-key})
+                    (->unique-constraint {:model-name model-name
+                                          :field-name field-name
+                                          :unique unique})
                     foreign-key
                     rest-options))))
     []
@@ -284,13 +292,6 @@
     #(> (count (keys %)) 0)))
 
 
-(defn- unique-index-name
-  [model-name field-name]
-  (->> [(name model-name) (name field-name) UNIQUE-INDEX-POSTFIX]
-    (str/join #"-")
-    (keyword)))
-
-
 (defn- foreign-key-index-name
   [model-name field-name]
   (->> [(name model-name) (name field-name) FOREIGN-KEY-INDEX-POSTFIX]
@@ -358,6 +359,14 @@
     [:primary-key field-name]]})
 
 
+(defn- alter-unique->edn
+  [model-name field-name]
+  {:add-index [:unique nil field-name]}
+  {:add-constraint
+   [(constraints/unique-constraint-name model-name field-name)
+    [:unique nil field-name]]})
+
+
 (s/def ::alter-column->sql
   (s/conformer
     (fn [{:keys [field-name model-name] :as action}]
@@ -369,7 +378,7 @@
                         #{:null} (let [operation (if (nil? value) :drop :set)]
                                    {:alter-column [field-name operation [:not nil]]})
                         #{:default} {:alter-column [field-name :set value]}
-                        #{:unique} {:add-index [:unique nil field-name]}
+                        #{:unique} (alter-unique->edn model-name field-name)
                         #{:primary-key} (alter-primary-key->edn model-name field-name)
                         #{:foreign-key} (alter-foreign-key->edn
                                           {:model-name model-name
@@ -385,9 +394,14 @@
                         :array (->alter-column field-name option action)
                         :null {:alter-column [field-name :drop [:not nil]]}
                         :default {:alter-column [field-name :drop :default]}
-                        :unique {:drop-constraint (unique-index-name model-name field-name)}
-                        :primary-key {:drop-constraint (constraints/primary-key-constraint-name model-name)}
-                        :foreign-key {:drop-constraint (foreign-key-index-name model-name field-name)}))
+                        :unique {:drop-constraint (constraints/unique-constraint-name
+                                                    model-name
+                                                    field-name)}
+                        :primary-key {:drop-constraint (constraints/primary-key-constraint-name
+                                                         model-name)}
+                        :foreign-key {:drop-constraint (foreign-key-index-name
+                                                         model-name
+                                                         field-name)}))
             dropped* (remove nil? dropped)
             all-actions (concat changes* dropped*)
             alter-table-sql {:alter-table (cons model-name all-actions)}
