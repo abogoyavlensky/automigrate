@@ -12,7 +12,7 @@
  :aliases
  {:dev {:extra-paths ["dev"]
         :extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}
-                     org.clojure/tools.namespace {:mvn/version "1.4.4"}
+                     org.clojure/tools.namespace {:mvn/version "1.4.5"}
                      hashp/hashp {:mvn/version "0.2.2"}
                      org.postgresql/postgresql {:mvn/version "42.7.1"}}}
 
