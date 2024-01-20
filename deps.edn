@@ -20,7 +20,8 @@
          :extra-deps {eftest/eftest {:mvn/version "0.6.0"}
                       circleci/bond {:mvn/version "0.6.0"}}
          :exec-fn automigrate.testing-util/run-eftest
-         :exec-args {:multithread? false}}
+         :exec-args {:multithread? false
+                     :test-warn-time 500}}
 
   :check-deps {:extra-deps {com.github.liquidz/antq {:mvn/version "2.8.1173"}
                             ; suppress logger output

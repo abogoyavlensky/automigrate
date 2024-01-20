@@ -53,10 +53,10 @@
                                        :unique true}}]
               :q-edn [{:create-table [:account]
                        :with-columns ['(:id :serial)]}
-                      {:add-column '(:number :bigserial :unique)
+                      {:add-column '(:number :bigserial [:constraint :account-number-key] :unique)
                        :alter-table :account}]
               :q-sql [["CREATE TABLE account (id SERIAL)"]
-                      ["ALTER TABLE account ADD COLUMN number BIGSERIAL UNIQUE"]]}
+                      ["ALTER TABLE account ADD COLUMN number BIGSERIAL CONSTRAINT account_number_key UNIQUE"]]}
             (test-util/perform-make-and-migrate!
               {:jdbc-url config/DATABASE-CONN
                :existing-actions existing-actions
