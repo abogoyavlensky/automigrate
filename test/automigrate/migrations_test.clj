@@ -858,9 +858,8 @@
                             :changes {:on-delete {:from :cascade :to :set-null}}})
         expected-q-edn '({:create-table [:account]
                           :with-columns [(:id :serial
-                                           [:constraint :account-pkey]
-                                           :primary-key
-                                           :unique)]}
+                                           [:constraint :account-pkey] :primary-key
+                                           [:constraint :account-id-key] :unique)]}
                          {:create-table [:feed]
                           :with-columns [(:id :serial)
                                          (:name :text)
@@ -877,7 +876,7 @@
                                                             [:raw "on delete"]
                                                             [:raw "set null"])})})
         expected-q-sql (list
-                         ["CREATE TABLE account (id SERIAL CONSTRAINT account_pkey PRIMARY KEY UNIQUE)"]
+                         ["CREATE TABLE account (id SERIAL CONSTRAINT account_pkey PRIMARY KEY CONSTRAINT account_id_key UNIQUE)"]
                          ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER REFERENCES account(id) on delete cascade)"]
                          [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
                             "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
