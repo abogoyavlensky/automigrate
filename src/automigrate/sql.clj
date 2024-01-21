@@ -41,6 +41,14 @@
         [:primary-key]))))
 
 
+(s/def :automigrate.sql.option->sql/check
+  (s/and
+    ::fields/check
+    (s/conformer
+      (fn [value]
+        [:check value]))))
+
+
 (s/def :automigrate.sql.option->sql/unique
   (s/and
     ::fields/unique
@@ -114,6 +122,7 @@
    :automigrate.sql.option->sql/foreign-key
    :automigrate.sql.option->sql/on-delete
    :automigrate.sql.option->sql/on-update
+   :automigrate.sql.option->sql/check
    :automigrate.sql.option->sql/array
    :automigrate.sql.option->sql/comment])
 
@@ -183,14 +192,21 @@
 (defn- ->foreign-key-constraint
   [{:keys [model-name field-name references]}]
   (when (some? references)
-    (concat [[:constraint (constraints/foreign-key-index-name model-name field-name)]]
+    (concat [[:constraint (constraints/foreign-key-constraint-name model-name field-name)]]
       references)))
+
+
+(defn- ->check-constraint
+  [{:keys [model-name field-name check]}]
+  (when (some? check)
+    [[:constraint (constraints/check-constraint-name model-name field-name)]
+     check]))
 
 
 (defn- fields->columns
   [{:keys [fields model-name]}]
   (reduce
-    (fn [acc [field-name {:keys [unique primary-key foreign-key] :as options}]]
+    (fn [acc [field-name {:keys [unique primary-key foreign-key check] :as options}]]
       (let [rest-options (remove #(= :EMPTY %) [(:on-delete options :EMPTY)
                                                 (:on-update options :EMPTY)
                                                 (:null options :EMPTY)
@@ -206,6 +222,9 @@
                     (->foreign-key-constraint {:model-name model-name
                                                :field-name field-name
                                                :references foreign-key})
+                    (->check-constraint {:model-name model-name
+                                         :field-name field-name
+                                         :check check})
                     rest-options))))
     []
     fields))
@@ -327,9 +346,9 @@
   (let [from-value-empty? (= :EMPTY (get-in action-changes [:foreign-key :from]))
         drop-constraint {:drop-constraint
                          [[:raw "IF EXISTS"]
-                          (constraints/foreign-key-index-name model-name field-name)]}
+                          (constraints/foreign-key-constraint-name model-name field-name)]}
         add-constraint {:add-constraint
-                        (concat [(constraints/foreign-key-index-name model-name field-name)
+                        (concat [(constraints/foreign-key-constraint-name model-name field-name)
                                  [:foreign-key field-name]]
                           field-value)}]
     (cond-> []
@@ -400,7 +419,7 @@
                                                     field-name)}
                         :primary-key {:drop-constraint (constraints/primary-key-constraint-name
                                                          model-name)}
-                        :foreign-key {:drop-constraint (constraints/foreign-key-index-name
+                        :foreign-key {:drop-constraint (constraints/foreign-key-constraint-name
                                                          model-name
                                                          field-name)}))
             dropped* (remove nil? dropped)

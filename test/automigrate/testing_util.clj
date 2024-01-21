@@ -258,14 +258,21 @@
      :order-by [:tc.constraint_name]}))
 
 
-(defn get-constraints-fk
-  [db model-name-str]
+(def ^:const CONTYPE-FK "f")
+(def ^:const CONTYPE-CHECK "c")
+
+
+(defn get-constraints-simple
+  [db {:keys [model-name-str contype]}]
   (db-util/exec!
     db
-    {:select [:c.conname :c.contype [[:raw "pg_get_constraintdef(c.oid)"]]]
+    {:select [:c.conname
+              :c.contype
+              [[:raw "pg_get_constraintdef(c.oid)"]]
+              [:t.relname :table-name]]
      :from [[:pg-constraint :c]]
      :join [[:pg-class :t] [:= :t.oid :c.conrelid]]
      :where [:and
              [:= :t.relname model-name-str]
-             [:= :contype "f"]]
+             [:= :contype contype]]
      :order-by [:c.oid]}))

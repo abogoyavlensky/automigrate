@@ -648,6 +648,15 @@
       value)))
 
 
+(defmethod ->error-message :automigrate.fields/check
+  [data]
+  (let [fq-field-name (get-fq-field-name data)
+        value (get-options data)]
+    (add-error-value
+      (format "Option :check of field %s should be a not empty vector." fq-field-name)
+      value)))
+
+
 (defmethod ->error-message :automigrate.fields/unique
   [data]
   (let [fq-field-name (get-fq-field-name data)

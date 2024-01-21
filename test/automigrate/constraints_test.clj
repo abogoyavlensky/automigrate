@@ -11,7 +11,7 @@
 
 ; PRIMARY KEY
 
-(deftest ^:eftest/slow test-create-table-with-primary-key-constraint
+(deftest ^:eftest/slow test-create-table-with-primary-key-constraint-on-column
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :create-table
                                 :fields {:id {:type :serial
@@ -44,7 +44,7 @@
             (test-util/get-constraints "users"))))))
 
 
-(deftest ^:eftest/slow test-alter-primary-key-constraint-added
+(deftest ^:eftest/slow test-alter-primary-key-constraint-added-on-column
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :serial
@@ -301,8 +301,11 @@
       (is (= [{:conname "post_user_id_fkey"
                :contype "f"
                :pg_get_constraintdef
-               "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"}]
-            (test-util/get-constraints-fk config/DATABASE-CONN "post"))))))
+               "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+               :table_name "post"}]
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-FK}))))))
 
 
 (deftest ^:eftest/slow test-drop-foreign-key-constraint
@@ -376,4 +379,48 @@
 
     (testing "test constraints in db"
       (is (= []
-            (test-util/get-constraints-fk config/DATABASE-CONN "post"))))))
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-FK}))))))
+
+
+; CHECK
+
+(deftest ^:eftest/slow test-create-table-with-check-constraint-on-column
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :create-table
+                                :fields {:month {:type :integer
+                                                 :check [:and
+                                                         [:> :month 0]
+                                                         [:<= :month 12]]}}
+                                :model-name :post})
+            :q-edn [{:create-table [:post]
+                     :with-columns ['(:month :integer [:constraint :post-month-check]
+                                       [:check [:and [:> :month 0] [:<= :month 12]]])]}]
+            :q-sql [["CREATE TABLE post (month INTEGER CONSTRAINT post_month_check CHECK((month > 0) AND (month <= 12)))"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions []
+             :existing-models {:post
+                               {:fields [[:month :integer {:check [:and
+                                                                   [:> :month 0]
+                                                                   [:<= :month 12]]}]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default nil
+               :column_name "month"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "YES"
+               :table_name "post"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "post"))))
+
+    (testing "test constraints in db"
+      (is (= [{:conname "post_month_check"
+               :contype "c"
+               :pg_get_constraintdef "CHECK (((month > 0) AND (month <= 12)))"
+               :table_name "post"}]
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-CHECK}))))))
