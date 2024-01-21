@@ -398,7 +398,7 @@ Actions:
   ...
 ```
 
-Create empty sql migration with custom name:
+Create empty SQL migration with custom name:
 
 ```shell
 $ clojure -X:migrations make :type :empty-sql :name add_custom_trigger
@@ -641,23 +641,21 @@ Appyling ...
 In the future there could be more convenient options for configuration if needed.* 
 
 
-## Roadmap draft
+## Roadmap
 
-- [x] Support enum type of fields for PostgreSQL.
-- [x] Support all built-in data types in PostgreSQL.
-- [x] Support array data types in PostgreSQL.
-- [x] Support comment on field.
-- [x] Support partial indexes.
-- [x] Support auto-generated backward migration.
-- [ ] Support custom field checks in PostgreSQL.
-- [ ] Support custom model constraints in PostgreSQL.
-- [ ] Support custom data-migration using Clojure.
-- [ ] Optimize auto-generated sql queries.
-- [ ] Test against different versions of Clojure in CI pipeline.
+- [x] Enum type of fields.
+- [x] All built-in data types.
+- [x] Array data types.
+- [x] Comment on field.
+- [x] Partial indexes.
+- [x] Auto-generated backward migration.
+- [ ] Field level checks.
+- [ ] Model level constraints.
+- [ ] Data-migration using Clojure.
+- [ ] Optimized auto-generated SQL queries.
 - [ ] Support for SQLite.
 - [ ] Support for MySQL.
-- [ ] Add visual representation of db schema by models.
-- [ ] Support running with Leiningen.
+- [ ] Visual representation of db schema by models.
 
 
 ### Things still in design
@@ -665,9 +663,11 @@ In the future there could be more convenient options for configuration if needed
 - How to handle common configuration conveniently?
 - Should args `:models-file` and `:migrations-dir` are set by default?
 - Should it be possible to set arg `:jdbc-url` as an env var?
-- More consistent and helpful messages for users.
+- More consistent and helpful messages for users, maybe using `fipp` library.
 - Ability to separate models by multiple files.
-- Move transformations out of clojure spec conformers. (tech)
+- Move transformations out of clojure spec conformers.
+- Try to replace `spec` with `malli`.
+- Simplify model definition just as map with key `:type` instead of vector of 3 items. 
 - Disable field types validation at all, or add ability to set arbitrary custom type.
 - Handle of model/field renaming.
 
@@ -683,9 +683,9 @@ In the future there could be more convenient options for configuration if needed
 - [Differ](https://github.com/robinheghan/differ)
 
 
-## Materials
+## Resources
 
-- Blog post: [Announcing automigrate](https://bogoyavlensky.com/blog/announcing-automigrate/). 
+- [Announcing automigrate](https://bogoyavlensky.com/blog/announcing-automigrate/) (blog post) 
 
 ## Development
 
