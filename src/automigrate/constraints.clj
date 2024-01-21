@@ -7,8 +7,6 @@
 (def ^:private FOREIGN-KEY-INDEX-POSTFIX "fkey")
 
 
-; TODO: move other constraint related code here!
-
 (defn primary-key-constraint-name
   [model-name]
   (->> [(name model-name) PRIMARY-KEY-CONSTRAINT-POSTFIX]
