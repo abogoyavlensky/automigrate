@@ -9,7 +9,7 @@
   (test-util/with-delete-dir config/MIGRATIONS-DIR))
 
 
-(deftest ^:eftest/slow test-action-create-partial-index-edn-condition-ok
+(deftest test-action-create-partial-index-edn-condition-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list
                            {:action :create-table
@@ -77,7 +77,7 @@
           (test-util/get-indexes config/DATABASE-CONN "users")))))
 
 
-(deftest ^:eftest/slow test-action-alter-index-to-partial-edn-condition-ok
+(deftest test-action-alter-index-to-partial-edn-condition-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list
                            {:action :alter-index
@@ -155,7 +155,7 @@
           (test-util/get-indexes config/DATABASE-CONN "users")))))
 
 
-(deftest ^:eftest/slow test-action-alter-index-from-partial-to-partial-raw-condition-ok
+(deftest test-action-alter-index-from-partial-to-partial-raw-condition-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list
                            {:action :alter-index

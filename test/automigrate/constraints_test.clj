@@ -11,7 +11,7 @@
 
 ; PRIMARY KEY
 
-(deftest ^:eftest/slow test-create-table-with-primary-key-constraint
+(deftest test-create-table-with-primary-key-constraint-on-column
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :create-table
                                 :fields {:id {:type :serial
@@ -44,7 +44,7 @@
             (test-util/get-constraints "users"))))))
 
 
-(deftest ^:eftest/slow test-alter-primary-key-constraint-added
+(deftest test-alter-primary-key-constraint-added-on-column
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :serial
@@ -84,7 +84,7 @@
             (test-util/get-constraints "users"))))))
 
 
-(deftest ^:eftest/slow test-drop-primary-key-constraint
+(deftest test-drop-primary-key-constraint
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :serial}
@@ -123,7 +123,7 @@
 
 ; UNIQUE
 
-(deftest ^:eftest/slow test-create-table-with-unique-constraint
+(deftest test-create-table-with-unique-constraint
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :create-table
                                 :fields {:id {:type :serial
@@ -156,7 +156,7 @@
             (test-util/get-constraints "users"))))))
 
 
-(deftest ^:eftest/slow test-alter-unique-constraint
+(deftest test-alter-unique-constraint
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :serial
@@ -197,7 +197,7 @@
             (test-util/get-constraints "users"))))))
 
 
-(deftest ^:eftest/slow test-drop-unique-constraint
+(deftest test-drop-unique-constraint
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :serial}
@@ -236,7 +236,7 @@
 
 ; FOREIGN KEY
 
-(deftest ^:eftest/slow test-create-table-with-foreign-key-constraint
+(deftest test-create-table-with-foreign-key-constraint
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list
                            {:action :create-table
@@ -301,11 +301,14 @@
       (is (= [{:conname "post_user_id_fkey"
                :contype "f"
                :pg_get_constraintdef
-               "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"}]
-            (test-util/get-constraints-fk config/DATABASE-CONN "post"))))))
+               "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+               :table_name "post"}]
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-FK}))))))
 
 
-(deftest ^:eftest/slow test-drop-foreign-key-constraint
+(deftest test-drop-foreign-key-constraint
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list
                            {:action :alter-column
@@ -376,4 +379,281 @@
 
     (testing "test constraints in db"
       (is (= []
-            (test-util/get-constraints-fk config/DATABASE-CONN "post"))))))
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-FK}))))))
+
+
+; CHECK
+
+(deftest test-create-table-with-check-constraint-on-column
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :create-table
+                                :fields {:month {:type :integer
+                                                 :check [:and
+                                                         [:> :month 0]
+                                                         [:<= :month 12]]}}
+                                :model-name :post})
+            :q-edn [{:create-table [:post]
+                     :with-columns ['(:month :integer [:constraint :post-month-check]
+                                       [:check [:and [:> :month 0] [:<= :month 12]]])]}]
+            :q-sql [["CREATE TABLE post (month INTEGER CONSTRAINT post_month_check CHECK((month > 0) AND (month <= 12)))"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions []
+             :existing-models {:post
+                               {:fields [[:month :integer {:check [:and
+                                                                   [:> :month 0]
+                                                                   [:<= :month 12]]}]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default nil
+               :column_name "month"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "YES"
+               :table_name "post"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "post"))))
+
+    (testing "test constraints in db"
+      (is (= [{:conname "post_month_check"
+               :contype "c"
+               :pg_get_constraintdef "CHECK (((month > 0) AND (month <= 12)))"
+               :table_name "post"}]
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-CHECK}))))))
+
+
+(deftest test-add-column-with-check-constraint
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :add-column
+                                :options {:type :integer
+                                          :check [:and
+                                                  [:> :month 0]
+                                                  [:<= :month 12]]}
+                                :field-name :month
+                                :model-name :post})
+            :q-edn [{:create-table [:post]
+                     :with-columns ['(:id :serial)]}
+                    {:add-column '(:month :integer [:constraint :post-month-check]
+                                    [:check [:and [:> :month 0] [:<= :month 12]]])
+                     :alter-table :post}]
+            :q-sql [["CREATE TABLE post (id SERIAL)"]
+                    ["ALTER TABLE post ADD COLUMN month INTEGER CONSTRAINT post_month_check CHECK((month > 0) AND (month <= 12))"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions [{:action :create-table
+                                 :fields {:id {:type :serial}}
+                                 :model-name :post}]
+             :existing-models {:post
+                               {:fields [[:id :serial]
+                                         [:month :integer {:check [:and
+                                                                   [:> :month 0]
+                                                                   [:<= :month 12]]}]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('post_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "post"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "month"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "YES"
+               :table_name "post"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "post"))))
+
+    (testing "test constraints in db"
+      (is (= [{:conname "post_month_check"
+               :contype "c"
+               :pg_get_constraintdef "CHECK (((month > 0) AND (month <= 12)))"
+               :table_name "post"}]
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-CHECK}))))))
+
+
+(deftest test-add-check-constraint-on-column
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :alter-column
+                                :options {:type :integer
+                                          :check [:and
+                                                  [:> :month 0]
+                                                  [:<= :month 12]]}
+                                :changes {:check {:from :EMPTY
+                                                  :to [:and
+                                                       [:> :month 0]
+                                                       [:<= :month 12]]}}
+                                :field-name :month
+                                :model-name :post})
+            :q-edn [{:create-table [:post]
+                     :with-columns ['(:month :integer)]}
+                    {:alter-table
+                     '(:post {:add-constraint
+                              [:post-month-check [:check [:and [:> :month 0] [:<= :month 12]]]]})}]
+            :q-sql [["CREATE TABLE post (month INTEGER)"]
+                    ["ALTER TABLE post ADD CONSTRAINT post_month_check CHECK((month > 0) AND (month <= 12))"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions [{:action :create-table
+                                 :fields {:month {:type :integer}}
+                                 :model-name :post}]
+             :existing-models {:post
+                               {:fields [[:month :integer {:check [:and
+                                                                   [:> :month 0]
+                                                                   [:<= :month 12]]}]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default nil
+               :column_name "month"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "YES"
+               :table_name "post"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "post"))))
+
+    (testing "test constraints in db"
+      (is (= [{:conname "post_month_check"
+               :contype "c"
+               :pg_get_constraintdef "CHECK (((month > 0) AND (month <= 12)))"
+               :table_name "post"}]
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-CHECK}))))))
+
+
+(deftest test-alter-check-constraint-on-column
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :alter-column
+                                :options {:type :integer
+                                          :check [:> :month 0]}
+                                :changes {:check {:from [:and
+                                                         [:> :month 0]
+                                                         [:<= :month 12]]
+                                                  :to [:> :month 0]}}
+                                :field-name :month
+                                :model-name :post})
+            :q-edn [{:create-table [:post]
+                     :with-columns ['(:month :integer [:constraint :post-month-check]
+                                       [:check [:and [:> :month 0] [:<= :month 12]]])]}
+                    {:alter-table
+                     '(:post
+                        {:drop-constraint [[:raw "IF EXISTS"] :post-month-check]}
+                        {:add-constraint [:post-month-check [:check [:> :month 0]]]})}]
+            :q-sql [["CREATE TABLE post (month INTEGER CONSTRAINT post_month_check CHECK((month > 0) AND (month <= 12)))"]
+                    [(str "ALTER TABLE post DROP CONSTRAINT IF EXISTS post_month_check,"
+                       " ADD CONSTRAINT post_month_check CHECK(month > 0)")]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions [{:action :create-table
+                                 :fields {:month {:type :integer
+                                                  :check [:and
+                                                          [:> :month 0]
+                                                          [:<= :month 12]]}}
+                                 :model-name :post}]
+             :existing-models {:post
+                               {:fields [[:month :integer {:check [:> :month 0]}]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default nil
+               :column_name "month"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "YES"
+               :table_name "post"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "post"))))
+
+    (testing "test constraints in db"
+      (is (= [{:conname "post_month_check"
+               :contype "c"
+               :pg_get_constraintdef "CHECK ((month > 0))"
+               :table_name "post"}]
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-CHECK}))))))
+
+
+(deftest test-drop-check-constraint-on-column
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list {:action :alter-column
+                                :options {:type :integer}
+                                :changes {:check {:from [:and
+                                                         [:> :month 0]
+                                                         [:<= :month 12]]
+                                                  :to :EMPTY}}
+                                :field-name :month
+                                :model-name :post})
+            :q-edn [{:create-table [:post]
+                     :with-columns ['(:month :integer [:constraint :post-month-check]
+                                       [:check [:and [:> :month 0] [:<= :month 12]]])]}
+                    {:alter-table
+                     '(:post {:drop-constraint :post-month-check})}]
+            :q-sql [["CREATE TABLE post (month INTEGER CONSTRAINT post_month_check CHECK((month > 0) AND (month <= 12)))"]
+                    ["ALTER TABLE post DROP CONSTRAINT post_month_check"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions [{:action :create-table
+                                 :fields {:month {:type :integer
+                                                  :check [:and
+                                                          [:> :month 0]
+                                                          [:<= :month 12]]}}
+                                 :model-name :post}]
+             :existing-models {:post
+                               {:fields [[:month :integer]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default nil
+               :column_name "month"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "YES"
+               :table_name "post"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "post"))))
+
+    (testing "test constraints in db"
+      (is (= []
+            (test-util/get-constraints-simple config/DATABASE-CONN
+              {:model-name-str "post"
+               :contype test-util/CONTYPE-CHECK}))))))
+
+
+(deftest test-error-check-constraint-on-column
+  (testing "check can't be nil"
+    (let [params {:existing-models
+                  {:account
+                   {:fields [[:thing :integer {:check nil}]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Option :check of field :account/thing should be a not empty vector.\n\n"
+               "  {:check nil}\n\n")
+            (with-out-str
+              (test-util/make-migration! params))))))
+
+  (testing "check can't be string"
+    (let [params {:existing-models
+                  {:account
+                   {:fields [[:thing :integer {:check "WRONG"}]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Option :check of field :account/thing should be a not empty vector.\n\n"
+               "  {:check \"WRONG\"}\n\n")
+            (with-out-str
+              (test-util/make-migration! params))))))
+
+  (testing "check can't be an empty vector"
+    (let [params {:existing-models
+                  {:account
+                   {:fields [[:thing :integer {:check []}]]}}}]
+      (is (= (str "-- MODEL ERROR -------------------------------------\n\n"
+               "Option :check of field :account/thing should be a not empty vector.\n\n"
+               "  {:check []}\n\n")
+            (with-out-str
+              (test-util/make-migration! params)))))))

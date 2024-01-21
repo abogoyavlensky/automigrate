@@ -232,6 +232,7 @@
 (s/def ::primary-key true?)
 (s/def ::unique true?)
 (s/def ::foreign-key qualified-keyword?)
+(s/def ::check (s/coll-of any? :min-count 1 :kind vector?))
 
 
 (s/def ::default-int integer?)
@@ -330,6 +331,7 @@
              ::foreign-key
              ::on-delete
              ::on-update
+             ::check
              ::array
              ::comment]))
 

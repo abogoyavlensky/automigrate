@@ -94,6 +94,7 @@
                                              ::fields/foreign-key
                                              ::fields/on-delete
                                              ::fields/on-update
+                                             ::fields/check
                                              ::fields/array
                                              ::fields/comment])))))
 
