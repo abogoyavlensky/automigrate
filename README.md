@@ -273,6 +273,7 @@ Available options are presented in the table below:
 | `:foreign-key` | Set to namespaced keyword to point to a primary key field from another model.                 | `false`   | `:another-model/field-name`                                                                                                    |
 | `:on-delete`   | Specify delete action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
 | `:on-update`   | Specify update action for `:foreign-key`.                                                     | `false`   | `:cascade`, `:set-null`, `:set-default`, `:restrict`, `:no-action`                                                             |
+| `:check`       | Set condition in Honeysql format to create custom CHECK for a column.                         | `false`   | Example: `[:and [:> :month 0] [:<= :month 12]]`                                                                                |
 | `:array`       | Can be added to any field type to make it array.                                              | `false`   | `string?`, examples: `"[]"`, `"[][]"`, `[][10][3]`                                                                             |
 | `:comment`     | Add a comment on the field.                                                                   | `false`   | `string?`                                                                                                                      |
 
@@ -649,13 +650,13 @@ In the future there could be more convenient options for configuration if needed
 - [x] Comment on field.
 - [x] Partial indexes.
 - [x] Auto-generated backward migration.
-- [ ] Field level checks.
-- [ ] Model level constraints.
+- [x] Field level CHECK constraints.
 - [ ] Data-migration using Clojure.
-- [ ] Optimized auto-generated SQL queries.
 - [ ] Support for SQLite.
+- [ ] Optimized auto-generated SQL queries.
+- [ ] Model level constraints.
 - [ ] Support for MySQL.
-- [ ] Visual representation of db schema by models.
+- [ ] Visual representation of DB schema.
 
 
 ### Things still in design

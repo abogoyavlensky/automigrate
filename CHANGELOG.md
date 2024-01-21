@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Add fixed name for constraints.
+- Add ability manage column level CHECK constraints.
 
 ### Fixed
 
