@@ -65,6 +65,7 @@ check-deps:
 check:
 	@$(MAKE) fmt
 	@$(MAKE) lint
+	@$(MAKE) test
 
 
 .PHONY: test  # Run tests

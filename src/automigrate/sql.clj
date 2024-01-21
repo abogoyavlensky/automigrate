@@ -356,6 +356,20 @@
       true (conj add-constraint))))
 
 
+(defn- alter-check->edn
+  [{:keys [model-name field-name field-value action-changes]}]
+  (let [from-value-empty? (= :EMPTY (get-in action-changes [:check :from]))
+        drop-constraint {:drop-constraint
+                         [[:raw "IF EXISTS"]
+                          (constraints/check-constraint-name model-name field-name)]}
+        add-constraint {:add-constraint
+                        [(constraints/check-constraint-name model-name field-name)
+                         field-value]}]
+    (cond-> []
+      (not from-value-empty?) (conj drop-constraint)
+      true (conj add-constraint))))
+
+
 (defn- ->alter-column
   [field-name option {:keys [changes options] :as _action}]
   (when (or (= option :type)
@@ -404,7 +418,12 @@
                                           {:model-name model-name
                                            :field-name field-name
                                            :field-value value
-                                           :action-changes (:changes action)})))
+                                           :action-changes (:changes action)})
+                        #{:check} (alter-check->edn
+                                    {:model-name model-name
+                                     :field-name field-name
+                                     :field-value value
+                                     :action-changes (:changes action)})))
             ; remove nil if options type and array have been changed
             changes* (->> changes (remove nil?) (flatten))
 
@@ -421,7 +440,10 @@
                                                          model-name)}
                         :foreign-key {:drop-constraint (constraints/foreign-key-constraint-name
                                                          model-name
-                                                         field-name)}))
+                                                         field-name)}
+                        :check {:drop-constraint (constraints/check-constraint-name
+                                                   model-name
+                                                   field-name)}))
             dropped* (remove nil? dropped)
             all-actions (concat changes* dropped*)
             alter-table-sql {:alter-table (cons model-name all-actions)}

@@ -9,7 +9,7 @@
   (test-util/with-delete-dir config/MIGRATIONS-DIR))
 
 
-(deftest ^:eftest/slow test-action-create-table-with-comment-on-column-ok
+(deftest test-action-create-table-with-comment-on-column-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :create-table
                                 :fields {:id {:type :serial}
@@ -54,7 +54,7 @@
               (test-util/get-column-comment config/DATABASE-CONN "users" "name")))))))
 
 
-(deftest ^:eftest/slow test-action-drop-table-with-comment-on-column-ok
+(deftest test-action-drop-table-with-comment-on-column-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :drop-table
                                 :model-name :users})
@@ -85,7 +85,7 @@
             (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
-(deftest ^:eftest/slow test-action-add-column-with-comment-on-column-ok
+(deftest test-action-add-column-with-comment-on-column-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :add-column
                                 :options {:type :varchar
@@ -133,7 +133,7 @@
             (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
-(deftest ^:eftest/slow test-action-drop-column-with-comment-on-column-ok
+(deftest test-action-drop-column-with-comment-on-column-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :drop-column
                                 :field-name :name
@@ -177,7 +177,7 @@
             (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
-(deftest ^:eftest/slow test-action-alter-column-add-comment-on-column-ok
+(deftest test-action-alter-column-add-comment-on-column-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :varchar
@@ -226,7 +226,7 @@
             (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
-(deftest ^:eftest/slow test-action-alter-column-with-comment-on-column-ok
+(deftest test-action-alter-column-with-comment-on-column-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :varchar
@@ -279,7 +279,7 @@
             (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
-(deftest ^:eftest/slow test-action-alter-column-with-comment-and-another-option-ok
+(deftest test-action-alter-column-with-comment-and-another-option-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :varchar
@@ -338,7 +338,7 @@
             (test-util/get-column-comment config/DATABASE-CONN "users" "name"))))))
 
 
-(deftest ^:eftest/slow test-action-alter-column-drop-comment-on-column-ok
+(deftest test-action-alter-column-drop-comment-on-column-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :options {:type :varchar}
