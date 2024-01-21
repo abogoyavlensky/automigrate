@@ -403,7 +403,7 @@
               "DROP CONSTRAINT account_pkey")
             "ALTER TABLE feed DROP COLUMN url"
             "DROP TABLE IF EXISTS feed"
-            "CREATE TABLE feed (account SERIAL REFERENCES account(id))"
+            "CREATE TABLE feed (account SERIAL CONSTRAINT feed_account_fkey REFERENCES account(id))"
             "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
             (str "ALTER TABLE feed"
               " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES account(id)")
@@ -814,13 +814,14 @@
                                          (:name :text)]}
                          {:add-column (:account
                                         :integer
+                                        [:constraint :feed-account-fkey]
                                         (:references :account :id)
                                         [:raw "on delete"]
                                         [:raw "cascade"]),
                           :alter-table :feed})
         expected-q-sql '(["CREATE TABLE account (id SERIAL CONSTRAINT account_pkey PRIMARY KEY CONSTRAINT account_id_key UNIQUE)"]
                          ["CREATE TABLE feed (id SERIAL, name TEXT)"]
-                         ["ALTER TABLE feed ADD COLUMN account INTEGER REFERENCES account(id) on delete cascade"])]
+                         ["ALTER TABLE feed ADD COLUMN account INTEGER CONSTRAINT feed_account_fkey REFERENCES account(id) on delete cascade"])]
 
     (is (= {:new-actions expected-actions
             :q-edn expected-q-edn
@@ -866,6 +867,7 @@
                           :with-columns [(:id :serial)
                                          (:name :text)
                                          (:account :integer
+                                           [:constraint :feed-account-fkey]
                                            (:references :account :id)
                                            [:raw "on delete"]
                                            [:raw "cascade"])]}
@@ -879,7 +881,7 @@
                                                             [:raw "set null"])})})
         expected-q-sql (list
                          ["CREATE TABLE account (id SERIAL CONSTRAINT account_pkey PRIMARY KEY CONSTRAINT account_id_key UNIQUE)"]
-                         ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER REFERENCES account(id) on delete cascade)"]
+                         ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER CONSTRAINT feed_account_fkey REFERENCES account(id) on delete cascade)"]
                          [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey, "
                             "ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) "
                             "REFERENCES account(id) on delete set null")])]
@@ -950,6 +952,7 @@
                           :with-columns [(:id :serial)
                                          (:name :text)
                                          (:account :integer
+                                           [:constraint :feed-account-fkey]
                                            (:references :account :id)
                                            [:raw "on delete"]
                                            [:raw "cascade"])]}
@@ -957,7 +960,7 @@
                                          {:drop-constraint :feed-account-fkey})})
         expected-q-sql (list
                          ["CREATE TABLE account (id SERIAL CONSTRAINT account_pkey PRIMARY KEY CONSTRAINT account_id_key UNIQUE)"]
-                         ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER REFERENCES account(id) on delete cascade)"]
+                         ["CREATE TABLE feed (id SERIAL, name TEXT, account INTEGER CONSTRAINT feed_account_fkey REFERENCES account(id) on delete cascade)"]
                          [(str "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey")])]
 
     (is (= {:new-actions expected-actions
@@ -1451,7 +1454,7 @@
                           :with-columns [(:id :serial [:constraint :account-id-key] :unique)]}
                          {:create-table [:feed]
                           :with-columns [(:id :serial)
-                                         (:account :integer (:references :account :id))]}
+                                         (:account :integer [:constraint :feed-account-fkey] (:references :account :id))]}
                          {:create-table [:customer]
                           :with-columns [(:id :serial [:constraint :customer-id-key] :unique)]}
                          {:alter-table
@@ -1462,7 +1465,7 @@
                                                (:references :customer :id))})})
         expected-q-sql (list
                          ["CREATE TABLE account (id SERIAL CONSTRAINT account_id_key UNIQUE)"]
-                         ["CREATE TABLE feed (id SERIAL, account INTEGER REFERENCES account(id))"]
+                         ["CREATE TABLE feed (id SERIAL, account INTEGER CONSTRAINT feed_account_fkey REFERENCES account(id))"]
                          ["CREATE TABLE customer (id SERIAL CONSTRAINT customer_id_key UNIQUE)"]
                          [(str "ALTER TABLE feed DROP CONSTRAINT IF EXISTS feed_account_fkey"
                             ", ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES customer(id)")])]

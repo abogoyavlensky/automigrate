@@ -232,3 +232,148 @@
     (testing "test constraints in db"
       (is (= []
             (test-util/get-constraints "users"))))))
+
+
+; FOREIGN KEY
+
+(deftest ^:eftest/slow test-create-table-with-foreign-key-constraint
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list
+                           {:action :create-table
+                            :fields {:id {:type :serial
+                                          :primary-key true}}
+                            :model-name :users}
+                           {:action :create-table
+                            :fields {:id {:primary-key true
+                                          :type :serial}
+                                     :user-id {:foreign-key :users/id
+                                               :on-delete :cascade
+                                               :type :integer}}
+                            :model-name :post})
+            :q-edn [{:create-table [:users]
+                     :with-columns ['(:id :serial [:constraint :users-pkey] :primary-key)]}
+                    {:create-table [:post]
+                     :with-columns ['(:id :serial [:constraint :post-pkey] :primary-key)
+                                    '(:user-id :integer
+                                       [:constraint :post-user-id-fkey]
+                                       (:references :users :id)
+                                       [:raw "on delete"]
+                                       [:raw "cascade"])]}]
+            :q-sql [["CREATE TABLE users (id SERIAL CONSTRAINT users_pkey PRIMARY KEY)"]
+                    [(str "CREATE TABLE post (id SERIAL CONSTRAINT post_pkey PRIMARY KEY,"
+                       " user_id INTEGER CONSTRAINT post_user_id_fkey REFERENCES users(id) on delete cascade)")]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions []
+             :existing-models {:users
+                               {:fields [[:id :serial {:primary-key true}]]}
+                               :post
+                               {:fields [[:id :serial {:primary-key true}]
+                                         [:user-id :integer {:foreign-key :users/id
+                                                             :on-delete :cascade}]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users")))
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('post_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "post"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "user_id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "YES"
+               :table_name "post"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "post"))))
+
+    (testing "test constraints in db"
+      (is (= [{:conname "post_user_id_fkey"
+               :contype "f"
+               :pg_get_constraintdef
+               "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"}]
+            (test-util/get-constraints-fk config/DATABASE-CONN "post"))))))
+
+
+(deftest ^:eftest/slow test-drop-foreign-key-constraint
+  (testing "check generated actions, queries edn and sql from all actions"
+    (is (= {:new-actions (list
+                           {:action :alter-column
+                            :options {:type :integer}
+                            :changes {:foreign-key {:from :users/id
+                                                    :to :EMPTY}
+                                      :on-delete {:from :cascade
+                                                  :to :EMPTY}}
+                            :field-name :user-id
+                            :model-name :post})
+            :q-edn [{:create-table [:users]
+                     :with-columns ['(:id :serial [:constraint :users-pkey] :primary-key)]}
+                    {:create-table [:post]
+                     :with-columns ['(:id :serial [:constraint :post-pkey] :primary-key)
+                                    '(:user-id :integer
+                                       [:constraint :post-user-id-fkey]
+                                       (:references :users :id)
+                                       [:raw "on delete"]
+                                       [:raw "cascade"])]}
+                    {:alter-table '(:post {:drop-constraint :post-user-id-fkey})}]
+            :q-sql [["CREATE TABLE users (id SERIAL CONSTRAINT users_pkey PRIMARY KEY)"]
+                    [(str "CREATE TABLE post (id SERIAL CONSTRAINT post_pkey PRIMARY KEY,"
+                       " user_id INTEGER CONSTRAINT post_user_id_fkey REFERENCES users(id) on delete cascade)")]
+                    ["ALTER TABLE post DROP CONSTRAINT post_user_id_fkey"]]}
+          (test-util/perform-make-and-migrate!
+            {:jdbc-url config/DATABASE-CONN
+             :existing-actions [{:action :create-table
+                                 :fields {:id {:type :serial
+                                               :primary-key true}}
+                                 :model-name :users}
+                                {:action :create-table
+                                 :fields {:id {:primary-key true
+                                               :type :serial}
+                                          :user-id {:foreign-key :users/id
+                                                    :on-delete :cascade
+                                                    :type :integer}}
+                                 :model-name :post}]
+             :existing-models {:users
+                               {:fields [[:id :serial {:primary-key true}]]}
+                               :post
+                               {:fields [[:id :serial {:primary-key true}]
+                                         [:user-id :integer]]}}})))
+
+    (testing "check actual db changes"
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('users_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "users"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "users")))
+      (is (= [{:character_maximum_length nil
+               :column_default "nextval('post_id_seq'::regclass)"
+               :column_name "id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "NO"
+               :table_name "post"}
+              {:character_maximum_length nil
+               :column_default nil
+               :column_name "user_id"
+               :data_type "integer"
+               :udt_name "int4"
+               :is_nullable "YES"
+               :table_name "post"}]
+            (test-util/get-table-schema-from-db config/DATABASE-CONN "post"))))
+
+    (testing "test constraints in db"
+      (is (= []
+            (test-util/get-constraints-fk config/DATABASE-CONN "post"))))))

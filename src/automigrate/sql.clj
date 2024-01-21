@@ -14,7 +14,6 @@
     [automigrate.util.spec :as spec-util]))
 
 
-(def ^:private FOREIGN-KEY-INDEX-POSTFIX "fkey")
 (def ^:private DEFAULT-INDEX :btree)
 
 
@@ -166,7 +165,7 @@
       (some? array-value) (conj array-value))))
 
 
-(defn ->primary-key-constraint
+(defn- ->primary-key-constraint
   [{:keys [model-name primary-key]}]
   (when (seq primary-key)
     (concat
@@ -174,11 +173,18 @@
       primary-key)))
 
 
-(defn ->unique-constraint
+(defn- ->unique-constraint
   [{:keys [model-name field-name unique]}]
   (when (some? unique)
     [[:constraint (constraints/unique-constraint-name model-name field-name)]
      unique]))
+
+
+(defn- ->foreign-key-constraint
+  [{:keys [model-name field-name references]}]
+  (when (some? references)
+    (concat [[:constraint (constraints/foreign-key-index-name model-name field-name)]]
+      references)))
 
 
 (defn- fields->columns
@@ -197,7 +203,9 @@
                     (->unique-constraint {:model-name model-name
                                           :field-name field-name
                                           :unique unique})
-                    foreign-key
+                    (->foreign-key-constraint {:model-name model-name
+                                               :field-name field-name
+                                               :references foreign-key})
                     rest-options))))
     []
     fields))
@@ -292,13 +300,6 @@
     #(> (count (keys %)) 0)))
 
 
-(defn- foreign-key-index-name
-  [model-name field-name]
-  (->> [(name model-name) (name field-name) FOREIGN-KEY-INDEX-POSTFIX]
-    (str/join #"-")
-    (keyword)))
-
-
 (defn- foreign-key-changes
   "Return full option changes or nil if option should be dropped."
   [options changes-to-add changes-to-drop]
@@ -326,9 +327,9 @@
   (let [from-value-empty? (= :EMPTY (get-in action-changes [:foreign-key :from]))
         drop-constraint {:drop-constraint
                          [[:raw "IF EXISTS"]
-                          (foreign-key-index-name model-name field-name)]}
+                          (constraints/foreign-key-index-name model-name field-name)]}
         add-constraint {:add-constraint
-                        (concat [(foreign-key-index-name model-name field-name)
+                        (concat [(constraints/foreign-key-index-name model-name field-name)
                                  [:foreign-key field-name]]
                           field-value)}]
     (cond-> []
@@ -399,7 +400,7 @@
                                                     field-name)}
                         :primary-key {:drop-constraint (constraints/primary-key-constraint-name
                                                          model-name)}
-                        :foreign-key {:drop-constraint (foreign-key-index-name
+                        :foreign-key {:drop-constraint (constraints/foreign-key-index-name
                                                          model-name
                                                          field-name)}))
             dropped* (remove nil? dropped)

@@ -256,3 +256,16 @@
             [:= :ccu.constraint_name :tc.constraint_name]]
      :where [:in :ccu.table_name [model-name-str]]
      :order-by [:tc.constraint_name]}))
+
+
+(defn get-constraints-fk
+  [db model-name-str]
+  (db-util/exec!
+    db
+    {:select [:c.conname :c.contype [[:raw "pg_get_constraintdef(c.oid)"]]]
+     :from [[:pg-constraint :c]]
+     :join [[:pg-class :t] [:= :t.oid :c.conrelid]]
+     :where [:and
+             [:= :t.relname model-name-str]
+             [:= :contype "f"]]
+     :order-by [:c.oid]}))
