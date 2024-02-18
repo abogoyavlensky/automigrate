@@ -1,15 +1,11 @@
-{:account [[:id :serial {:primary-key true
-                         :null false
-                         :unique true}]
+{:account [[:id :serial {:primary-key true}]
            [:username [:varchar 256] {:null false
                                       :unique true}]
            [:password [:varchar 256] {:null false}]
            [:updated-at :timestamp {:default [:now]}]
            [:created-at :timestamp {:default [:now]}]]
 
- :budget {:fields [[:id :serial {:primary-key true
-                                 :null false
-                                 :unique true}]
+ :budget {:fields [[:id :serial {:primary-key true}]
                    [:owner :integer {:foreign-key :account/id
                                      :on-delete :cascade
                                      :null false}]
@@ -22,9 +18,7 @@
                      {:fields [:owner :title]
                       :unique true}]]}
 
- :category {:fields [[:id :serial {:primary-key true
-                                   :null false
-                                   :unique true}]
+ :category {:fields [[:id :serial {:primary-key true}]
                      ; TODO: update to budget-id
                      [:account :integer {:foreign-key :account/id
                                          :on-delete :cascade
@@ -40,9 +34,7 @@
                        {:fields [:account :title :tx-type]
                         :unique true}]]}
 
- :transaction [[:id :serial {:primary-key true
-                             :null false
-                             :unique true}]
+ :transaction [[:id :serial {:primary-key true}]
                [:account :integer {:foreign-key :account/id
                                    :on-delete :cascade
                                    :null false}]

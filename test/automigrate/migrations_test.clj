@@ -255,9 +255,9 @@
             (set))))
     ; check actual db changes
     (doseq [model-name ["account" "category" "budget" "transaction"]]
-      (is (seq (test-util/get-table-schema-from-db
-                 config/DATABASE-CONN
-                 model-name)))))
+      (is (not (nil? (seq (test-util/get-table-schema-from-db
+                            config/DATABASE-CONN
+                            model-name)))))))
 
   (testing "test reverting the migration"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
