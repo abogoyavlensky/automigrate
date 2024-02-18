@@ -1,0 +1,61 @@
+{:account [[:id :serial {:primary-key true
+                         :null false
+                         :unique true}]
+           [:username [:varchar 256] {:null false
+                                      :unique true}]
+           [:password [:varchar 256] {:null false}]
+           [:updated-at :timestamp {:default [:now]}]
+           [:created-at :timestamp {:default [:now]}]]
+
+ :budget {:fields [[:id :serial {:primary-key true
+                                 :null false
+                                 :unique true}]
+                   [:owner :integer {:foreign-key :account/id
+                                     :on-delete :cascade
+                                     :null false}]
+                   [:title [:varchar 48] {:null false}]
+                   [:currency [:varchar 3] {:null false}]
+                   [:updated-at :timestamp {:default [:now]}]
+                   [:created-at :timestamp {:default [:now]}]]
+          :indexes [[:budget-owner-title-unique-idx
+                     :btree
+                     {:fields [:owner :title]
+                      :unique true}]]}
+
+ :category {:fields [[:id :serial {:primary-key true
+                                   :null false
+                                   :unique true}]
+                     ; TODO: update to budget-id
+                     [:account :integer {:foreign-key :account/id
+                                         :on-delete :cascade
+                                         :null false}]
+                     [:title [:varchar 96] {:null false}]
+                     [:icon [:varchar 96]]
+                     [:tx-type [:varchar 8] {:null false
+                                             :check [:in :tx-type ["spending" "income"]]}]
+                     [:updated-at :timestamp {:default [:now]}]
+                     [:created-at :timestamp {:default [:now]}]]
+            :indexes [[:category-account-title-tx-type-unique-idx
+                       :btree
+                       {:fields [:account :title :tx-type]
+                        :unique true}]]}
+
+ :transaction [[:id :serial {:primary-key true
+                             :null false
+                             :unique true}]
+               [:account :integer {:foreign-key :account/id
+                                   :on-delete :cascade
+                                   :null false}]
+               [:budget :integer {:foreign-key :budget/id
+                                  :on-delete :cascade
+                                  :null false}]
+               [:category :integer {:foreign-key :category/id
+                                    :on-delete :cascade
+                                    :null false}]
+               [:amount [:numeric 12 2] {:null false}]
+               [:note [:varchar 120]]
+               [:tx-type [:varchar 8] {:null false
+                                       :default "spending"
+                                       :check [:in :tx-type ["spending" "income"]]}]
+               [:updated-at :timestamp {:default [:now]}]
+               [:created-at :timestamp {:default [:now]}]]}
