@@ -331,6 +331,19 @@
     (models/->internal-models)))
 
 
+(defn- get-deps-for-model
+  [model-fields]
+  (mapv
+    (fn [field]
+      (cond
+        (contains? field :foreign-key)
+        (-> field :foreign-key model-util/kw->map)
+
+        (s/valid? ::fields/enum-type (:type field))
+        {:type-name (-> field :type last)}))
+    (vals model-fields)))
+
+
 (s/def ::model-name keyword?)
 (s/def ::field-name keyword?)
 (s/def ::type-name keyword?)
@@ -348,7 +361,7 @@
 
 
 (defn- action-dependencies
-  "Return dependencies as vector of vectors for an action or nil."
+  "Return dependencies as vector of maps for an action or nil."
   [action]
   {:pre [(su/assert! map? action)]
    :post [(su/assert! ::action-dependencies-ret %)]}
@@ -370,17 +383,7 @@
                                             (conj {:type-name (last type-def)}))
            #{actions/DROP-COLUMN-ACTION} (cond-> [{:model-name (:model-name action)}]
                                            (some? fk) (conj (model-util/kw->map fk)))
-           #{actions/CREATE-TABLE-ACTION} (mapv
-                                            (fn [field]
-                                              (cond
-                                                (contains? field :foreign-key)
-                                                (-> field
-                                                  :foreign-key
-                                                  model-util/kw->map)
-
-                                                (s/valid? ::fields/enum-type (:type field))
-                                                {:type-name (-> field :type last)}))
-                                            (vals (:fields action)))
+           #{actions/CREATE-TABLE-ACTION} (get-deps-for-model (:fields action))
            #{actions/CREATE-INDEX-ACTION
              actions/ALTER-INDEX-ACTION} (mapv (fn [field]
                                                  {:model-name (:model-name action)
@@ -415,13 +418,21 @@
                                           (contains? type-names (last field-type))))
         ; First, drop table with enum column, then drop enum.
         #{actions/DROP-TABLE-ACTION} (let [fields (get-in old-schema
-                                                    [(:model-name action)
-                                                     :fields])
+                                                    [(:model-name action) :fields])
                                            field-types (mapv :type (vals fields))]
-                                       (some
-                                         #(and (s/valid? ::fields/enum-type %)
-                                            (contains? type-names (last %)))
-                                         field-types))
+                                       (or
+                                         (contains? (->> (get-in old-schema
+                                                           [(:model-name action)
+                                                            :fields])
+                                                      (get-deps-for-model)
+                                                      (mapv :model-name)
+                                                      (set))
+                                           (:model-name next-action))
+
+                                         (some
+                                           #(and (s/valid? ::fields/enum-type %)
+                                              (contains? type-names (last %)))
+                                           field-types)))
         ; First, create/alter enum type, then add/alter column/table
         #{actions/CREATE-TYPE-ACTION
           actions/ALTER-TYPE-ACTION} (contains? type-names (:type-name action))
@@ -432,7 +443,7 @@
   "Assoc dependencies to graph by actions."
   [old-schema actions graph next-action]
   (let [deps (action-dependencies next-action)
-        parent-actions (filter
+        parent-actions (filterv
                          (partial parent-action? old-schema deps next-action)
                          actions)]
     (as-> graph $

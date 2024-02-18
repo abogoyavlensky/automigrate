@@ -241,6 +241,41 @@
             "feed")))))
 
 
+(deftest test-migrate-backward-with-drop-table-with-fk-ref
+  (core/make {:models-file (str config/MODELS-DIR "budget_create_tables.edn")
+              :migrations-dir config/MIGRATIONS-DIR})
+  (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                 :jdbc-url config/DATABASE-URL})
+  (testing "test migrations have been applied"
+    (is (= #{"0001_auto_create_table_account_etc"}
+          (->> {:select [:*]
+                :from [db-util/MIGRATIONS-TABLE]}
+            (db-util/exec! config/DATABASE-CONN)
+            (map :name)
+            (set))))
+    ; check actual db changes
+    (doseq [model-name ["account" "category" "budget" "transaction"]]
+      (is (not (nil? (seq (test-util/get-table-schema-from-db
+                            config/DATABASE-CONN
+                            model-name)))))))
+
+  (testing "test reverting the migration"
+    (core/migrate {:migrations-dir config/MIGRATIONS-DIR
+                   :jdbc-url config/DATABASE-URL
+                   :number 0})
+    (is (= #{}
+          (->> {:select [:*]
+                :from [db-util/MIGRATIONS-TABLE]}
+            (db-util/exec! config/DATABASE-CONN)
+            (map :name)
+            (set))))
+    (doseq [model-name ["account" "category" "budget" "transaction"]]
+      (is (= []
+            (test-util/get-table-schema-from-db
+              config/DATABASE-CONN
+              model-name))))))
+
+
 (deftest test-migrate-migrations-with-alter-columns-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
               :migrations-dir config/MIGRATIONS-DIR})
