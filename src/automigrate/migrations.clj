@@ -785,7 +785,8 @@
     (mapv sql/->sql)
     (flatten)
     (add-transaction-to-explain)
-    (file-util/safe-println)))
+    (mapv file-util/fmt-sql)
+    (file-util/safe-println-sql)))
 
 
 (defmethod explain* [AUTO-MIGRATION-EXT EXPLAIN-FORMAT-HUMAN]

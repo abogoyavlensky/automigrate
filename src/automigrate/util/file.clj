@@ -3,7 +3,9 @@
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str])
-  (:import [java.nio.file Paths]))
+  (:import [java.nio.file Paths]
+           [com.github.vertical_blank.sqlformatter SqlFormatter]
+           [com.github.vertical_blank.sqlformatter.languages Dialect]))
 
 
 (def DEFAULT-ZERO-COUNT 4)
@@ -31,12 +33,27 @@
    (format (str "%0" zero-count "d") number)))
 
 
+(defn fmt-sql
+  [sql-str]
+  ; TODO: switch to Dialect/StandardSql for other databases by default!
+  (.format (SqlFormatter/of Dialect/PostgreSql) sql-str))
+
+
 (defn safe-println
   ([more]
    (safe-println more ";"))
   ([more delimiter]
    (.write *out*
      (str (str/join (str delimiter "\n") more) "\n"))))
+
+
+; TODO: reduce duplication with safe-println!
+(defn safe-println-sql
+  ([more]
+   (safe-println-sql more ";"))
+  ([more delimiter]
+   (.write *out*
+     (str (str/join (str delimiter "\n\n") more) "\n"))))
 
 
 (defn prn-err
