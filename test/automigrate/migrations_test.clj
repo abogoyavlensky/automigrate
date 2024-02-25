@@ -1,5 +1,6 @@
 (ns automigrate.migrations-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.string :as str]
+            [clojure.test :refer :all]
             [clojure.java.io :as io]
             [bond.james :as bond]
             [automigrate.migrations :as migrations]
@@ -354,7 +355,6 @@
 
 (deftest test-explain-basic-migration-sql-ok
   (bond/with-stub [[migrations/migrations-list (constantly ["0001_auto_create_table_feed_etc.edn"])]
-                   [file-util/safe-println (constantly nil)]
                    [migrations/migration->actions (constantly
                                                     '({:model-name :feed
                                                        :fields {:id {:type :serial
@@ -426,31 +426,31 @@
                                                        :options {:type :btree
                                                                  :fields [:name]}
                                                        :action :alter-index}))]]
-    (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
-                         :number 1})
-    (is (= ["BEGIN"
-            "CREATE TABLE feed (id SERIAL CONSTRAINT feed_pkey PRIMARY KEY NOT NULL, number INTEGER DEFAULT 0, info TEXT)"
-            "CREATE TABLE account (id SERIAL CONSTRAINT account_id_key UNIQUE NULL, name VARCHAR(100) NULL, rate FLOAT)"
-            "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW())"
-            "ALTER TABLE account ADD COLUMN day DATE"
-            (str "ALTER TABLE account ALTER COLUMN number TYPE INTEGER USING number :: INTEGER, ADD CONSTRAINT account_number_key UNIQUE(number), "
-              "ALTER COLUMN number SET DEFAULT 0, ALTER COLUMN number DROP NOT NULL, "
-              "DROP CONSTRAINT account_pkey")
-            "ALTER TABLE feed DROP COLUMN url"
-            "DROP TABLE IF EXISTS feed"
-            "CREATE TABLE feed (account SERIAL CONSTRAINT feed_account_fkey REFERENCES account(id))"
-            "ALTER TABLE feed DROP CONSTRAINT feed_account_fkey"
-            (str "ALTER TABLE feed"
-              " ADD CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES account(id)")
-            "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
-            "DROP INDEX feed_name_idx"
-            "DROP INDEX feed_name_idx"
-            "CREATE INDEX feed_name_idx ON FEED USING BTREE(name)"
-            "COMMIT;"]
-          (-> (bond/calls file-util/safe-println)
-            (last)
-            :args
-            (first))))))
+    (is (= (str/join
+             "\n\n"
+             ["SQL for forward migration 0001_auto_create_table_feed_etc.edn:"
+              "BEGIN;"
+              "CREATE TABLE feed (\n  id SERIAL CONSTRAINT feed_pkey PRIMARY KEY NOT NULL,\n  number INTEGER DEFAULT 0,\n  info TEXT\n);"
+              "CREATE TABLE account (\n  id SERIAL CONSTRAINT account_id_key UNIQUE NULL,\n  name VARCHAR(100) NULL,\n  rate FLOAT\n);"
+              "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW());"
+              "ALTER TABLE\n  account\nADD\n  COLUMN day DATE;"
+              (str "ALTER TABLE\n  account\nALTER COLUMN\n  number TYPE INTEGER USING number :: INTEGER,\nADD\n  CONSTRAINT account_number_key UNIQUE(number),\n"
+                "ALTER COLUMN\n  number\nSET\n  DEFAULT 0,\nALTER COLUMN\n  number DROP NOT NULL,\n"
+                "  DROP CONSTRAINT account_pkey;")
+              "ALTER TABLE\n  feed DROP COLUMN url;"
+              "DROP TABLE IF EXISTS feed;"
+              "CREATE TABLE feed (\n  account SERIAL CONSTRAINT feed_account_fkey REFERENCES account(id)\n);"
+              "ALTER TABLE\n  feed DROP CONSTRAINT feed_account_fkey;"
+              (str "ALTER TABLE\n  feed\n"
+                "ADD\n  CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES account(id);")
+              "CREATE INDEX feed_name_idx ON FEED USING BTREE(name);"
+              "DROP INDEX feed_name_idx;"
+              "DROP INDEX feed_name_idx;"
+              "CREATE INDEX feed_name_idx ON FEED USING BTREE(name);"
+              "COMMIT;\n"])
+          (with-out-str
+            (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
+                                 :number 1}))))))
 
 
 (deftest test-explain-basic-migration-human-ok

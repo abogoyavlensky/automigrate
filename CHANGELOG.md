@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ## 0.3.2 - UNRELEASED
 
+### Added
+
+- Format SQL output from explain command.
+
 ### Fixed
 
 - Fix ordering actions for dropping table with fk reference.

@@ -5,7 +5,8 @@
         com.github.seancorfield/next.jdbc {:mvn/version "1.3.909"}
         weavejester/dependency {:mvn/version "0.2.1"}
         differ/differ {:mvn/version "0.3.3"}
-        slingshot/slingshot {:mvn/version "0.12.2"}}
+        slingshot/slingshot {:mvn/version "0.12.2"}
+        com.github.vertical-blank/sql-formatter {:mvn/version "2.0.4"}}
 
  :tools/usage {:ns-default automigrate.core}
 
