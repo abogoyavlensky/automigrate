@@ -1,14 +1,12 @@
-{:author {:fields [[:id :serial {:unique true
-                                 :primary-key true}]
-                   [:first-name [:varchar 256]]
+{:author {:fields [[:id :serial {:primary-key true}]
+                   [:first-name [:varchar 255]]
                    [:second-name :text]
                    [:created-at :timestamp {:default [:now]
                                             :null false}]]
           :indexes [[:author-created-at-idx :btree {:fields [:created-at]}]]}
 
- :book [[:id :serial {:unique true
-                      :primary-key true}]
-        [:name [:varchar 256] {:null false}]
+ :book [[:id :serial {:primary-key true}]
+        [:name [:varchar 255] {:null false}]
         [:description :text]
         [:amount :integer {:null false
                            :default 0}]

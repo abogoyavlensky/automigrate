@@ -1,9 +1,9 @@
 ({:action :create-table,
   :model-name :author,
   :fields
-  {:id {:unique true, :primary-key true, :type :serial},
-   :first-name {:type [:varchar 256]},
-   :second-name {:type [:varchar 256]},
+  {:id {:primary-key true, :type :serial},
+   :first-name {:type [:varchar 255]},
+   :second-name {:type [:varchar 255]},
    :created-at {:default [:now], :type :timestamp}}}
  {:action :create-index,
   :index-name :author-created-at-idx,

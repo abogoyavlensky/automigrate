@@ -140,7 +140,6 @@ To view status of existing migrations you can run:
 ```shell
 $ clojure -X:migrations list
 Existing migrations:
-
 [x] 0001_auto_create_table_book.edn
 ```
 
@@ -503,7 +502,6 @@ View list of partially applied migrations:
 ```shell
 $ clojure -X:migrations list
 Existing migrations:
-
 [x] 0001_auto_create_table_book.edn
 [ ] 0002_create_table_author.edn
 [ ] 0003_add_custom_trigger.sql

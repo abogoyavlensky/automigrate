@@ -7,7 +7,7 @@ Run the database and a simple admin UI for viewing the db schema:
 ```shell
 $ docker compose build demo
 $ docker compose up -d db adminer
-$ docker compose run --rm /bin/bash
+$ docker compose run --rm demo /bin/bash
 ```
 
 Check existing migrations:
@@ -15,7 +15,6 @@ Check existing migrations:
 ```shell
 $ clojure -X:migrations list
 Existing migrations:
-
 [ ] 0001_auto_create_table_book.edn
 [ ] 0002_auto_create_table_author_etc.edn
 [ ] 0003_auto_add_column_amount_to_book_etc.edn
@@ -38,7 +37,6 @@ Check migration status again:
 ```shell
 $ clojure -X:migrations list
 Existing migrations:
-
 [x] 0001_auto_create_table_book.edn
 [x] 0002_auto_create_table_author_etc.edn
 [x] 0003_auto_add_column_amount_to_book_etc.edn
