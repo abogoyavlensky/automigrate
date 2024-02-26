@@ -12,8 +12,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Add example with empty models.
-- Remove unique option from id fields in examples.
+- Add an example minimal setup with empty models.
+- Update doc: remove unique option from id fields in examples.
 
 ### Fixed
 
