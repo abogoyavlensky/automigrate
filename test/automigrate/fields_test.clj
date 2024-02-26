@@ -141,26 +141,26 @@
 (deftest test-fields-alter-column-char-to-int-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
-                                :changes {:type {:from [:char 256]
+                                :changes {:type {:from [:char 255]
                                                  :to :integer}}
                                 :field-name :num
                                 :model-name :account
                                 :options {:type :integer}})
             :q-edn [{:create-table [:account]
                      :with-columns ['(:id :serial)
-                                    '(:num [:char 256])]}
+                                    '(:num [:char 255])]}
                     {:alter-table
                      (list :account
                        {:alter-column
                         (list :num :type :integer :using [:raw "num"] [:raw "::"] :integer)})}]
 
-            :q-sql [["CREATE TABLE account (id SERIAL, num CHAR(256))"]
+            :q-sql [["CREATE TABLE account (id SERIAL, num CHAR(255))"]
                     ["ALTER TABLE account ALTER COLUMN num TYPE INTEGER USING num :: INTEGER"]]}
           (test-util/perform-make-and-migrate!
             {:jdbc-url config/DATABASE-CONN
              :existing-actions [{:action :create-table
                                  :fields {:id {:type :serial}
-                                          :num {:type [:char 256]}}
+                                          :num {:type [:char 255]}}
                                  :model-name :account}]
              :existing-models {:account
                                {:fields [[:id :serial]

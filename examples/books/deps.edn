@@ -1,8 +1,8 @@
 {:paths ["src"]
- :deps {org.clojure/clojure {:mvn/version "1.10.3"}
-        org.postgresql/postgresql {:mvn/version "42.3.1"}}
+ :deps {org.clojure/clojure {:mvn/version "1.11.1"}
+        org.postgresql/postgresql {:mvn/version "42.7.1"}}
  :aliases
- {:migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "0.3.0"}}
+ {:migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "0.3.2"}}
                :ns-default automigrate.core
                :exec-args {:models-file "models.edn"
                            :migrations-dir "migrations"

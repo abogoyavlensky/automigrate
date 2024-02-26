@@ -132,7 +132,7 @@
                 :order-by [:created-at]}
             (db-util/exec! config/DATABASE-CONN)))))
   (testing "check list-migrations output"
-    (is (= (str "Existing migrations:\n\n"
+    (is (= (str "Existing migrations:\n"
              "[ ] 0001_auto_create_table_feed.edn\n"
              "[ ] 0002_add_description_field.sql\n")
           (with-out-str

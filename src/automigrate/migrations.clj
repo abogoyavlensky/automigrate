@@ -999,7 +999,7 @@
           migrated (set (get-already-migrated-migrations db migrations-table))]
       (if (seq migration-names)
         (do
-          (println "Existing migrations:\n")
+          (println "Existing migrations:")
           (doseq [file-name migration-names
                   :let [migration-name (get-migration-name file-name)
                         sign (if (contains? migrated migration-name)

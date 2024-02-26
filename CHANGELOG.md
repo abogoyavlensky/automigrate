@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
 
 - Format SQL output from explain command.
 
+### Changed
+
+- Add an example minimal setup with empty models.
+- Update doc: remove unique option from id fields in examples.
+
 ### Fixed
 
 - Fix ordering actions for dropping table with fk reference.

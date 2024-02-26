@@ -96,9 +96,8 @@ Let's do it step by step.
 
 *resources/db/models.edn*
 ```clojure
-{:book [[:id :serial {:unique true
-                      :primary-key true}]
-        [:name [:varchar 256] {:null false}]
+{:book [[:id :serial {:primary-key true}]
+        [:name [:varchar 255] {:null false}]
         [:description :text]]}
 ```
 
@@ -117,8 +116,8 @@ The migration at `resources/db/migrations/0001_auto_create_table_book.edn` will 
 ({:action :create-table,
   :model-name :book,
   :fields
-  {:id {:unique true, :primary-key true, :type :serial},
-   :name {:null false, :type [:varchar 256]},
+  {:id {:primary-key true, :type :serial},
+   :name {:null false, :type [:varchar 255]},
    :description {:type :text}}})
 ```
 
@@ -140,7 +139,6 @@ To view status of existing migrations you can run:
 ```shell
 $ clojure -X:migrations list
 Existing migrations:
-
 [x] 0001_auto_create_table_book.edn
 ```
 
@@ -151,14 +149,20 @@ $ clojure -X:migrations explain :number 1
 SQL for forward migration 0001_auto_create_table_book.edn:
 
 BEGIN;
-CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, description TEXT);
+
+CREATE TABLE book (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT
+);
+
 COMMIT;
 ```
 
 All SQL queries of the migration are wrapped by a transaction.
 
-:information_source: *For a slightly more complex example please check [models.edn](/examples/models.edn)
-and [README.md](/examples/README.md) from the `examples` dir of this repo.* 
+:information_source: *For a slightly more complex example please check [models.edn](/examples/books/models.edn)
+and [README.md](/examples/books/README.md) from the `examples` dir of this repo.* 
 
 ## Documentation
 
@@ -169,9 +173,8 @@ A model's definition could be a vector of vectors in the simple case of just def
 As we saw in the previous example:
 
 ```clojure
-{:book [[:id :serial {:unique true
-                      :primary-key true}]
-        [:name [:varchar 256] {:null false}]
+{:book [[:id :serial {:primary-key true}]
+        [:name [:varchar 255] {:null false}]
         [:description :text]]}
 ```
 
@@ -179,9 +182,8 @@ Or it could be a map with keys `:fields`, `:indexes` (*optional*) and `:types` (
 The same model from above could be described as a map:
 
 ```clojure
-{:book {:fields [[:id :serial {:unique true
-                               :primary-key true}]
-                [:name [:varchar 256] {:null false}]
+{:book {:fields [[:id :serial {:primary-key true}]
+                [:name [:varchar 255] {:null false}]
                 [:description :text]]}}
 ```
 
@@ -503,7 +505,6 @@ View list of partially applied migrations:
 ```shell
 $ clojure -X:migrations list
 Existing migrations:
-
 [x] 0001_auto_create_table_book.edn
 [ ] 0002_create_table_author.edn
 [ ] 0003_add_custom_trigger.sql
@@ -529,7 +530,13 @@ $ clojure -X:migrations explain :number 1
 SQL for forward migration 0001_auto_create_table_book.edn:
 
 BEGIN;
-CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, description TEXT);
+
+CREATE TABLE book (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT
+);
+
 COMMIT;
 ```
 
@@ -539,7 +546,9 @@ $ clojure -X:migrations explain :number 1 :direction backward
 SQL for backward migration 0001_auto_create_table_book.edn:
 
 BEGIN;
+
 DROP TABLE IF EXISTS book;
+
 COMMIT;
 ```
 

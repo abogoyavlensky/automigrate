@@ -1,12 +1,12 @@
-({:action :add-column,
-  :field-name :amount,
-  :model-name :book,
-  :options {:null false, :default 0, :type :integer}}
- {:action :alter-column,
+({:action :alter-column,
   :field-name :second-name,
   :model-name :author,
   :options {:type :text},
-  :changes {:type {:from [:varchar 256], :to :text}}}
+  :changes {:type {:from [:varchar 255], :to :text}}}
+ {:action :add-column,
+  :field-name :amount,
+  :model-name :book,
+  :options {:null false, :default 0, :type :integer}}
  {:action :alter-column,
   :field-name :created-at,
   :model-name :author,
