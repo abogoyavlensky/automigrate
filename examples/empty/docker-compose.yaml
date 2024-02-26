@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:14-alpine
+    ports:
+      - 5432
+    environment:
+      POSTGRES_DB: demo
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+
+  adminer:
+    image: adminer
+    ports:
+      - 8081:8080
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+
+  demo:
+    build:
+      context: .
+    working_dir: /app
+    links:
+      - db
+    volumes:
+      - .:/app
