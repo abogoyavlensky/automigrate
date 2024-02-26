@@ -96,9 +96,8 @@ Let's do it step by step.
 
 *resources/db/models.edn*
 ```clojure
-{:book [[:id :serial {:unique true
-                      :primary-key true}]
-        [:name [:varchar 256] {:null false}]
+{:book [[:id :serial {:primary-key true}]
+        [:name [:varchar 255] {:null false}]
         [:description :text]]}
 ```
 
@@ -117,8 +116,8 @@ The migration at `resources/db/migrations/0001_auto_create_table_book.edn` will 
 ({:action :create-table,
   :model-name :book,
   :fields
-  {:id {:unique true, :primary-key true, :type :serial},
-   :name {:null false, :type [:varchar 256]},
+  {:id {:primary-key true, :type :serial},
+   :name {:null false, :type [:varchar 255]},
    :description {:type :text}}})
 ```
 
@@ -150,7 +149,13 @@ $ clojure -X:migrations explain :number 1
 SQL for forward migration 0001_auto_create_table_book.edn:
 
 BEGIN;
-CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, description TEXT);
+
+CREATE TABLE book (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT
+);
+
 COMMIT;
 ```
 
@@ -168,9 +173,8 @@ A model's definition could be a vector of vectors in the simple case of just def
 As we saw in the previous example:
 
 ```clojure
-{:book [[:id :serial {:unique true
-                      :primary-key true}]
-        [:name [:varchar 256] {:null false}]
+{:book [[:id :serial {:primary-key true}]
+        [:name [:varchar 255] {:null false}]
         [:description :text]]}
 ```
 
@@ -178,9 +182,8 @@ Or it could be a map with keys `:fields`, `:indexes` (*optional*) and `:types` (
 The same model from above could be described as a map:
 
 ```clojure
-{:book {:fields [[:id :serial {:unique true
-                               :primary-key true}]
-                [:name [:varchar 256] {:null false}]
+{:book {:fields [[:id :serial {:primary-key true}]
+                [:name [:varchar 255] {:null false}]
                 [:description :text]]}}
 ```
 
@@ -527,7 +530,13 @@ $ clojure -X:migrations explain :number 1
 SQL for forward migration 0001_auto_create_table_book.edn:
 
 BEGIN;
-CREATE TABLE book (id SERIAL UNIQUE PRIMARY KEY, name VARCHAR(256) NOT NULL, description TEXT);
+
+CREATE TABLE book (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT
+);
+
 COMMIT;
 ```
 
@@ -537,7 +546,9 @@ $ clojure -X:migrations explain :number 1 :direction backward
 SQL for backward migration 0001_auto_create_table_book.edn:
 
 BEGIN;
+
 DROP TABLE IF EXISTS book;
+
 COMMIT;
 ```
 

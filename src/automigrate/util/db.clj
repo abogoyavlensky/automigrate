@@ -92,7 +92,7 @@
   [db migrations-table]
   (->> {:create-table [migrations-table :if-not-exists]
         :with-columns [[:id :serial [:not nil] [:primary-key]]
-                       [:name [:varchar 256] [:not nil] :unique]
+                       [:name [:varchar 255] [:not nil] :unique]
                        [:created_at :timestamp [:default [:now]]]]}
     (exec! db)))
 

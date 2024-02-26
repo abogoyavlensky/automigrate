@@ -15,7 +15,7 @@
                 :account
                 {:fields {:id {:type :serial
                                :unique true}
-                          :name {:type [:varchar 256]}}}}]
+                          :name {:type [:varchar 255]}}}}]
     (is (true? (#'models/validate-foreign-key models)))))
 
 
@@ -29,7 +29,7 @@
                 :account
                 {:fields {:id {:type :serial
                                :unique true}
-                          :name {:type [:varchar 256]}}}}]
+                          :name {:type [:varchar 255]}}}}]
     (is (thrown-with-msg? ExceptionInfo
           #"Foreign key :feed/account has reference on the missing model :missing-model."
           (#'models/validate-foreign-key models)))))
@@ -43,7 +43,7 @@
                           :account {:type :integer
                                     :foreign-key :account/missing-field}}}
                 :account
-                {:fields {:name {:type [:varchar 256]}}}}]
+                {:fields {:name {:type [:varchar 255]}}}}]
     (is (thrown-with-msg? ExceptionInfo
           #"Foreign key :feed/account has reference on the missing field :account/missing-field."
           (#'models/validate-foreign-key models)))))

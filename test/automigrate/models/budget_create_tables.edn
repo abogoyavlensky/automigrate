@@ -1,7 +1,7 @@
 {:account [[:id :serial {:primary-key true}]
-           [:username [:varchar 256] {:null false
+           [:username [:varchar 255] {:null false
                                       :unique true}]
-           [:password [:varchar 256] {:null false}]
+           [:password [:varchar 255] {:null false}]
            [:updated-at :timestamp {:default [:now]}]
            [:created-at :timestamp {:default [:now]}]]
 

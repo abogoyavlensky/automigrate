@@ -177,12 +177,12 @@
                              :model-name :account
                              :fields {:id {:type :serial
                                            :null false}
-                                      :name {:type [:varchar 256]}}})
+                                      :name {:type [:varchar 255]}}})
                            ({:action :drop-table
                              :model-name :feed}))
         existing-models {:account
                          [[:id :serial {:null false}]
-                          [:name [:varchar 256]]]}]
+                          [:name [:varchar 255]]]}]
     (is (= "There are no changes in models.\n"
           (with-out-str
             (test-util/make-migration! {:existing-actions existing-actions
@@ -200,13 +200,13 @@
                              :model-name :account
                              :fields {:id {:type :serial
                                            :unique true}
-                                      :name {:type [:varchar 256]}}}))
+                                      :name {:type [:varchar 255]}}}))
         existing-models {:feed
                          {:fields [[:id :serial {:null false}]
                                    [:account :integer {:foreign-key :account/id}]]}
                          :account
                          {:fields [[:id :serial {:unique true}]
-                                   [:name [:varchar 256]]]}}]
+                                   [:name [:varchar 255]]]}}]
     (is (= "There are no changes in models.\n"
           (with-out-str
             (test-util/make-migration! {:existing-actions existing-actions
