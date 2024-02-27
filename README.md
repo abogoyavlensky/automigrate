@@ -1,4 +1,4 @@
-# automigrate
+# Automigrate
 
 [![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
 [![cljdoc badge](https://cljdoc.org/badge/net.clojars.abogoyavlensky/automigrate)](https://cljdoc.org/jump/release/net.clojars.abogoyavlensky/automigrate)
@@ -56,29 +56,6 @@ Then you could use it as:
 
 ```shell
 clojure -X:migrations make
-```
-
-#### tools.deps -T option
-
-Alternatively you can use the following alias with `-T` option (*from clojure tools cli version >= `1.10.3.933`*).
-The difference is that the project's `:deps` is not included for running migrations.
-
-*deps.edn*
-```clojure
-{...
- :aliases {...
-           :migrations {:deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<LATEST VERSION>"}
-                               org.postgresql/postgresql {:mvn/version "42.3.1"}}
-                        :ns-default automigrate.core
-                        :exec-args {:models-file "resources/db/models.edn"
-                                    :migrations-dir "resources/db/migrations"
-                                    :jdbc-url "jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"}}}}
-```
-
-You can then use it as:
-
-```shell
-clojure -T:migrations make
 ```
 
 #### Leiningen
@@ -648,7 +625,7 @@ Appyling ...
 ```
 
 *The downside of that approach could be a lack of ability to use a common config for a project.
-In the future there could be more convenient options for configuration if needed.* 
+In the future there could be more convenient options for configuration.* 
 
 
 ## Roadmap
@@ -662,10 +639,10 @@ In the future there could be more convenient options for configuration if needed
 - [x] Field level CHECK constraints.
 - [ ] Data-migration using Clojure.
 - [ ] Support for SQLite.
-- [ ] Optimized auto-generated SQL queries.
 - [ ] Model level constraints.
-- [ ] Support for MySQL.
+- [ ] Optimized auto-generated SQL queries.
 - [ ] Visual representation of DB schema.
+- [ ] Support for MySQL.
 
 
 ### Things still in design
@@ -684,7 +661,7 @@ In the future there could be more convenient options for configuration if needed
 
 ## Inspired by
 
-- [Django migrations](https://docs.djangoproject.com/en/4.0/topics/migrations/)
+- [Django Migrations](https://docs.djangoproject.com/en/4.0/topics/migrations/)
 - [Prisma Migrate](https://www.prisma.io/migrate)
 
 ### Thanks to projects

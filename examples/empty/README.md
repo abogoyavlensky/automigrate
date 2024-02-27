@@ -22,7 +22,8 @@ Migrations not found.
 
 ## Next steps
 To see Automigrate in action you can add a model to `models.edn` as it described 
-in [documentation](https://github.com/abogoyavlensky/automigrate#model-definition) and run
+in [documentation](https://github.com/abogoyavlensky/automigrate#model-definition) and run:
+
 ```shell
 $ clojure -X:migrations make
 ```
