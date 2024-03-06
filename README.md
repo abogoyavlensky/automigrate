@@ -673,6 +673,7 @@ In the future there could be more convenient options for configuration.*
 ## Resources
 
 - [Announcing automigrate](https://bogoyavlensky.com/blog/announcing-automigrate/) (blog post) 
+- [Designing a database schema for a budget tracker with Automigrate](https://bogoyavlensky.com/blog/db-schema-for-budget-tracker-with-automigrate/) (blog post) 
 
 ## Development
 
