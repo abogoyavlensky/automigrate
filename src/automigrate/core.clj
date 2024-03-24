@@ -109,8 +109,8 @@ Available options:
   :models-file - Path to the file with model definitions. (required)
   :migrations-dir - Path to directory containing migration files. (required)
   :name - Custom name for a migration. (optional)
-  :type - Type of a new migration, empty by default for auto-migration.
-          Also available `:empty-sql` - for creating an empty raw SQL migration. (optional)"
+  :type - Type of new migration, empty by default for auto-migration.
+          Also, available `:empty-sql` - for creating an empty raw SQL migration. (optional)"
   [args]
   (run-fn migrations/make-migration args ::make-args))
 

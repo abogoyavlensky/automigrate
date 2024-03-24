@@ -23,7 +23,7 @@
            "  :models-file - Path to the file with model definitions. (required)\n"
            "  :migrations-dir - Path to directory containing migration files. (required)\n"
            "  :name - Custom name for a migration. (optional)\n"
-           "  :type - Type of a new migration, empty by default for auto-migration.\n"
-           "          Also available `:empty-sql` - for creating an empty raw SQL migration. (optional)\n\n")
+           "  :type - Type of new migration, empty by default for auto-migration.\n"
+           "          Also, available `:empty-sql` - for creating an empty raw SQL migration. (optional)\n\n")
         (with-out-str
           (help/show-help! {:cmd 'make})))))
