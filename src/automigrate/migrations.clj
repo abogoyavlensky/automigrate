@@ -26,6 +26,11 @@
   (:import [java.io FileNotFoundException]))
 
 
+; DEFAULTS
+(def MODELS-FILE "resources/db/models.edn")
+(def MIGRATIONS-DIR "resources/db/migrations")
+(def MIGRATIONS-TABLE :automigrate-migrations)
+
 (def ^:private DROPPED-ENTITY-VALUE 0)
 (def ^:private DEFAULT-ROOT-NODE :root)
 (def ^:private AUTO-MIGRATION-PREFIX "auto")
@@ -685,6 +690,8 @@
 (defmethod make-migration :default
   ; Make new migration based on models definitions automatically.
   [{:keys [models-file migrations-dir]
+    :or {models-file MODELS-FILE
+         migrations-dir MIGRATIONS-DIR}
     custom-migration-name :name}]
   (try+
     (if-let [next-migration (make-next-migration {:models-file models-file
@@ -728,8 +735,9 @@
 
 (defmethod make-migration EMPTY-SQL-MIGRATION-TYPE
   ; Make new migrations based on models definitions automatically.
-  [{next-migration-name :name
-    migrations-dir :migrations-dir}]
+  [{:keys [migrations-dir]
+    :or {migrations-dir MIGRATIONS-DIR}
+    next-migration-name :name}]
   (try+
     (when (empty? next-migration-name)
       (throw+ {:type ::missing-migration-name
@@ -810,7 +818,8 @@
   [{:keys [migrations-dir number direction]
     explain-format :format
     :or {direction FORWARD-DIRECTION
-         explain-format EXPLAIN-FORMAT-SQL}}]
+         explain-format EXPLAIN-FORMAT-SQL
+         migrations-dir MIGRATIONS-DIR}}]
   (try+
     (let [migration-names (migrations-list migrations-dir)
           file-name (get-migration-by-number migration-names number)
@@ -942,7 +951,8 @@
 (defn migrate
   "Run migration on a db."
   [{:keys [migrations-dir jdbc-url number migrations-table]
-    :or {migrations-table db-util/MIGRATIONS-TABLE}}]
+    :or {migrations-table MIGRATIONS-TABLE
+         migrations-dir MIGRATIONS-DIR}}]
   (try+
     (let [db (db-util/db-conn jdbc-url)
           _ (db-util/create-migrations-table db migrations-table)
@@ -990,8 +1000,9 @@
 
 (defn list-migrations
   "Print migration list with status."
-  [{:keys [migrations-dir jdbc-url migrations-table]
-    :or {migrations-table db-util/MIGRATIONS-TABLE}}]
+  [{:keys [jdbc-url migrations-dir migrations-table]
+    :or {migrations-table MIGRATIONS-TABLE
+         migrations-dir MIGRATIONS-DIR}}]
   ; TODO: reduce duplication with `migrate` fn!
   (try+
     (let [migration-names (migrations-list migrations-dir)

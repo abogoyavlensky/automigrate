@@ -19,7 +19,6 @@
                       :unique true}]]}
 
  :category {:fields [[:id :serial {:primary-key true}]
-                     ; TODO: update to budget-id
                      [:account :integer {:foreign-key :account/id
                                          :on-delete :cascade
                                          :null false}]

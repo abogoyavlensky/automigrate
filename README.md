@@ -43,14 +43,18 @@ A config for development environment could look like the following:
  :aliases {...
            :migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<LATEST VERSION>"}
                                      org.postgresql/postgresql {:mvn/version "42.3.1"}}
-                        :ns-default automigrate.core
-                        :exec-args {:models-file "resources/db/models.edn"
-                                    :migrations-dir "resources/db/migrations"
-                                    :jdbc-url "jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"}}}}
+                        :ns-default automigrate.core}}}
 ```
 
-:information_source: *You can move postgres driver to project's `:deps` section.
-You can choose any paths you want for `:models-file` and `:migrations-dir`.* 
+Then you need to set database URL either using `DATABASE_URL` env var or `:jdbc-url` in `:exec-args`.
+*Optionally, you can change the env var name using `:jdbc-url-env-var` in `:exec-args`.* 
+
+```shell
+export DATABASE_URL="jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"
+```
+
+:information_source: *You can move postgres driver and automigrate to project's `:deps` section.
+Optionally, you can choose any paths you want for `:models-file` and `:migrations-dir` using `:exec-args`.* 
 
 Then you could use it as:
 
@@ -334,16 +338,17 @@ Limitations:
 
 Available commands are: `make`, `migrate`, `list`, `explain`, `help`. Let's see them in detail by section.
 
-:information_source: *Assume that args `:models-file`, `:migrations-dir` and `:jdbc-url` are supposed to be set in deps.edn alias.*
+:information_source: *Assume that args `:models-file`, `:migrations-dir`, `:jdbc-url` and `:jdbc-url-env-var` have values by default and are supposed to be set in deps.edn alias.*
 
 Common args for all commands:
 
-| Argument            | Description                                | Required?                              | Possible values                                                                                  | Default value              |
-|---------------------|--------------------------------------------|----------------------------------------|--------------------------------------------------------------------------------------------------|----------------------------|
-| `:models-file`      | Path to models file.                       | `true` (only for `make`)               | string path (example: `"path/to/models.edn"`)                                                    | *not provided*             |
-| `:migrations-dir`   | Path to store migrations dir.              | `true`                                 | string path (example: `"path/to/migrations"`)                                                    | *not provided*             |
-| `:jdbc-url`         | Database connection defined as JDBC-url.   | `true` (only for `migrate` and `list`) | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | *not provided*             |
-| `:migrations-table` | Model name for storing applied migrations. | `false`                                | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"` |
+| Argument             | Description                                  | Required? | Possible values                                                                                  | Default value               |
+|----------------------|----------------------------------------------|-----------|--------------------------------------------------------------------------------------------------|-----------------------------|
+| `:models-file`       | Path to models file.                         | `false`   | string path (example: `"path/to/models.edn"`)                                                    | `"resources/db/models.edn"` |
+| `:migrations-dir`    | Path to store migrations dir.                | `false`   | string path (example: `"path/to/migrations"`)                                                    | `"resources/db/migrations"` |
+| `:jdbc-url`          | Database connection defined as JDBC-url.     | `false`   | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | Read env var `DATABASE_URL` |
+| `:jdbc-url-env-var`  | Name of environment variable for jdbc-url.   | `false`   | string jdbc url (example: `DB_URL`)                                                              | `DATABASE_URL`              |
+| `:migrations-table`  | Model name for storing applied migrations.   | `false`   | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"`  |
 
 ### `make`
 
@@ -647,9 +652,7 @@ In the future there could be more convenient options for configuration.*
 
 ### Things still in design
 
-- How to handle common configuration conveniently?
-- Should args `:models-file` and `:migrations-dir` are set by default?
-- Should it be possible to set arg `:jdbc-url` as an env var?
+- How to handle common configuration conveniently (separated edn file?)?
 - More consistent and helpful messages for users, maybe using `fipp` library.
 - Ability to separate models by multiple files.
 - Move transformations out of clojure spec conformers.

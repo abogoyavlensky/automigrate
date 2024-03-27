@@ -3,7 +3,7 @@
             [clojure.spec.alpha :as s]
             [bond.james :as bond]
             [automigrate.core :as core]
-            [automigrate.migrations :as automigrate-migrations]
+            [automigrate.migrations :as migrations]
             [automigrate.testing-config :as config]
             [automigrate.util.file :as file-util]
             [automigrate.testing-util :as test-util]
@@ -17,22 +17,16 @@
 
 (deftest test-run-make-migration-args-error
   (testing "check missing model file path"
-    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
+    (bond/with-spy [migrations/make-next-migration]
       (core/make {:migrations-dir config/MIGRATIONS-DIR})
-      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= [{:message (str "Missing model file path.\n\n  "
-                            "{:migrations-dir \"test/automigrate/migrations\"}")
-                 :title "COMMAND ERROR"}]
-              (test-util/get-spec-error-data (constantly error)))))))
+      (is (= "resources/db/models.edn"
+            (-> (bond/calls #'migrations/make-next-migration) first :args first :models-file)))))
 
   (testing "check missing migrations dir path"
-    (bond/with-stub! [[file-util/prn-err (constantly nil)]]
+    (bond/with-spy [migrations/make-next-migration]
       (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")})
-      (let [error (-> (bond/calls file-util/prn-err) first :args first)]
-        (is (= [{:message (str "Missing migrations dir path.\n\n  "
-                            "{:models-file \"test/automigrate/models/feed_basic.edn\"}")
-                 :title "COMMAND ERROR"}]
-              (test-util/get-spec-error-data (constantly error)))))))
+      (is (= "resources/db/migrations"
+            (-> (bond/calls #'migrations/make-next-migration) first :args first :migrations-dir)))))
 
   (testing "check wrong type of migration"
     (bond/with-stub! [[file-util/prn-err (constantly nil)]]
@@ -57,8 +51,8 @@
 (deftest test-run-migrate-args-error
   (testing "check missing db connection"
     (is (= (str "-- COMMAND ERROR -------------------------------------\n\n"
-             "Missing db connection config.\n\n  {"
-             ":migrations-dir \"test/automigrate/migrations\"}\n\n")
+             "Missing database connection URL.\n\n"
+             "  nil\n\n")
           (with-out-str
             (core/migrate {:migrations-dir config/MIGRATIONS-DIR})))))
 
@@ -92,7 +86,7 @@
 (deftest test-run-unexpected-error
   (testing "check fiction unexpected error"
     #_{:clj-kondo/ignore [:private-call]}
-    (bond/with-stub! [[automigrate-migrations/get-detailed-migrations-to-migrate
+    (bond/with-stub! [[migrations/get-detailed-migrations-to-migrate
                        (fn [& _] (throw (Exception. "Testing error message.")))]]
       (is (= (str "-- UNEXPECTED ERROR -------------------------------------\n\n"
                "Testing error message.\n\n")

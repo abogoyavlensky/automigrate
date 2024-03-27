@@ -13,6 +13,9 @@
             [automigrate.util.file :as file-util]))
 
 
+(def MIGRATIONS-TABLE :automigrate-migrations)
+
+
 (defn run-eftest
   "Run all  test using Eftest runner."
   [params]
@@ -223,7 +226,7 @@
 (defn get-all-migrations-set
   [db]
   (->> {:select [:*]
-        :from [db-util/MIGRATIONS-TABLE]}
+        :from [MIGRATIONS-TABLE]}
     (db-util/exec! db)
     (map :name)
     (set)))

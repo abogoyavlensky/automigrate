@@ -865,12 +865,17 @@
       (add-error-value "Missing migrations dir path." (:val data))
 
       '(clojure.core/fn [%] (clojure.core/contains? % :jdbc-url))
-      (add-error-value "Missing db connection config." (:val data))
+      (add-error-value "Missing db connection URL." (:val data))
 
       '(clojure.core/fn [%] (clojure.core/contains? % :number))
       (add-error-value "Missing migration number." (:val data))
 
       "Invalid command arguments.")))
+
+
+(defmethod ->error-message :automigrate.core/jdbc-url
+  [data]
+  (add-error-value "Missing database connection URL." (:val data)))
 
 
 (defmethod ->error-message :automigrate.core/type
