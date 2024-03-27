@@ -62,7 +62,7 @@
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"})
         (->> {:select [:*]
-              :from [db-util/MIGRATIONS-TABLE]}
+              :from [test-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
@@ -89,7 +89,7 @@
            {:id 2
             :name "0002_auto_add_column_created_at_to_feed_etc"})
         (->> {:select [:*]
-              :from [db-util/MIGRATIONS-TABLE]}
+              :from [test-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
@@ -160,7 +160,7 @@
              "0002_auto_add_column_created_at_to_feed_etc"
              "0003_auto_alter_column_id_in_feed_etc"}
           (->> {:select [:*]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [test-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
             (set))))
@@ -196,7 +196,7 @@
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at_to_feed_etc"}
           (->> {:select [:*]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [test-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
             (set))))
@@ -232,7 +232,7 @@
                    :number 0})
     (is (= #{}
           (->> {:select [:*]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [test-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
             (set))))
@@ -250,7 +250,7 @@
   (testing "test migrations have been applied"
     (is (= #{"0001_auto_create_table_account_etc"}
           (->> {:select [:*]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [test-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
             (set))))
@@ -266,7 +266,7 @@
                    :number 0})
     (is (= #{}
           (->> {:select [:*]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [test-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map :name)
             (set))))
@@ -305,7 +305,7 @@
            {:id 2
             :name "0002_auto_alter_column_id_in_feed_etc"})
         (->> {:select [:*]
-              :from [db-util/MIGRATIONS-TABLE]}
+              :from [test-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
@@ -327,7 +327,7 @@
            {:id 2
             :name "0002_auto_drop_column_name_from_feed"})
         (->> {:select [:*]
-              :from [db-util/MIGRATIONS-TABLE]}
+              :from [test-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
@@ -348,7 +348,7 @@
            {:id 2
             :name "0002_auto_drop_table_feed"})
         (->> {:select [:*]
-              :from [db-util/MIGRATIONS-TABLE]}
+              :from [test-util/MIGRATIONS-TABLE]}
           (db-util/exec! config/DATABASE-CONN)
           (map #(dissoc % :created_at))))))
 
