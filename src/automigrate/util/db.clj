@@ -6,11 +6,6 @@
             [clojure.string :as str]))
 
 
-(def MIGRATIONS-TABLE
-  "Default migrations table name."
-  :automigrate-migrations)
-
-
 ; Additional sql clauses
 ; TODO: update custom clauses with more precise formatters
 

@@ -65,7 +65,7 @@
             {:id 2
              :name "0002_add_description_field"}]
           (->> {:select [:id :name]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [test-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN))))
     (is (= "text"
           (->> (test-util/get-table-fields config/DATABASE-CONN :feed)
@@ -80,7 +80,7 @@
     (is (= '({:id 1
               :name "0001_auto_create_table_feed"})
           (->> {:select [:*]
-                :from [db-util/MIGRATIONS-TABLE]}
+                :from [test-util/MIGRATIONS-TABLE]}
             (db-util/exec! config/DATABASE-CONN)
             (map #(dissoc % :created_at)))))
     (is (nil?
@@ -128,7 +128,7 @@
   (testing "check that migrations table does not exist"
     (is (thrown? Exception
           (->> {:select [:name]
-                :from [db-util/MIGRATIONS-TABLE]
+                :from [test-util/MIGRATIONS-TABLE]
                 :order-by [:created-at]}
             (db-util/exec! config/DATABASE-CONN)))))
   (testing "check list-migrations output"

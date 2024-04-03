@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 *The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)*
 
+## 0.3.3 - UNRELEASED
+
+### Added
+
+- Read database URL from env variable by default.
+
+### Changed
+
+- Make migrations-dir and models-file optional with default value. 
+
 ## 0.3.2 - 2024-02-27
 
 ### Added
