@@ -37,10 +37,10 @@
 (deftest test-create-migrations-dir-ok
   (testing "test creating dir"
     (is (false? (.isDirectory (io/file config/MIGRATIONS-DIR))))
-    (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
+    (#'migrations/create-migrations-dir! config/MIGRATIONS-DIR)
     (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR)))))
   (testing "test when dir already exists"
-    (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
+    (#'migrations/create-migrations-dir! config/MIGRATIONS-DIR)
     (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR))))))
 
 

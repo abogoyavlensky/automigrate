@@ -91,7 +91,7 @@
         new-version (cond-> latest-version
                       (some? bump) (bump-version bump)
                       (true? snapshot?) (add-snapshot))]
-    _ (println (format "New version: %s" new-version))
+    (println (format "New version: %s" new-version))
     new-version))
 
 

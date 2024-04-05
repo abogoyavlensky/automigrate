@@ -336,19 +336,27 @@ Limitations:
         
 ### CLI interface
 
-Available commands are: `make`, `migrate`, `list`, `explain`, `help`. Let's see them in detail by section.
+Available commands are: 
 
-:information_source: *Assume that args `:models-file`, `:migrations-dir`, `:jdbc-url` and `:jdbc-url-env-var` have values by default and are supposed to be set in deps.edn alias.*
+| Command   | Description                                                       |
+|-----------|-------------------------------------------------------------------|
+| `make`    | Create migration for new changes in models file.                  |
+| `migrate` | Apply a change described in the  migration to database.           |
+| `list`    | Show list of existing migrations with status.                     |
+| `explain` | Show a migration in SQL or human-readable format.                 |
+| `help`    | Show short documentation for Automigrate or a particular command. |
 
 Common args for all commands:
 
-| Argument             | Description                                  | Required? | Possible values                                                                                  | Default value               |
-|----------------------|----------------------------------------------|-----------|--------------------------------------------------------------------------------------------------|-----------------------------|
-| `:models-file`       | Path to models file.                         | `false`   | string path (example: `"path/to/models.edn"`)                                                    | `"resources/db/models.edn"` |
-| `:migrations-dir`    | Path to store migrations dir.                | `false`   | string path (example: `"path/to/migrations"`)                                                    | `"resources/db/migrations"` |
-| `:jdbc-url`          | Database connection defined as JDBC-url.     | `false`   | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | Read env var `DATABASE_URL` |
-| `:jdbc-url-env-var`  | Name of environment variable for jdbc-url.   | `false`   | string jdbc url (example: `DB_URL`)                                                              | `DATABASE_URL`              |
-| `:migrations-table`  | Model name for storing applied migrations.   | `false`   | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"`  |
+| Argument             | Description                                                     | Required? | Possible values                                                                                  | Default value                                               |
+|----------------------|-----------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| `:jdbc-url`          | Database connection defined as JDBC-url.                        | `false`   | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | Read env var (`DATABASE_URL` or set as `:jdbc-url-env-var`) |
+| `:jdbc-url-env-var`  | Name of environment variable for jdbc-url.                      | `false`   | string jdbc url (example: `DB_URL`)                                                              | `DATABASE_URL`                                              |
+| `:models-file`       | Path to models file, relative to the `resources` dir.           | `false`   | string path (example: `"path/to/models.edn"`)                                                    | `"db/models.edn"`                                           |
+| `:migrations-dir`    | Path to store migrations dir, relative to the `resources` dir.  | `false`   | string path (example: `"path/to/migrations"`)                                                    | `"db/migrations"`                                           |
+| `:migrations-table`  | Model name for storing applied migrations.                      | `false`   | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"`                                  |
+
+:information_source: *Assume that args `:jdbc-url`, `:jdbc-url-env-var`, `:models-file` and `:migrations-dir` have values by default.*
 
 ### `make`
 

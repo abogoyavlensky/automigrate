@@ -6,7 +6,8 @@
         weavejester/dependency {:mvn/version "0.2.1"}
         differ/differ {:mvn/version "0.3.3"}
         slingshot/slingshot {:mvn/version "0.12.2"}
-        com.github.vertical-blank/sql-formatter {:mvn/version "2.0.4"}}
+        com.github.vertical-blank/sql-formatter {:mvn/version "2.0.4"}
+        resauce/resauce {:mvn/version "0.2.0"}}
 
  :tools/usage {:ns-default automigrate.core}
 

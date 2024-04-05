@@ -1,7 +1,6 @@
 (ns automigrate.sql
   "Module for transforming actions from migration to SQL queries."
   (:require
-    [automigrate.util.spec :as su]
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [slingshot.slingshot :refer [throw+]]
@@ -605,16 +604,16 @@
 
 (defn- ->alter-type-action
   [{:keys [type-name new-value position existing-value]}]
-  {:pre [(su/assert! keyword? type-name)
-         (su/assert! string? new-value)
-         (su/assert! #{:before :after} position)
-         (su/assert! string? existing-value)]}
+  {:pre [(spec-util/assert! keyword? type-name)
+         (spec-util/assert! string? new-value)
+         (spec-util/assert! #{:before :after} position)
+         (spec-util/assert! string? existing-value)]}
   {:alter-type [type-name :add-value new-value position existing-value]})
 
 
 (defn- get-actions-for-new-choices
   [type-name initial-value choices-to-add position]
-  {:pre [(su/assert! #{:before :after} position)]}
+  {:pre [(spec-util/assert! #{:before :after} position)]}
   (loop [prev-value initial-value
          [new-value & rest-choices] choices-to-add
          actions []]
@@ -706,13 +705,3 @@
     (if (sequential? formatted-action)
       (map #(db-util/fmt %) formatted-action)
       (db-util/fmt formatted-action))))
-
-
-(comment
-  (let [type-name :account-role
-        from ["admin" "customer"]
-        to ["basic" "other" "admin" "test" "developer" "customer" "support"]]
-    (reduce
-      (partial get-actions-for-enum-choices-changes type-name from to)
-      []
-      (map-indexed vector from))))

@@ -234,7 +234,7 @@
             "account")))))
 
 
-(deftest test-fields-alter-column-array-with-underscore-ok
+(deftest test-fields-alter-column-array-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :field-name :num-val
