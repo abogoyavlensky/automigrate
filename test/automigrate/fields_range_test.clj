@@ -7,7 +7,7 @@
 
 (use-fixtures :each
   (test-util/with-drop-tables config/DATABASE-CONN)
-  (test-util/with-delete-dir config/MIGRATIONS-DIR))
+  (test-util/with-delete-dir config/MIGRATIONS-DIR-FULL))
 
 
 (deftest ^:eftest/slow test-fields-range-create-table-ok

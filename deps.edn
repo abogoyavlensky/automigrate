@@ -18,7 +18,7 @@
                      hashp/hashp {:mvn/version "0.2.2"}
                      org.postgresql/postgresql {:mvn/version "42.7.1"}}}
 
-  :test {:extra-paths ["test"]
+  :test {:extra-paths ["test" "test/resources"]
          :extra-deps {eftest/eftest {:mvn/version "0.6.0"}
                       circleci/bond {:mvn/version "0.6.0"}}
          :exec-fn automigrate.testing-util/run-eftest

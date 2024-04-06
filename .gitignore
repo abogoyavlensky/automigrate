@@ -19,8 +19,7 @@ lsp/
 # for local testing
 src/automigrate/models.edn
 src/automigrate/migrations/
-test/automigrate/migrations/
-.lsp/sqlite.5.db
+test/resources/db/migrations/
 resources/
 examples/*/.cpcache/
 .lsp/

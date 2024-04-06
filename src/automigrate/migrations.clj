@@ -128,17 +128,12 @@
     migrations))
 
 
-(defn- file-url->file-name
-  [file-url]
-  (.getName (io/file (.getFile file-url))))
-
-
 (defn- migrations-list
   "Get migrations' files list."
   [migrations-dir]
   (->> migrations-dir
     (file-util/list-files)
-    (mapv file-url->file-name)
+    (mapv file-util/file-url->file-name)
     (sort)
     (validate-migration-numbers)))
 
@@ -662,7 +657,7 @@
   "Return true if migration has been created automatically false otherwise."
   [file-url]
   (let [ext (str "." (name AUTO-MIGRATION-EXT))
-        file-name (file-url->file-name file-url)]
+        file-name (file-util/file-url->file-name file-url)]
     (str/ends-with? file-name ext)))
 
 
@@ -671,7 +666,7 @@
   [{:keys [models-file migrations-dir]}]
   (let [auto-migration-files (->> (file-util/list-files migrations-dir)
                                (filter auto-migration?)
-                               (sort-by file-url->file-name))
+                               (sort-by file-util/file-url->file-name))
         old-schema (schema/current-db-schema auto-migration-files)
         new-schema (read-models models-file)]
     (-> (make-migration* old-schema new-schema)
@@ -698,19 +693,20 @@
 
 (defmethod make-migration :default
   ; Make new migration based on models definition automatically.
-  [{:keys [models-file migrations-dir]
+  [{:keys [models-file migrations-dir resources-dir]
     :or {models-file MODELS-FILE
-         migrations-dir MIGRATIONS-DIR}
+         migrations-dir MIGRATIONS-DIR
+         resources-dir RESOURCES-DIR}
     custom-migration-name :name}]
   (try+
     (if-let [next-migration (make-next-migration {:models-file models-file
                                                   :migrations-dir migrations-dir})]
-      (let [migrations-dir-resource (file-util/join-path RESOURCES-DIR migrations-dir)
+      (let [migrations-dir-resource (file-util/join-path resources-dir migrations-dir)
             _ (create-migrations-dir! migrations-dir-resource)
             next-migration-name (get-next-migration-name next-migration custom-migration-name)
             migration-file-name-full-path (get-next-migration-file-path
                                             {:migration-type AUTO-MIGRATION-EXT
-                                             :resources-dir RESOURCES-DIR
+                                             :resources-dir resources-dir
                                              :migrations-dir migrations-dir
                                              :next-migration-name next-migration-name})]
         (spit migration-file-name-full-path
@@ -746,19 +742,20 @@
 
 (defmethod make-migration EMPTY-SQL-MIGRATION-TYPE
   ; Make new migrations based on models definitions automatically.
-  [{:keys [migrations-dir]
-    :or {migrations-dir MIGRATIONS-DIR}
+  [{:keys [migrations-dir resources-dir]
+    :or {migrations-dir MIGRATIONS-DIR
+         resources-dir RESOURCES-DIR}
     next-migration-name :name}]
   (try+
     (when (empty? next-migration-name)
       (throw+ {:type ::missing-migration-name
                :message "Missing migration name."}))
-    (let [migrations-dir-resource (file-util/join-path RESOURCES-DIR migrations-dir)
+    (let [migrations-dir-resource (file-util/join-path resources-dir migrations-dir)
           _ (create-migrations-dir! migrations-dir-resource)
           next-migration-name* (str/replace next-migration-name #"-" "_")
           migration-file-name-full-path (get-next-migration-file-path
                                           {:migration-type SQL-MIGRATION-EXT
-                                           :resources-dir RESOURCES-DIR
+                                           :resources-dir resources-dir
                                            :migrations-dir migrations-dir
                                            :next-migration-name next-migration-name*})]
       (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
@@ -828,11 +825,12 @@
 
 (defn explain
   "Generate raw sql or human-readable text from migration."
-  [{:keys [migrations-dir number direction]
+  [{:keys [migrations-dir number direction resources-dir]
     explain-format :format
     :or {direction FORWARD-DIRECTION
          explain-format EXPLAIN-FORMAT-SQL
-         migrations-dir MIGRATIONS-DIR}}]
+         migrations-dir MIGRATIONS-DIR
+         resources-dir RESOURCES-DIR}}]
   (try+
     (let [migration-names (migrations-list migrations-dir)
           file-name (get-migration-by-number migration-names number)
@@ -851,7 +849,7 @@
       (let [all-migrations (migrations-list migrations-dir)
             all-migrations-detailed (map detailed-migration all-migrations)
             migration-type (get-migration-type file-name)
-            migrations-dir-resource (file-util/join-path RESOURCES-DIR migrations-dir)
+            migrations-dir-resource (file-util/join-path resources-dir migrations-dir)
             actions (migration->actions {:file-name file-name
                                          :migrations-dir migrations-dir-resource
                                          :migration-type migration-type
@@ -964,9 +962,10 @@
 
 (defn migrate
   "Run migration on a db."
-  [{:keys [migrations-dir jdbc-url number migrations-table]
+  [{:keys [migrations-dir jdbc-url number migrations-table resources-dir]
     :or {migrations-table MIGRATIONS-TABLE
-         migrations-dir MIGRATIONS-DIR}}]
+         migrations-dir MIGRATIONS-DIR
+         resources-dir RESOURCES-DIR}}]
   (try+
     (let [db (db-util/db-conn jdbc-url)
           _ (db-util/create-migrations-table db migrations-table)
@@ -981,7 +980,7 @@
             FORWARD-DIRECTION (println (str "Applying " migration-name "..."))
             BACKWARD-DIRECTION (println (str "Reverting " migration-name "...")))
           (jdbc/with-transaction [tx db]
-            (let [migrations-dir-resource (file-util/join-path RESOURCES-DIR migrations-dir)
+            (let [migrations-dir-resource (file-util/join-path resources-dir migrations-dir)
                   actions (migration->actions {:file-name file-name
                                                :migrations-dir migrations-dir-resource
                                                :migration-type migration-type

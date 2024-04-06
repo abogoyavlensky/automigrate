@@ -7,7 +7,7 @@
 
 
 (use-fixtures :each
-  (test-util/with-delete-dir config/MIGRATIONS-DIR))
+  (test-util/with-delete-dir config/MIGRATIONS-DIR-FULL))
 
 
 (deftest test-spec-public-model-filter-and-sort-multiple-errors

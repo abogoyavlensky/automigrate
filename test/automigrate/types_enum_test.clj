@@ -11,7 +11,7 @@
 
 (use-fixtures :each
   (test-util/with-drop-tables config/DATABASE-CONN)
-  (test-util/with-delete-dir config/MIGRATIONS-DIR))
+  (test-util/with-delete-dir config/MIGRATIONS-DIR-FULL))
 
 
 (deftest test-make-migration*-create-type-enum-ok
@@ -445,7 +445,7 @@
                                                  :choices ["admin" "customer"]}
                                        :changes {:choices {:from ["admin" "customer"]
                                                            :to ["admin" "customer" "support"]}}})}]
-      (is (= (str "Created migration: test/automigrate/migrations/0001_auto_alter_type_account_role_etc.edn\n"
+      (is (= (str "Created migration: test/resources/db/migrations/0001_auto_alter_type_account_role_etc.edn\n"
                "Actions:\n"
                "  - alter type account_role\n"
                "  - add column role to account\n"

@@ -1,6 +1,7 @@
 (ns automigrate.util.file
   "Utils for working with file system."
   (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [clojure.string :as str]
             [resauce.core :as resauce])
   (:import [java.nio.file Paths]
@@ -14,6 +15,11 @@
 (defn list-files
   [migrations-dir]
   (resauce/resource-dir migrations-dir))
+
+
+(defn file-url->file-name
+  [file-url]
+  (.getName (io/file (.getFile file-url))))
 
 
 (defn read-edn

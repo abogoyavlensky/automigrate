@@ -6,7 +6,7 @@
 
 (use-fixtures :each
   (test-util/with-drop-tables config/DATABASE-CONN)
-  (test-util/with-delete-dir config/MIGRATIONS-DIR))
+  (test-util/with-delete-dir config/MIGRATIONS-DIR-FULL))
 
 
 (deftest test-action-create-table-with-comment-on-column-ok
