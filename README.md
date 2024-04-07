@@ -348,15 +348,14 @@ Available commands are:
 
 Common args for all commands:
 
-| Argument             | Description                                                     | Required? | Possible values                                                                                  | Default value                                               |
-|----------------------|-----------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| `:jdbc-url`          | Database connection defined as JDBC-url.                        | `false`   | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | Read env var (`DATABASE_URL` or set as `:jdbc-url-env-var`) |
-| `:jdbc-url-env-var`  | Name of environment variable for jdbc-url.                      | `false`   | string jdbc url (example: `DB_URL`)                                                              | `DATABASE_URL`                                              |
-| `:models-file`       | Path to models file, relative to the `resources` dir.           | `false`   | string path (example: `"path/to/models.edn"`)                                                    | `"db/models.edn"`                                           |
-| `:migrations-dir`    | Path to store migrations dir, relative to the `resources` dir.  | `false`   | string path (example: `"path/to/migrations"`)                                                    | `"db/migrations"`                                           |
-| `:migrations-table`  | Model name for storing applied migrations.                      | `false`   | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"`                                  |
-
-:information_source: *Assume that args `:jdbc-url`, `:jdbc-url-env-var`, `:models-file` and `:migrations-dir` have values by default.*
+| Argument            | Description                                                               | Required? | Possible values                                                                                  | Default value                                               |
+|---------------------|---------------------------------------------------------------------------|-----------|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| `:jdbc-url`         | Database connection defined as JDBC-url.                                  | `false`   | string jdbc url (example: `"jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"`) | Read env var (`DATABASE_URL` or set as `:jdbc-url-env-var`) |
+| `:jdbc-url-env-var` | Name of environment variable for jdbc-url.                                | `false`   | string jdbc url (example: `DB_URL`)                                                              | `DATABASE_URL`                                              |
+| `:models-file`      | Path to models file, relative to the `resources` dir.                     | `false`   | string path (example: `"path/to/models.edn"`)                                                    | `"db/models.edn"`                                           |
+| `:migrations-dir`   | Path to store migrations dir, relative to the `resources` dir.            | `false`   | string path (example: `"path/to/migrations"`)                                                    | `"db/migrations"`                                           |
+| `:resources-dir`    | Path to resources dir to create migrations dir when it doesn't exist yet. | `false`   | string path (example: `"path/to/resources"`)                                                     | `"resources"`                                               |
+| `:migrations-table` | Model name for storing applied migrations.                                | `false`   | string (example: `"migrations"`)                                                                 | `"automigrate_migrations"`                                  |
 
 ### `make`
 
