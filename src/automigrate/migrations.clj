@@ -608,12 +608,12 @@
 (defmethod migration->actions [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
   [{:keys [file-name migrations-dir]}]
   (let [migration-file-path (file-util/join-path migrations-dir file-name)]
-    (file-util/read-edn migration-file-path)))
+    (-> migration-file-path (io/resource) (file-util/read-edn))))
 
 
 (defn- ->file
   [file-name migrations-dir]
-  (io/file (file-util/join-path migrations-dir file-name)))
+  (file-util/join-path migrations-dir file-name))
 
 
 (defmethod migration->actions [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
@@ -621,7 +621,7 @@
   (let [migrations-from (->> all-migrations
                           (take-while #(<= (:number-int %) number-int))
                           (filterv #(= AUTO-MIGRATION-EXT (:migration-type %)))
-                          (map #(-> % :file-name (->file migrations-dir))))
+                          (mapv #(-> % :file-name (->file migrations-dir))))
         schema-from (schema/current-db-schema migrations-from)
 
         migrations-to (butlast migrations-from)
@@ -632,6 +632,7 @@
 (defmethod migration->actions [SQL-MIGRATION-EXT FORWARD-DIRECTION]
   [{:keys [file-name migrations-dir]}]
   (-> (file-util/join-path migrations-dir file-name)
+    (io/resource)
     (slurp)
     (get-forward-sql-migration)))
 
@@ -639,6 +640,7 @@
 (defmethod migration->actions [SQL-MIGRATION-EXT BACKWARD-DIRECTION]
   [{:keys [file-name migrations-dir]}]
   (-> (file-util/join-path migrations-dir file-name)
+    (io/resource)
     (slurp)
     (get-backward-sql-migration)))
 
@@ -825,12 +827,11 @@
 
 (defn explain
   "Generate raw sql or human-readable text from migration."
-  [{:keys [migrations-dir number direction resources-dir]
+  [{:keys [migrations-dir number direction]
     explain-format :format
     :or {direction FORWARD-DIRECTION
          explain-format EXPLAIN-FORMAT-SQL
-         migrations-dir MIGRATIONS-DIR
-         resources-dir RESOURCES-DIR}}]
+         migrations-dir MIGRATIONS-DIR}}]
   (try+
     (let [migration-names (migrations-list migrations-dir)
           file-name (get-migration-by-number migration-names number)
@@ -849,9 +850,8 @@
       (let [all-migrations (migrations-list migrations-dir)
             all-migrations-detailed (map detailed-migration all-migrations)
             migration-type (get-migration-type file-name)
-            migrations-dir-resource (file-util/join-path resources-dir migrations-dir)
             actions (migration->actions {:file-name file-name
-                                         :migrations-dir migrations-dir-resource
+                                         :migrations-dir migrations-dir
                                          :migration-type migration-type
                                          :direction direction
                                          :number-int (get-migration-number file-name)
@@ -962,10 +962,9 @@
 
 (defn migrate
   "Run migration on a db."
-  [{:keys [migrations-dir jdbc-url number migrations-table resources-dir]
+  [{:keys [migrations-dir jdbc-url number migrations-table]
     :or {migrations-table MIGRATIONS-TABLE
-         migrations-dir MIGRATIONS-DIR
-         resources-dir RESOURCES-DIR}}]
+         migrations-dir MIGRATIONS-DIR}}]
   (try+
     (let [db (db-util/db-conn jdbc-url)
           _ (db-util/create-migrations-table db migrations-table)
@@ -980,9 +979,8 @@
             FORWARD-DIRECTION (println (str "Applying " migration-name "..."))
             BACKWARD-DIRECTION (println (str "Reverting " migration-name "...")))
           (jdbc/with-transaction [tx db]
-            (let [migrations-dir-resource (file-util/join-path resources-dir migrations-dir)
-                  actions (migration->actions {:file-name file-name
-                                               :migrations-dir migrations-dir-resource
+            (let [actions (migration->actions {:file-name file-name
+                                               :migrations-dir migrations-dir
                                                :migration-type migration-type
                                                :number-int number-int
                                                :direction direction

@@ -67,7 +67,6 @@
 
   (testing "check forward migration"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                   :resources-dir config/RESOURCES-DIR
                    :jdbc-url config/DATABASE-URL})
     (is (= [{:id 1
              :name "0001_auto_create_table_feed"}
@@ -84,7 +83,6 @@
 
   (testing "check backward migration"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                   :resources-dir config/RESOURCES-DIR
                    :jdbc-url config/DATABASE-URL
                    :number 1})
     (is (= '({:id 1
@@ -118,7 +116,6 @@
              "ALTER TABLE feed ADD COLUMN description text;\n\n")
           (with-out-str
             (core/explain {:migrations-dir config/MIGRATIONS-DIR
-                           :resources-dir config/RESOURCES-DIR
                            :jdbc-url config/DATABASE-URL
                            :number 2})))))
   (testing "explain backward migration"
@@ -126,7 +123,6 @@
              "ALTER TABLE feed DROP COLUMN description;\n\n")
           (with-out-str
             (core/explain {:migrations-dir config/MIGRATIONS-DIR
-                           :resources-dir config/RESOURCES-DIR
                            :jdbc-url config/DATABASE-URL
                            :number 2
                            :direction "backward"}))))))

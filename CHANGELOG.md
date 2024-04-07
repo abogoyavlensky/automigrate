@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Read database URL from env variable by default.
+- Add ability to run migration commands from jar-file.
 
 ### Changed
 

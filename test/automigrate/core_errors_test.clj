@@ -54,8 +54,7 @@
              "Missing database connection URL.\n\n"
              "  nil\n\n")
           (with-out-str
-            (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                           :resources-dir config/RESOURCES-DIR})))))
+            (core/migrate {:migrations-dir config/MIGRATIONS-DIR})))))
 
   (testing "check invalid target migration number"
     (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
@@ -65,7 +64,6 @@
           (with-out-str
             (core/migrate {:jdbc-url config/DATABASE-URL
                            :migrations-dir config/MIGRATIONS-DIR
-                           :resources-dir config/RESOURCES-DIR
                            :number 4}))))))
 
 

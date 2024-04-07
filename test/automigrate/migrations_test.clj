@@ -67,7 +67,6 @@
               :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                 :resources-dir config/RESOURCES-DIR
                  :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"})
@@ -96,7 +95,6 @@
           (io/resource)
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                 :resources-dir config/RESOURCES-DIR
                  :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
@@ -125,7 +123,6 @@
                       :migrations-dir config/MIGRATIONS-DIR}))))
   (testing "test migrate forward to specific number"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                   :resources-dir config/RESOURCES-DIR
                    :jdbc-url config/DATABASE-URL
                    :number 2
                    :migrations-table "custom-migrations_table"})
@@ -140,7 +137,6 @@
     (is (= "Nothing to migrate.\n"
           (with-out-str
             (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                           :resources-dir config/RESOURCES-DIR
                            :jdbc-url config/DATABASE-URL
                            :number 2
                            :migrations-table "custom-migrations-table"}))))
@@ -153,7 +149,6 @@
             (set)))))
   (testing "test migrate forward all"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                   :resources-dir config/RESOURCES-DIR
                    :jdbc-url config/DATABASE-URL
                    :migrations-table "custom-migrations-table"})
     (is (= #{"0001_auto_create_table_feed"
@@ -177,8 +172,7 @@
               :migrations-dir config/MIGRATIONS-DIR
               :resources-dir config/RESOURCES-DIR})
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                 :jdbc-url config/DATABASE-URL
-                 :resources-dir config/RESOURCES-DIR})
+                 :jdbc-url config/DATABASE-URL})
   (testing "test migrations have been applied"
     (is (= #{"0001_auto_create_table_feed"
              "0002_auto_add_column_created_at_to_feed_etc"
@@ -215,7 +209,6 @@
             "feed"))))
   (testing "test migrate backward to specific number"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                   :resources-dir config/RESOURCES-DIR
                    :jdbc-url config/DATABASE-URL
                    :number 2})
     (is (= #{"0001_auto_create_table_feed"
@@ -253,7 +246,6 @@
 
   (testing "test to revert all migrations"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                   :resources-dir config/RESOURCES-DIR
                    :jdbc-url config/DATABASE-URL
                    :number 0})
     (is (= #{}
@@ -273,7 +265,6 @@
               :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                 :resources-dir config/RESOURCES-DIR
                  :jdbc-url config/DATABASE-URL})
   (testing "test migrations have been applied"
     (is (= #{"0001_auto_create_table_account_etc"}
@@ -290,7 +281,6 @@
 
   (testing "test reverting the migration"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                   :resources-dir config/RESOURCES-DIR
                    :jdbc-url config/DATABASE-URL
                    :number 0})
     (is (= #{}
@@ -331,7 +321,6 @@
           (io/resource)
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                 :resources-dir config/RESOURCES-DIR
                  :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
@@ -357,7 +346,6 @@
           (io/resource)
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                 :resources-dir config/RESOURCES-DIR
                  :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
@@ -382,7 +370,6 @@
           (io/resource)
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
-                 :resources-dir config/RESOURCES-DIR
                  :jdbc-url config/DATABASE-URL})
   (is (= '({:id 1
             :name "0001_auto_create_table_feed"}
@@ -492,7 +479,6 @@
                 "COMMIT;\n"]))
           (with-out-str
             (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
-                                 :resources-dir config/RESOURCES-DIR
                                  :number 1}))))))
 
 
@@ -571,7 +557,6 @@
                                                                  :fields [:name]}
                                                        :action :alter-index}))]]
     (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
-                         :resources-dir config/RESOURCES-DIR
                          :number 1
                          :format :human})
     (is (= ["  - create table feed"
