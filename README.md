@@ -53,13 +53,26 @@ Then you need to set database URL either using `DATABASE_URL` env var or `:jdbc-
 export DATABASE_URL="jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"
 ```
 
-:information_source: *You can move postgres driver and automigrate to project's `:deps` section.
-Optionally, you can choose any paths you want for `:models-file` and `:migrations-dir` using `:exec-args`.* 
+And create `models.edn` file with a models you want or at least an empty map. 
+By default, the path is `resources/db/models.edn`, for example, 
+let's add a simple model for user:
 
-Then you could use it as:
+```clojure
+{:users [[:id :serial {:primary-key true}]
+         [:name [:varchar 255]]]}
+```
+
+Then we can create a migration:
 
 ```shell
 clojure -X:migrations make
+```
+
+Migration will be created at `resources/db/migrations` by default. 
+Now, we can apply changes to the database: 
+
+```shell
+clojure -X:migrations migrate
 ```
 
 #### Leiningen
