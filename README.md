@@ -136,7 +136,7 @@ COMMIT;
 
 All SQL queries of the migration are wrapped by a transaction.
 
-:information_source: *For a slightly more complex example please check [models.edn](/examples/books/models.edn)
+:information_source: *For a slightly more complex example please check [models.edn](/examples/books/resources/db/models.edn)
 and [README.md](/examples/books/README.md) from the `examples` dir of this repo.* 
 
 ## Documentation
