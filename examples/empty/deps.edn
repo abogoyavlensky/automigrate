@@ -4,6 +4,4 @@
  :aliases
  {:migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "0.3.2"}}
                :ns-default automigrate.core
-               :exec-args {:models-file "models.edn"
-                           :migrations-dir "migrations"
-                           :jdbc-url "jdbc:postgresql://db:5432/demo?user=demo&password=demo"}}}}
+               :exec-args {:jdbc-url "jdbc:postgresql://db:5432/demo?user=demo&password=demo"}}}}

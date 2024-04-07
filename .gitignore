@@ -20,7 +20,6 @@ lsp/
 src/automigrate/models.edn
 src/automigrate/migrations/
 test/resources/db/migrations/
-resources/
 examples/*/.cpcache/
 .lsp/
 NEXT-CHANGELOG.md
