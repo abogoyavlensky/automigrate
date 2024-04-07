@@ -35,15 +35,14 @@ Breaking changes are possible.
 
 #### tools.deps -X option
 
-A config for development environment could look like the following:
-
 *deps.edn*
 ```clojure
 {...
  :aliases {...
-           :migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<LATEST VERSION>"}
-                                     org.postgresql/postgresql {:mvn/version "42.3.1"}}
-                        :ns-default automigrate.core}}}
+           :migrations 
+           {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<VERSION>"}
+                         org.postgresql/postgresql {:mvn/version "42.3.1"}}
+            :ns-default automigrate.core}}}
 ```
 
 Then you need to set database URL either using `DATABASE_URL` env var or `:jdbc-url` in `:exec-args`.
