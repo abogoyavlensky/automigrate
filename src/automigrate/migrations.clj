@@ -701,11 +701,13 @@
          resources-dir RESOURCES-DIR}
     custom-migration-name :name}]
   (try+
+    ; Create migrations dir if it doesn't exist
+    (create-migrations-dir!
+      (file-util/join-path resources-dir migrations-dir))
+
     (if-let [next-migration (make-next-migration {:models-file models-file
                                                   :migrations-dir migrations-dir})]
-      (let [migrations-dir-resource (file-util/join-path resources-dir migrations-dir)
-            _ (create-migrations-dir! migrations-dir-resource)
-            next-migration-name (get-next-migration-name next-migration custom-migration-name)
+      (let [next-migration-name (get-next-migration-name next-migration custom-migration-name)
             migration-file-name-full-path (get-next-migration-file-path
                                             {:migration-type AUTO-MIGRATION-EXT
                                              :resources-dir resources-dir
@@ -738,6 +740,13 @@
     (catch FileNotFoundException e
       (-> {:title "ERROR"
            :message (format "Missing file:\n\n  %s" (ex-message e))}
+        (errors/custom-error->error-report)
+        (file-util/prn-err)))
+    (catch IllegalArgumentException e
+      (-> {:title "ERROR"
+           :message (str (format "%s\n\nMissing resource file error. " (ex-message e))
+                      "Please, check, if models.edn exists and resources dir\n"
+                      "is included to source paths in `deps.edn` or `project.clj`.")}
         (errors/custom-error->error-report)
         (file-util/prn-err)))))
 
