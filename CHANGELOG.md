@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Make `migrations-dir` and `models-file` params optional with default value.
 - **BREAKING** `migrations-dir` and `models-file` should contain relative path to resources dir.
 - Add ability to set custom resources dir using `:resources-dir`.
+- Upgrade dependencies.
 
 #### Notes about breaking change of paths config:
 

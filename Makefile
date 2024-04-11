@@ -56,11 +56,15 @@ lint-init:
 	@clj-kondo --dependencies --copy-configs --lint $(DIRS)
 
 
-.PHONY: check-deps  # Check deps versions
-check-deps:
+.PHONY: outdated  # Check deps versions
+outdated:
 	@$(INFO) "Checking deps versions..."
-	@clojure -M:check-deps
+	@clojure -M:outdated
 
+.PHONY: outdated-fix  # Check deps versions and upgrade
+outdated-fix:
+	@$(INFO) "Upgrading deps versions..."
+	@clojure -M:outdated --upgrade --force
 
 .PHONY: check  # Check linting and apply formatting locally
 check:

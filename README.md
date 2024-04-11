@@ -735,7 +735,7 @@ make repl  # run builtin repl with dev aliases; also you could use any repl you 
 make test  # run whole tests locally against testing database started by docker-compose
 make fmt  # run formatting in action mode
 make lint  # run linting
-make check-deps  # run checking new versions of deps in force mode
+make outdated  # run checking new versions of deps in force mode
 ```
 
 ### Release new version
