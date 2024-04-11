@@ -18,44 +18,53 @@
 
 (use-fixtures :each
   (test-util/with-drop-tables config/DATABASE-CONN)
-  (test-util/with-delete-dir config/MIGRATIONS-DIR))
+  (test-util/with-delete-dir config/MIGRATIONS-DIR-FULL))
 
 
 (deftest test-reading-models-from-file-ok
   (let [path (str config/MODELS-DIR "feed_basic.edn")]
     (is (= {:feed
             {:fields [[:id :serial {:null false}]]}}
-          (file-util/read-edn path)))))
+          (-> path io/resource file-util/read-edn)))))
 
 
 (deftest test-reading-models-from-file-err
-  (let [path (str config/MODELS-DIR "not_existing.edn")]
+  (let [path (str config/MODELS-DIR-FULL "not_existing.edn")]
     (is (thrown? FileNotFoundException
-          (file-util/read-edn path)))))
+          (-> path (file-util/read-edn))))))
+
+
+(deftest test-reading-models-from-file-as-resource-err
+  (let [path (str config/MODELS-DIR-FULL "not_existing.edn")]
+    (is (thrown? IllegalArgumentException
+          (-> path (io/resource) (file-util/read-edn))))))
 
 
 (deftest test-create-migrations-dir-ok
   (testing "test creating dir"
-    (is (false? (.isDirectory (io/file config/MIGRATIONS-DIR))))
-    (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
-    (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR)))))
+    (is (false? (.isDirectory (io/file config/MIGRATIONS-DIR-FULL))))
+    (#'migrations/create-migrations-dir! config/MIGRATIONS-DIR-FULL)
+    (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR-FULL)))))
   (testing "test when dir already exists"
-    (#'migrations/create-migrations-dir config/MIGRATIONS-DIR)
-    (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR))))))
+    (#'migrations/create-migrations-dir! config/MIGRATIONS-DIR-FULL)
+    (is (true? (.isDirectory (io/file config/MIGRATIONS-DIR-FULL))))))
 
 
 (deftest test-make-single-migrations-for-basic-model-ok
   (#'migrations/make-migration {:models-file (str config/MODELS-DIR "feed_basic.edn")
+                                :resources-dir config/RESOURCES-DIR
                                 :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:model-name :feed
             :fields {:id {:type :serial :null false}}
             :action :create-table})
         (-> (str config/MIGRATIONS-DIR "/0001_auto_create_table_feed.edn")
+          (io/resource)
           (file-util/read-edn)))))
 
 
 (deftest test-migrate-single-migrations-for-basic-model-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
@@ -69,8 +78,10 @@
 
 (deftest test-migrate-migrations-with-adding-columns-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :add-column
             :field-name :created-at
@@ -81,6 +92,7 @@
             :model-name :feed
             :options {:type [:varchar 100] :null true}})
         (-> (str config/MIGRATIONS-DIR "/0002_auto_add_column_created_at_to_feed_etc.edn")
+          (io/resource)
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
@@ -96,15 +108,18 @@
 
 (deftest test-migrate-forward-to-number-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
-  (is (= (str "Created migration: test/automigrate/migrations/0003_auto_alter_column_id_in_feed_etc.edn\n"
+  (is (= (str "Created migration: test/resources/db/migrations/0003_auto_alter_column_id_in_feed_etc.edn\n"
            "Actions:\n"
            "  - alter column id in feed\n"
            "  - alter column name in feed\n")
         (with-out-str
           (core/make {:models-file (str config/MODELS-DIR "feed_alter_column.edn")
+                      :resources-dir config/RESOURCES-DIR
                       :migrations-dir config/MIGRATIONS-DIR}))))
   (testing "test migrate forward to specific number"
     (core/migrate {:migrations-dir config/MIGRATIONS-DIR
@@ -148,11 +163,14 @@
 
 (deftest test-migrate-backward-to-number-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
-              :migrations-dir config/MIGRATIONS-DIR})
+              :migrations-dir config/MIGRATIONS-DIR
+              :resources-dir config/RESOURCES-DIR})
   (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
-              :migrations-dir config/MIGRATIONS-DIR})
+              :migrations-dir config/MIGRATIONS-DIR
+              :resources-dir config/RESOURCES-DIR})
   (core/make {:models-file (str config/MODELS-DIR "feed_alter_column.edn")
-              :migrations-dir config/MIGRATIONS-DIR})
+              :migrations-dir config/MIGRATIONS-DIR
+              :resources-dir config/RESOURCES-DIR})
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
   (testing "test migrations have been applied"
@@ -244,6 +262,7 @@
 
 (deftest test-migrate-backward-with-drop-table-with-fk-ref
   (core/make {:models-file (str config/MODELS-DIR "budget_create_tables.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
@@ -279,8 +298,10 @@
 
 (deftest test-migrate-migrations-with-alter-columns-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (core/make {:models-file (str config/MODELS-DIR "feed_alter_column.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :alter-column
             :changes {:primary-key {:from :EMPTY
@@ -297,6 +318,7 @@
             :field-name :name
             :model-name :feed})
         (-> (str config/MIGRATIONS-DIR "/0002_auto_alter_column_id_in_feed_etc.edn")
+          (io/resource)
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
@@ -312,13 +334,16 @@
 
 (deftest test-migrate-migrations-with-drop-columns-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
-              :migrations-dir config/MIGRATIONS-DIR})
+              :migrations-dir config/MIGRATIONS-DIR
+              :resources-dir config/RESOURCES-DIR})
   (core/make {:models-file (str config/MODELS-DIR "feed_drop_column.edn")
-              :migrations-dir config/MIGRATIONS-DIR})
+              :migrations-dir config/MIGRATIONS-DIR
+              :resources-dir config/RESOURCES-DIR})
   (is (= '({:action :drop-column
             :field-name :name
             :model-name :feed})
         (-> (str config/MIGRATIONS-DIR "/0002_auto_drop_column_name_from_feed.edn")
+          (io/resource)
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
@@ -334,12 +359,15 @@
 
 (deftest test-migrate-migrations-with-drop-table-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_add_column.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (core/make {:models-file (str config/MODELS-DIR "feed_drop_table.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR})
   (is (= '({:action :drop-table
             :model-name :feed})
         (-> (str config/MIGRATIONS-DIR "/0002_auto_drop_table_feed.edn")
+          (io/resource)
           (file-util/read-edn))))
   (core/migrate {:migrations-dir config/MIGRATIONS-DIR
                  :jdbc-url config/DATABASE-URL})
@@ -426,28 +454,29 @@
                                                        :options {:type :btree
                                                                  :fields [:name]}
                                                        :action :alter-index}))]]
-    (is (= (str/join
-             "\n\n"
-             ["SQL for forward migration 0001_auto_create_table_feed_etc.edn:"
-              "BEGIN;"
-              "CREATE TABLE feed (\n  id SERIAL CONSTRAINT feed_pkey PRIMARY KEY NOT NULL,\n  number INTEGER DEFAULT 0,\n  info TEXT\n);"
-              "CREATE TABLE account (\n  id SERIAL CONSTRAINT account_id_key UNIQUE NULL,\n  name VARCHAR(100) NULL,\n  rate FLOAT\n);"
-              "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW());"
-              "ALTER TABLE\n  account\nADD\n  COLUMN day DATE;"
-              (str "ALTER TABLE\n  account\nALTER COLUMN\n  number TYPE INTEGER USING number :: INTEGER,\nADD\n  CONSTRAINT account_number_key UNIQUE(number),\n"
-                "ALTER COLUMN\n  number\nSET\n  DEFAULT 0,\nALTER COLUMN\n  number DROP NOT NULL,\n"
-                "  DROP CONSTRAINT account_pkey;")
-              "ALTER TABLE\n  feed DROP COLUMN url;"
-              "DROP TABLE IF EXISTS feed;"
-              "CREATE TABLE feed (\n  account SERIAL CONSTRAINT feed_account_fkey REFERENCES account(id)\n);"
-              "ALTER TABLE\n  feed DROP CONSTRAINT feed_account_fkey;"
-              (str "ALTER TABLE\n  feed\n"
-                "ADD\n  CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES account(id);")
-              "CREATE INDEX feed_name_idx ON FEED USING BTREE(name);"
-              "DROP INDEX feed_name_idx;"
-              "DROP INDEX feed_name_idx;"
-              "CREATE INDEX feed_name_idx ON FEED USING BTREE(name);"
-              "COMMIT;\n"])
+    (is (= (str
+             "SQL for forward migration 0001_auto_create_table_feed_etc.edn:\n"
+             (str/join
+               "\n\n"
+               ["BEGIN;"
+                "CREATE TABLE feed (\n  id SERIAL CONSTRAINT feed_pkey PRIMARY KEY NOT NULL,\n  number INTEGER DEFAULT 0,\n  info TEXT\n);"
+                "CREATE TABLE account (\n  id SERIAL CONSTRAINT account_id_key UNIQUE NULL,\n  name VARCHAR(100) NULL,\n  rate FLOAT\n);"
+                "CREATE TABLE role (is_active BOOLEAN, created_at TIMESTAMP DEFAULT NOW());"
+                "ALTER TABLE\n  account\nADD\n  COLUMN day DATE;"
+                (str "ALTER TABLE\n  account\nALTER COLUMN\n  number TYPE INTEGER USING number :: INTEGER,\nADD\n  CONSTRAINT account_number_key UNIQUE(number),\n"
+                  "ALTER COLUMN\n  number\nSET\n  DEFAULT 0,\nALTER COLUMN\n  number DROP NOT NULL,\n"
+                  "  DROP CONSTRAINT account_pkey;")
+                "ALTER TABLE\n  feed DROP COLUMN url;"
+                "DROP TABLE IF EXISTS feed;"
+                "CREATE TABLE feed (\n  account SERIAL CONSTRAINT feed_account_fkey REFERENCES account(id)\n);"
+                "ALTER TABLE\n  feed DROP CONSTRAINT feed_account_fkey;"
+                (str "ALTER TABLE\n  feed\n"
+                  "ADD\n  CONSTRAINT feed_account_fkey FOREIGN KEY(account) REFERENCES account(id);")
+                "CREATE INDEX feed_name_idx ON FEED USING BTREE(name);"
+                "DROP INDEX feed_name_idx;"
+                "DROP INDEX feed_name_idx;"
+                "CREATE INDEX feed_name_idx ON FEED USING BTREE(name);"
+                "COMMIT;\n"]))
           (with-out-str
             (migrations/explain {:migrations-dir config/MIGRATIONS-DIR
                                  :number 1}))))))
@@ -1027,13 +1056,15 @@
 
 (deftest test-custom-migration-name-ok
   (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
+              :resources-dir config/RESOURCES-DIR
               :migrations-dir config/MIGRATIONS-DIR
               :name "some-custom-migration-name"})
   (is (= '({:model-name :feed
             :fields {:id {:type :serial :null false}}
             :action :create-table})
-        (file-util/read-edn
-          (str config/MIGRATIONS-DIR "/0001_some_custom_migration_name.edn")))))
+        (-> (str config/MIGRATIONS-DIR "/0001_some_custom_migration_name.edn")
+          (io/resource)
+          (file-util/read-edn)))))
 
 
 (deftest test-make-and-migrate-alter-varchar-value-field-ok

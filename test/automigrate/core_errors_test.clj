@@ -12,20 +12,20 @@
 
 (use-fixtures :each
   (test-util/with-drop-tables config/DATABASE-CONN)
-  (test-util/with-delete-dir config/MIGRATIONS-DIR))
+  (test-util/with-delete-dir config/MIGRATIONS-DIR-FULL))
 
 
 (deftest test-run-make-migration-args-error
   (testing "check missing model file path"
     (bond/with-spy [migrations/make-next-migration]
       (core/make {:migrations-dir config/MIGRATIONS-DIR})
-      (is (= "resources/db/models.edn"
+      (is (= "db/models.edn"
             (-> (bond/calls #'migrations/make-next-migration) first :args first :models-file)))))
 
   (testing "check missing migrations dir path"
     (bond/with-spy [migrations/make-next-migration]
       (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")})
-      (is (= "resources/db/migrations"
+      (is (= "db/migrations"
             (-> (bond/calls #'migrations/make-next-migration) first :args first :migrations-dir)))))
 
   (testing "check wrong type of migration"
@@ -58,7 +58,8 @@
 
   (testing "check invalid target migration number"
     (core/make {:models-file (str config/MODELS-DIR "feed_basic.edn")
-                :migrations-dir config/MIGRATIONS-DIR})
+                :migrations-dir config/MIGRATIONS-DIR
+                :resources-dir config/RESOURCES-DIR})
     (is (= "-- ERROR -------------------------------------\n\nInvalid target migration number.\n\n"
           (with-out-str
             (core/migrate {:jdbc-url config/DATABASE-URL

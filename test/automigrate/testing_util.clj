@@ -113,6 +113,7 @@
      ; parameters are not involved in test as they are mocked
      ; passing them here just to be able to run the make-migration fn
      {:models-file (str config/MODELS-DIR "feed_basic.edn")
+      :resources-dir config/RESOURCES-DIR
       :migrations-dir config/MIGRATIONS-DIR})))
 
 

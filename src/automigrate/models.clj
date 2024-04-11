@@ -267,12 +267,3 @@
   "Transform public models from file to internal representation."
   [models]
   (spec-util/conform ::->internal-models models))
-
-
-(comment
-  (let [models {:account {:types [[:account-role :enum {:choices ["admin" "customer"]}]]
-                          :fields [[:id :serial {:unique true}]]}
-                :feed {:types [[:status :enum {:choices ["admin" "customer"]}]]
-                       :fields [[:id :serial {:unique true}]]}}]
-    (->> models
-      (spec-util/conform ::->internal-models))))

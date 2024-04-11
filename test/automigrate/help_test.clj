@@ -20,10 +20,11 @@
 (deftest test-help-output-for-make-command-help
   (is (= (str "Create a new migration based on changes to the models.\n\n"
            "Available options:\n"
-           "  :models-file - Path to the file with model definitions. Default: `resources/db/models.edn`. (optional)\n"
-           "  :migrations-dir - Path to directory containing migration files. Default: `resources/db/migrations`. (optional)\n"
            "  :name - Custom name for a migration. Default: auto-generated name by first action in migration. (optional)\n"
            "  :type - Type of new migration, empty by default for auto-generated migration.\n"
-           "          Also, available `:empty-sql` - for creating an empty raw SQL migration. (optional)\n\n")
+           "          Set `:empty-sql` - for creating an empty raw SQL migration. (optional)\n"
+           "  :models-file - Path to the file with model definitions relative to the `resources` dir. Default: `db/models.edn`. (optional)\n"
+           "  :migrations-dir - Path to directory containing migration files relative to the `resources` dir. Default: `db/migrations`. (optional)\n"
+           "  :resources-dir - Path to resources dir to create migrations dir, if it doesn't exist. Default: `resources` (optional)\n\n")
         (with-out-str
           (help/show-help! {:cmd 'make})))))

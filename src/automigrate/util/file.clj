@@ -2,7 +2,8 @@
   "Utils for working with file system."
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [resauce.core :as resauce])
   (:import [java.nio.file Paths]
            [com.github.vertical_blank.sqlformatter SqlFormatter]
            [com.github.vertical_blank.sqlformatter.languages Dialect]))
@@ -13,9 +14,12 @@
 
 (defn list-files
   [migrations-dir]
-  (->> (file-seq (io/file migrations-dir))
-    (filter #(.isFile %))
-    (sort)))
+  (resauce/resource-dir migrations-dir))
+
+
+(defn file-url->file-name
+  [file-url]
+  (.getName (io/file (.getFile file-url))))
 
 
 (defn read-edn

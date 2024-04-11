@@ -1,7 +1,7 @@
 # Example minimal setup for Automigrate
 
 This example contains minimal setup for experimenting with Automigrate.
-Just add your models to `models.edn` and create migrations!
+Just add your models to `resources/db/models.edn` and create migrations!
 
 ## Setup
 

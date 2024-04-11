@@ -3,13 +3,11 @@
   Also contains tools for inspection of db state by migrations
   and state of migrations itself."
   (:require [next.jdbc :as jdbc]
-            #_{:clj-kondo/ignore [:unused-namespace]}
             [clojure.spec.alpha :as s]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.set :as set]
             [clojure.pprint :as pprint]
-            #_{:clj-kondo/ignore [:unused-referred-var]}
             [slingshot.slingshot :refer [throw+ try+]]
             [differ.core :as differ]
             [weavejester.dependency :as dep]
@@ -21,15 +19,16 @@
             [automigrate.schema :as schema]
             [automigrate.util.file :as file-util]
             [automigrate.util.db :as db-util]
-            [automigrate.util.spec :as su]
+            [automigrate.util.spec :as spec-util]
             [automigrate.util.model :as model-util])
   (:import [java.io FileNotFoundException]))
 
 
 ; DEFAULTS
-(def MODELS-FILE "resources/db/models.edn")
-(def MIGRATIONS-DIR "resources/db/migrations")
-(def MIGRATIONS-TABLE :automigrate-migrations)
+(def ^:private RESOURCES-DIR "resources")
+(def ^:private MODELS-FILE "db/models.edn")
+(def ^:private MIGRATIONS-DIR "db/migrations")
+(def ^:private MIGRATIONS-TABLE :automigrate-migrations)
 
 (def ^:private DROPPED-ENTITY-VALUE 0)
 (def ^:private DEFAULT-ROOT-NODE :root)
@@ -74,8 +73,8 @@
     (vector)))
 
 
-(defn- create-migrations-dir
-  "Create migrations root dir if it is not exist."
+(defn- create-migrations-dir!
+  "Create migrations root dir if it does not exist."
   [migrations-dir]
   (when-not (.isDirectory (io/file migrations-dir))
     (.mkdir (java.io.File. migrations-dir))))
@@ -132,8 +131,9 @@
 (defn- migrations-list
   "Get migrations' files list."
   [migrations-dir]
-  (->> (file-util/list-files migrations-dir)
-    (map #(.getName %))
+  (->> migrations-dir
+    (file-util/list-files)
+    (mapv file-util/file-url->file-name)
     (sort)
     (validate-migration-numbers)))
 
@@ -332,6 +332,7 @@
   "Read and validate models from file."
   [models-file]
   (->> models-file
+    (io/resource)
     (file-util/read-edn)
     (models/->internal-models)))
 
@@ -368,8 +369,8 @@
 (defn- action-dependencies
   "Return dependencies as vector of maps for an action or nil."
   [action]
-  {:pre [(su/assert! map? action)]
-   :post [(su/assert! ::action-dependencies-ret %)]}
+  {:pre [(spec-util/assert! map? action)]
+   :post [(spec-util/assert! ::action-dependencies-ret %)]}
   (let [changes-to-add (model-util/changes-to-add (:changes action))
         fk (condp contains? (:action action)
              #{actions/ADD-COLUMN-ACTION} (get-in action [:options :foreign-key])
@@ -607,12 +608,12 @@
 (defmethod migration->actions [AUTO-MIGRATION-EXT FORWARD-DIRECTION]
   [{:keys [file-name migrations-dir]}]
   (let [migration-file-path (file-util/join-path migrations-dir file-name)]
-    (file-util/read-edn migration-file-path)))
+    (-> migration-file-path (io/resource) (file-util/read-edn))))
 
 
 (defn- ->file
   [file-name migrations-dir]
-  (io/file (file-util/join-path migrations-dir file-name)))
+  (file-util/join-path migrations-dir file-name))
 
 
 (defmethod migration->actions [AUTO-MIGRATION-EXT BACKWARD-DIRECTION]
@@ -620,7 +621,7 @@
   (let [migrations-from (->> all-migrations
                           (take-while #(<= (:number-int %) number-int))
                           (filterv #(= AUTO-MIGRATION-EXT (:migration-type %)))
-                          (map #(-> % :file-name (->file migrations-dir))))
+                          (mapv #(-> % :file-name (->file migrations-dir))))
         schema-from (schema/current-db-schema migrations-from)
 
         migrations-to (butlast migrations-from)
@@ -631,6 +632,7 @@
 (defmethod migration->actions [SQL-MIGRATION-EXT FORWARD-DIRECTION]
   [{:keys [file-name migrations-dir]}]
   (-> (file-util/join-path migrations-dir file-name)
+    (io/resource)
     (slurp)
     (get-forward-sql-migration)))
 
@@ -638,31 +640,35 @@
 (defmethod migration->actions [SQL-MIGRATION-EXT BACKWARD-DIRECTION]
   [{:keys [file-name migrations-dir]}]
   (-> (file-util/join-path migrations-dir file-name)
+    (io/resource)
     (slurp)
     (get-backward-sql-migration)))
 
 
-(defn- get-next-migration-file-name
+(defn- get-next-migration-file-path
   "Return next migration file name based on existing migrations."
-  [{:keys [migration-type migrations-dir next-migration-name]}]
+  [{:keys [migration-type resources-dir migrations-dir next-migration-name]}]
   (let [migration-names (migrations-list migrations-dir)
         migration-number (next-migration-number migration-names)
         migration-file-name (str migration-number "_" next-migration-name)
         migration-file-with-ext (str migration-file-name "." (name migration-type))]
-    (file-util/join-path migrations-dir migration-file-with-ext)))
+    (file-util/join-path resources-dir migrations-dir migration-file-with-ext)))
 
 
 (defn- auto-migration?
   "Return true if migration has been created automatically false otherwise."
-  [f]
-  (str/ends-with? (.getName f) (str "." (name AUTO-MIGRATION-EXT))))
+  [file-url]
+  (let [ext (str "." (name AUTO-MIGRATION-EXT))
+        file-name (file-util/file-url->file-name file-url)]
+    (str/ends-with? file-name ext)))
 
 
 (defn- make-next-migration
   "Return actions for next migration."
   [{:keys [models-file migrations-dir]}]
   (let [auto-migration-files (->> (file-util/list-files migrations-dir)
-                               (filter auto-migration?))
+                               (filter auto-migration?)
+                               (sort-by file-util/file-url->file-name))
         old-schema (schema/current-db-schema auto-migration-files)
         new-schema (read-models models-file)]
     (-> (make-migration* old-schema new-schema)
@@ -688,18 +694,23 @@
 
 
 (defmethod make-migration :default
-  ; Make new migration based on models definitions automatically.
-  [{:keys [models-file migrations-dir]
+  ; Make new migration based on models definition automatically.
+  [{:keys [models-file migrations-dir resources-dir]
     :or {models-file MODELS-FILE
-         migrations-dir MIGRATIONS-DIR}
+         migrations-dir MIGRATIONS-DIR
+         resources-dir RESOURCES-DIR}
     custom-migration-name :name}]
   (try+
+    ; Create migrations dir if it doesn't exist
+    (create-migrations-dir!
+      (file-util/join-path resources-dir migrations-dir))
+
     (if-let [next-migration (make-next-migration {:models-file models-file
                                                   :migrations-dir migrations-dir})]
-      (let [_ (create-migrations-dir migrations-dir)
-            next-migration-name (get-next-migration-name next-migration custom-migration-name)
-            migration-file-name-full-path (get-next-migration-file-name
+      (let [next-migration-name (get-next-migration-name next-migration custom-migration-name)
+            migration-file-name-full-path (get-next-migration-file-path
                                             {:migration-type AUTO-MIGRATION-EXT
+                                             :resources-dir resources-dir
                                              :migrations-dir migrations-dir
                                              :next-migration-name next-migration-name})]
         (spit migration-file-name-full-path
@@ -730,22 +741,32 @@
       (-> {:title "ERROR"
            :message (format "Missing file:\n\n  %s" (ex-message e))}
         (errors/custom-error->error-report)
+        (file-util/prn-err)))
+    (catch IllegalArgumentException e
+      (-> {:title "ERROR"
+           :message (str (format "%s\n\nMissing resource file error. " (ex-message e))
+                      "Please, check, if models.edn exists and resources dir\n"
+                      "is included to source paths in `deps.edn` or `project.clj`.")}
+        (errors/custom-error->error-report)
         (file-util/prn-err)))))
 
 
 (defmethod make-migration EMPTY-SQL-MIGRATION-TYPE
   ; Make new migrations based on models definitions automatically.
-  [{:keys [migrations-dir]
-    :or {migrations-dir MIGRATIONS-DIR}
+  [{:keys [migrations-dir resources-dir]
+    :or {migrations-dir MIGRATIONS-DIR
+         resources-dir RESOURCES-DIR}
     next-migration-name :name}]
   (try+
     (when (empty? next-migration-name)
       (throw+ {:type ::missing-migration-name
                :message "Missing migration name."}))
-    (let [_ (create-migrations-dir migrations-dir)
+    (let [migrations-dir-resource (file-util/join-path resources-dir migrations-dir)
+          _ (create-migrations-dir! migrations-dir-resource)
           next-migration-name* (str/replace next-migration-name #"-" "_")
-          migration-file-name-full-path (get-next-migration-file-name
+          migration-file-name-full-path (get-next-migration-file-path
                                           {:migration-type SQL-MIGRATION-EXT
+                                           :resources-dir resources-dir
                                            :migrations-dir migrations-dir
                                            :next-migration-name next-migration-name*})]
       (spit migration-file-name-full-path SQL-MIGRATION-TEMPLATE)
@@ -762,8 +783,8 @@
 (defn- get-migration-by-number
   "Return migration file name by number."
   [migration-names number]
-  {:pre [(su/assert! (s/coll-of string?) migration-names)
-         (su/assert! integer? number)]}
+  {:pre [(spec-util/assert! (s/coll-of string?) migration-names)
+         (spec-util/assert! integer? number)]}
   (->> migration-names
     (filter #(= number (get-migration-number %)))
     (first)))
@@ -833,7 +854,7 @@
                  :message (format "Missing migration by number %s" (str number))}))
 
       (file-util/safe-println
-        [(format "%s for %s migration %s:\n" format-title (name direction) file-name)])
+        [(format "%s for %s migration %s:" format-title (name direction) file-name)])
 
       (let [all-migrations (migrations-list migrations-dir)
             all-migrations-detailed (map detailed-migration all-migrations)
@@ -881,7 +902,7 @@
 
 (defn- action->honeysql
   [action]
-  (su/conform ::sql/->sql action))
+  (spec-util/conform ::sql/->sql action))
 
 
 (defmethod exec-action! AUTO-MIGRATION-EXT
@@ -1016,7 +1037,7 @@
                         sign (if (contains? migrated migration-name)
                                LIST-SIGN-COMPLETED
                                " ")]]
-            (file-util/safe-println [(format "[%s] %s" sign file-name)])))
+            (println (format "[%s] %s" sign file-name))))
         (println "Migrations not found.")))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
@@ -1026,32 +1047,3 @@
       (-> e
         (errors/custom-error->error-report)
         (file-util/prn-err)))))
-
-
-; Comments for development.
-
-(comment
-  (let [config {:models-file "src/automigrate/models.edn"
-                ;:models-file "test/automigrate/models/feed_add_column.edn"
-                :migrations-dir "src/automigrate/migrations"
-                :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"
-                :number 4}
-        db (db-util/db-conn (:jdbc-url config))
-        migrations-files (file-util/list-files (:migrations-dir config))
-        models-file (:models-file config)]
-      (try+
-        (->> (read-models models-file))
-        ;(->> (make-migration* models-file migrations-files))
-        ;(make-next-migration config)
-        ;     (flatten))
-        (catch [:type ::s/invalid] e
-          (print (:message e))
-          (:data e)))))
-
-
-(comment
-  (let [config {:models-file "src/automigrate/models.edn"
-                :migrations-dir "src/automigrate/migrations"
-                :jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}
-        db (db-util/db-conn (:jdbc-url config))]
-    (make-migration config)))

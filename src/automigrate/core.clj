@@ -15,6 +15,7 @@
 
 (s/def ::models-file string?)
 (s/def ::migrations-dir string?)
+(s/def ::resources-dir string?)
 (s/def ::jdbc-url (s/and some? (s/conformer str)))
 (s/def ::jdbc-url-env-var string?)
 (s/def ::number int?)
@@ -54,10 +55,11 @@
 
 (s/def ::make-args
   (s/keys
-    :opt-un [::models-file
+    :opt-un [::type
+             ::name
+             ::models-file
              ::migrations-dir
-             ::type
-             ::name]))
+             ::resources-dir]))
 
 
 (s/def ::migrate-args
@@ -111,11 +113,12 @@
   "Create a new migration based on changes to the models.
 
 Available options:
-  :models-file - Path to the file with model definitions. Default: `resources/db/models.edn`. (optional)
-  :migrations-dir - Path to directory containing migration files. Default: `resources/db/migrations`. (optional)
   :name - Custom name for a migration. Default: auto-generated name by first action in migration. (optional)
   :type - Type of new migration, empty by default for auto-generated migration.
-          Also, available `:empty-sql` - for creating an empty raw SQL migration. (optional)"
+          Set `:empty-sql` - for creating an empty raw SQL migration. (optional)
+  :models-file - Path to the file with model definitions relative to the `resources` dir. Default: `db/models.edn`. (optional)
+  :migrations-dir - Path to directory containing migration files relative to the `resources` dir. Default: `db/migrations`. (optional)
+  :resources-dir - Path to resources dir to create migrations dir, if it doesn't exist. Default: `resources` (optional)"
   [args]
   (run-fn migrations/make-migration args ::make-args))
 
@@ -124,15 +127,18 @@ Available options:
   "Run existing migrations and change the database schema.
 
 Available options:
+  :number - Integer number of the target migration. (optional)
   :jdbc-url - JDBC url for the database connection. Default: get from `DATABASE_URL` env var. (optional)
-  :jdbc-url-env-var - Name of environment variable for jdbc-url. Default: `DATABASE_URL`.
-  :migrations-dir - Path to directory containing migration files. Default: `resources/db/migrations`. (optional)
-  :migrations-table - Custom name for the migrations table in the database. (optional)
-  :number - Integer number of the target migration. (optional)"
-  [{:keys [jdbc-url-env-var] :as args}]
-  (let [jdbc-url-env-var* (or jdbc-url-env-var JDBC-URL-ENV-VAR)
-        args* (update args :jdbc-url #(or % (System/getenv jdbc-url-env-var*)))]
-    (run-fn migrations/migrate args* ::migrate-args)))
+  :jdbc-url-env-var - Name of environment variable for jdbc-url. Default: `DATABASE_URL`. (optional)
+  :migrations-dir - Path to directory containing migration files relative to the `resources` dir. Default: `db/migrations`. (optional)
+  :migrations-table - Custom name for the migrations table in the database. (optional)"
+  ([]
+   ; 0-arity function can be used inside application code if there are no any options.
+   (migrate {}))
+  ([{:keys [jdbc-url-env-var] :as args}]
+   (let [jdbc-url-env-var* (or jdbc-url-env-var JDBC-URL-ENV-VAR)
+         args* (update args :jdbc-url #(or % (System/getenv jdbc-url-env-var*)))]
+     (run-fn migrations/migrate args* ::migrate-args))))
 
 
 (defn explain
@@ -140,9 +146,9 @@ Available options:
 
 Available options:
   :number - Integer number of the migration to explain. (required)
-  :migrations-dir - Path to directory containing migration files. Default: `resources/db/migrations`. (optional)
   :direction - Direction of the migration to explain, can be `forward` (default) or `backward`. (optional)
-  :format - Format of explanation, can be `sql` (default) or `human`. (optional)"
+  :format - Format of explanation, can be `sql` (default) or `human`. (optional)
+  :migrations-dir - Path to directory containing migration files relative to the `resources` dir. Default: `db/migrations`. (optional)"
   [args]
   (run-fn migrations/explain args ::explain-args))
 
@@ -152,8 +158,8 @@ Available options:
 
 Available options:
   :jdbc-url - JDBC url for the database connection. Default: get from `DATABASE_URL` env var. (optional)
-  :jdbc-url-env-var - Name of environment variable for jdbc-url. Default: `DATABASE_URL`.
-  :migrations-dir - Path to directory containing migration files. Default: `resources/db/migrations`. (optional)
+  :jdbc-url-env-var - Name of environment variable for jdbc-url. Default: `DATABASE_URL`. (optional)
+  :migrations-dir - Path to directory containing migration files relative to the `resources` dir. Default: `db/migrations`. (optional)
   :migrations-table - Custom name for the migrations table in the database. Default: `automigrate_migrations`. (optional)"
   [{:keys [jdbc-url-env-var] :as args}]
   (let [jdbc-url-env-var* (or jdbc-url-env-var JDBC-URL-ENV-VAR)

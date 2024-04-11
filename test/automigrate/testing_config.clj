@@ -2,10 +2,14 @@
   (:require [automigrate.util.db :as db-util]))
 
 
-(def MIGRATIONS-DIR "test/automigrate/migrations")
+(def MIGRATIONS-DIR-FULL "test/resources/db/migrations")
+(def MIGRATIONS-DIR "db/migrations")
 
 
-(def MODELS-DIR "test/automigrate/models/")
+(def MODELS-DIR-FULL "test/resources/db/models/")
+(def MODELS-DIR "db/models/")
+
+(def RESOURCES-DIR "test/resources")
 
 
 (def DATABASE-URL

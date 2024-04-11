@@ -9,10 +9,44 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Read database URL from env variable by default.
+- Add ability to set a name for the env variable of database URL. 
+- Add ability to run commands from a jar.
 
 ### Changed
 
-- Make migrations-dir and models-file optional with default value. 
+- Make `migrations-dir` and `models-file` params optional with default value.
+- **BREAKING** `migrations-dir` and `models-file` should contain relative path to resources dir.
+- Add ability to set custom resources dir using `:resources-dir`.
+- Upgrade dependencies.
+
+#### Notes about breaking change of paths config:
+
+- If you use path values as: 
+```clojure
+{:migrations-dir "resources/db/migrations" 
+ :models-file "resources/db/models.edn"}
+```
+then you can just remove that from config and everything will work as expected because 
+those values now are defaults.
+
+- If you have custom values for paths:
+```clojure
+{:migrations-dir "resources/path/to/migrations" 
+ :models-file "resources/path/to/models.edn"}
+```
+
+then you need to remove `resources` dir from paths, because now it is a default:
+
+```clojure
+{:migrations-dir "path/to/migrations" 
+ :models-file "path/to/models.edn"}
+```
+
+- If you use custom resources dir, you can specify it, for example, as:
+```clojure
+{...
+ :resources-dir "content"}
+```
 
 ## 0.3.2 - 2024-02-27
 

@@ -1,6 +1,7 @@
 (ns automigrate.schema
   "Module for generating db schema from migrations."
-  (:require [automigrate.util.file :as file-util]
+  (:require [clojure.java.io :as io]
+            [automigrate.util.file :as file-util]
             [automigrate.actions :as actions]
             [automigrate.models :as models]
             [automigrate.util.map :as map-util]
@@ -10,7 +11,11 @@
 
 (defn- load-migrations-from-files
   [migrations-files]
-  (map file-util/read-edn migrations-files))
+  (map (fn [file-ref]
+         (if (string? file-ref)
+           (-> file-ref io/resource file-util/read-edn)
+           (file-util/read-edn file-ref)))
+    migrations-files))
 
 
 (defmulti apply-action-to-schema

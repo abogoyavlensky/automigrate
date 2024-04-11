@@ -9,7 +9,7 @@
 
 (use-fixtures :each
   (test-util/with-drop-tables config/DATABASE-CONN)
-  (test-util/with-delete-dir config/MIGRATIONS-DIR))
+  (test-util/with-delete-dir config/MIGRATIONS-DIR-FULL))
 
 
 (deftest test-validate-fk-options-on-delete
@@ -234,7 +234,7 @@
             "account")))))
 
 
-(deftest test-fields-alter-column-array-with-underscore-ok
+(deftest test-fields-alter-column-array-ok
   (testing "check generated actions, queries edn and sql from all actions"
     (is (= {:new-actions (list {:action :alter-column
                                 :field-name :num-val

@@ -46,20 +46,25 @@ fmt:
 .PHONY: lint  # Linting code
 lint:
 	@$(INFO) "Linting project..."
-	@clj-kondo --parallel --dependencies --copy-configs --lint $(DIRS)
+	@clj-kondo --parallel --lint $(DIRS)
 
 
 .PHONY: lint-init  # Linting code with libraries
 lint-init:
 	@$(INFO) "Linting project's classpath..."
 	@clj-kondo --parallel --lint $(shell clj -Spath)
+	@clj-kondo --dependencies --copy-configs --lint $(DIRS)
 
 
-.PHONY: check-deps  # Check deps versions
-check-deps:
+.PHONY: outdated  # Check deps versions
+outdated:
 	@$(INFO) "Checking deps versions..."
-	@clojure -M:check-deps
+	@clojure -M:outdated
 
+.PHONY: outdated-fix  # Check deps versions and upgrade
+outdated-fix:
+	@$(INFO) "Upgrading deps versions..."
+	@clojure -M:outdated --upgrade --force
 
 .PHONY: check  # Check linting and apply formatting locally
 check:
