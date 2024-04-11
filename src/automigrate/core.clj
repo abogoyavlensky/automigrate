@@ -132,10 +132,13 @@ Available options:
   :jdbc-url-env-var - Name of environment variable for jdbc-url. Default: `DATABASE_URL`. (optional)
   :migrations-dir - Path to directory containing migration files relative to the `resources` dir. Default: `db/migrations`. (optional)
   :migrations-table - Custom name for the migrations table in the database. (optional)"
-  [{:keys [jdbc-url-env-var] :as args}]
-  (let [jdbc-url-env-var* (or jdbc-url-env-var JDBC-URL-ENV-VAR)
-        args* (update args :jdbc-url #(or % (System/getenv jdbc-url-env-var*)))]
-    (run-fn migrations/migrate args* ::migrate-args)))
+  ([]
+   ; 0-arity function can be used inside application code if there are no any options.
+   (migrate {}))
+  ([{:keys [jdbc-url-env-var] :as args}]
+   (let [jdbc-url-env-var* (or jdbc-url-env-var JDBC-URL-ENV-VAR)
+         args* (update args :jdbc-url #(or % (System/getenv jdbc-url-env-var*)))]
+     (run-fn migrations/migrate args* ::migrate-args))))
 
 
 (defn explain

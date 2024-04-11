@@ -621,18 +621,59 @@ Appyling 0003_make_all_accounts_active...
 :warning: *The library is not yet ready for production use. 
 But it is really appreciated if you try it out! :wink:*
 
-For now, there is just a single way to configure db connection url as a `:jdbc-url` arg for a command.
-The idea here is that you could override default dev `:jdbc-url` value from `deps.edn` by running `migrate`
-command with env var using bash-script, makefile or whatever you want:
+In production build you can use `DATABASE_URL` env variable to set up database connection
+for migrations. There are some options we have to run migrations. 
+
+#### Inside application as a part of the system start
+
+An example for Integrant database component:
+```clojure
+(ns myprj.main
+  (:require [automigrate.core :as automigrate]
+            [integrant.core :as ig]
+            [hikari-cp.core :as cp])
+
+  (defmethod ig/init-key ::db
+     [_ options]
+     (automigrate/migrate)
+     (cp/make-datasource options)))
+```
+
+#### Without uberjar
+If you do not build a jar-file and use clojure cli tool to run the app then you can use the same alias 
+as it is described in the installation section of this doc.
 
 ```shell
-$ clojure -X:migrations migrate :jdbc-url $DATABASE_URL 
+$ clojure -X:migrations migrate
+```
+
+#### With uberjar
+
+If you build jar-file then you can implement additional option to run migration via main, for instance:
+
+```clojure
+(ns myprj.main
+  (:gen-class)
+  (:require [automigrate.core :as automigrate]))
+
+(defn -main
+  "Run application system in production."
+  [& [command]]
+  (case command
+    "migrations" (automigrate/migrate)
+    (run-system)))
+```
+
+Then build jar-file and run migrations 
+```shell
+$ java -jar target/standalone.jar migrations 
 Appyling ...
 ```
 
-*The downside of that approach could be a lack of ability to use a common config for a project.
-In the future there could be more convenient options for configuration.* 
-
+or run the app:
+```shell
+$ java -jar target/standalone.jar
+```
 
 ## Roadmap
 
