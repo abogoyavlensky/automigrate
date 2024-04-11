@@ -38,6 +38,7 @@ Breaking changes are possible.
 *deps.edn*
 ```clojure
 {...
+ :paths [... "resources"]
  :aliases 
  {...
   :migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<VERSION>"}
@@ -640,7 +641,7 @@ An example for Integrant database component:
 ```
 
 #### Without uberjar
-If you do not build a jar-file and use clojure cli tool to run the app then you can use the same alias 
+If you do not build a jar-file and use clojure cli tool or lein to run the app then you can use the same alias 
 as it is described in the installation section of this doc.
 
 ```shell
@@ -655,6 +656,10 @@ If you build jar-file then you can implement additional option to run migration 
 (ns myprj.main
   (:gen-class)
   (:require [automigrate.core :as automigrate]))
+
+(defn- run-system
+  []
+  ...)
 
 (defn -main
   "Run application system in production."

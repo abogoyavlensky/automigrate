@@ -2,6 +2,6 @@
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}
         org.postgresql/postgresql {:mvn/version "42.7.1"}}
  :aliases
- {:migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "0.3.2"}}
+ {:migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "0.3.3"}}
                :ns-default automigrate.core
                :exec-args {:jdbc-url "jdbc:postgresql://db:5432/demo?user=demo&password=demo"}}}}
