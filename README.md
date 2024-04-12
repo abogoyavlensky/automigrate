@@ -33,7 +33,7 @@ Breaking changes are possible.
 
 [![Clojars Project](https://img.shields.io/clojars/v/net.clojars.abogoyavlensky/automigrate.svg)](https://clojars.org/net.clojars.abogoyavlensky/automigrate)
 
-#### Setup database URL
+#### Setup database connection
 
 Before running migrations we need to set database URL with `DATABASE_URL` env var, for example:
 
@@ -41,8 +41,8 @@ Before running migrations we need to set database URL with `DATABASE_URL` env va
 export DATABASE_URL="jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"
 ```
 
-There is ability to change the name of environment variable using command argument: `:jdbc-url-env-var`.
-Alternatively, we can use `:jdbc-url` argument to setup database URL directly.
+***Note:** There is an ability to change the name of the environment variable using command argument: `:jdbc-url-env-var`.
+Alternatively, instead of env var we can use `:jdbc-url` argument to setup the database URL directly for commands.*
 
 #### tools.deps -X option
 
@@ -52,7 +52,8 @@ Alternatively, we can use `:jdbc-url` argument to setup database URL directly.
         org.postgresql/postgresql {:mvn/version "42.3.1"}}
  :paths [... "resources"]
  :aliases 
- {:migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<VERSION>"}}
+ {...
+  :migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<VERSION>"}}
                :ns-default automigrate.core}}}
 ```
 
@@ -75,7 +76,8 @@ $ clojure -X:migrations help
   :dependencies [[org.clojure/clojure "1.11.2"]
                  [org.postgresql/postgresql "42.7.3"]]
   :resource-paths ["resources"]
-  :profiles {:migrations
+  :profiles {...
+             :migrations
              {:dependencies [[net.clojars.abogoyavlensky/automigrate "<VERSION>"]]
               :main automigrate.core}}
   :aliases {"migrations" ["with-profile" "+migrations" "run"]})
