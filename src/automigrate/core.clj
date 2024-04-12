@@ -195,10 +195,10 @@ Available options:
 (def cli-options-explain
   (concat
     cli-options-common
-    [[nil "--number NUMBER"
+    [["-n" "--number NUMBER"
       :parse-fn #(Integer/parseInt %)]
-     [nil "--direction DIRECTION"]
-     [nil "--format FORMAT"]]))
+     ["-d" "--direction DIRECTION"]
+     ["-f" "--format FORMAT"]]))
 
 
 (def cli-options-make
@@ -211,7 +211,7 @@ Available options:
 (def cli-options-migrate
   (concat
     cli-options-common
-    [[nil "--number NUMBER"
+    [["-n" "--number NUMBER"
       :parse-fn #(Integer/parseInt %)]]))
 
 
