@@ -57,10 +57,9 @@ Alternatively, instead of env var we can use `:jdbc-url` argument to setup the d
                :ns-default automigrate.core}}}
 ```
 
-Now we can update `resources/db/models.edn` file and run commands:
+Now we can create `resources/db/models.edn` file with a map and run commands:
 
 ```shell
-$ clojure -X:migrations list
 $ clojure -X:migrations list
 $ clojure -X:migrations make
 $ clojure -X:migrations migrate
@@ -91,7 +90,7 @@ $ lein migrations migrate
 $ lein migrations explain --number 1
 $ lein migrations help
 ```
-***Note:** For lein there is the same CLI-interface with same comamnds and options, but
+***Note:** For lein there is the same CLI-interface with the same commands and options, but
 instead of keywords (e.g.`:number`) for option names you should use  `--...` (e.g. `--number`).*
 
 ### Getting started
