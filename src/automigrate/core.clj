@@ -1,7 +1,9 @@
 (ns automigrate.core
   "Public interface for lib's users."
+  (:gen-class)
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
+            [clojure.tools.cli :as cli]
             [slingshot.slingshot :refer [try+]]
             [automigrate.migrations :as migrations]
             [automigrate.util.spec :as spec-util]
@@ -21,7 +23,10 @@
 (s/def ::number int?)
 
 
-(s/def ::cmd (set automigrate-help/HELP-CMDS-ORDER))
+(s/def ::cmd
+  (s/and
+    (s/conformer symbol)
+    (set automigrate-help/HELP-CMDS-ORDER)))
 
 
 (s/def ::format
@@ -95,7 +100,7 @@
 (defn- run-fn
   [f args args-spec]
   (try+
-    (let [args* (spec-util/conform args-spec args)]
+    (let [args* (spec-util/conform args-spec (or args {}))]
       (f args*))
     (catch [:type ::s/invalid] e
       (file-util/prn-err e))
@@ -174,3 +179,60 @@ Available options:
   :cmd - Command name to display help information for a specific command. (optional)"
   [args]
   (run-fn automigrate-help/show-help! args ::help-args))
+
+
+; Classic CLI-interface support
+
+(def cli-options-common
+  [[nil "--jdbc-url URL"]
+   [nil "--jdbc-url-env-var ENV_VAR"]
+   [nil "--migrations-dir DIR_PATH"]
+   [nil "--models-file FILE_PATH"]
+   [nil "--migrations-table TABLE"]
+   [nil "--resources-dir DIR"]])
+
+
+(def cli-options-explain
+  (concat
+    cli-options-common
+    [["-n" "--number NUMBER"
+      :parse-fn #(Integer/parseInt %)]
+     ["-d" "--direction DIRECTION"]
+     ["-f" "--format FORMAT"]]))
+
+
+(def cli-options-make
+  (concat
+    cli-options-common
+    [[nil "--name NAME"]]
+    [[nil "--type TYPE"]]))
+
+
+(def cli-options-migrate
+  (concat
+    cli-options-common
+    [["-n" "--number NUMBER"
+      :parse-fn #(Integer/parseInt %)]]))
+
+
+(def cli-options-help
+  [[nil "--cmd COMMAND"]])
+
+
+(defn- parse-opts-or-throw-err
+  [args options-spec]
+  (let [args-parsed (cli/parse-opts args options-spec)]
+    (if (seq (:errors args-parsed))
+      (throw (ex-info (format "Command error: %s" (:errors args-parsed)) {}))
+      (:options args-parsed))))
+
+
+(defn -main
+  [command & args]
+  (case command
+    "list" (list (parse-opts-or-throw-err args cli-options-common))
+    "migrate" (migrate (parse-opts-or-throw-err args cli-options-migrate))
+    "make" (make (parse-opts-or-throw-err args cli-options-make))
+    "explain" (explain (parse-opts-or-throw-err args cli-options-explain))
+    "help" (help (parse-opts-or-throw-err args cli-options-help))
+    (println "ERROR: command does not exist.")))
