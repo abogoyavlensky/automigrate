@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Read database URL from env variable by default.
 - Add ability to set a name for the env variable of database URL. 
 - Add ability to run commands from a jar.
+- Add CLI-interface for Leiningen support
 
 ### Changed
 
@@ -27,7 +28,7 @@ All notable changes to this project will be documented in this file.
  :models-file "resources/db/models.edn"}
 ```
 then you can just remove that from config and everything will work as expected because 
-those values now are defaults.
+those values are defaults now.
 
 - If you have custom values for paths:
 ```clojure

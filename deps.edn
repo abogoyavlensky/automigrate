@@ -26,9 +26,9 @@
          :exec-args {:multithread? false
                      :test-warn-time 500}}
 
-  :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.8.1185"}
+  :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.8.1194"}
                           ; suppress logger output
-                          org.slf4j/slf4j-nop {:mvn/version "2.0.12"}}
+                          org.slf4j/slf4j-nop {:mvn/version "2.0.13"}}
              :main-opts ["-m" "antq.core" "--no-diff"
                          "--exclude=io.github.seancorfield/build-clj"
                          "--exclude=net.clojars.abogoyavlensky/automigrate"]}

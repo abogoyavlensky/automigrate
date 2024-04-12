@@ -33,29 +33,64 @@ Breaking changes are possible.
 
 [![Clojars Project](https://img.shields.io/clojars/v/net.clojars.abogoyavlensky/automigrate.svg)](https://clojars.org/net.clojars.abogoyavlensky/automigrate)
 
-#### tools.deps -X option
+#### Setup database URL
 
-*deps.edn*
-```clojure
-{...
- :paths [... "resources"]
- :aliases 
- {...
-  :migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<VERSION>"}
-                            org.postgresql/postgresql {:mvn/version "42.3.1"}}
-               :ns-default automigrate.core}}}
-```
-
-Then you need to set database URL either using `DATABASE_URL` env var or `:jdbc-url` in `:exec-args`.
-*Optionally, you can change the env var name using `:jdbc-url-env-var` in `:exec-args`.* 
+Before running migrations we need to set database URL with `DATABASE_URL` env var, for example:
 
 ```shell
 export DATABASE_URL="jdbc:postgresql://localhost:5432/mydb?user=myuser&password=secret"
 ```
 
+There is ability to change the name of environment variable using command argument: `:jdbc-url-env-var`.
+Alternatively, we can use `:jdbc-url` argument to setup database URL directly.
+
+#### tools.deps -X option
+
+*deps.edn*
+```clojure
+{:deps {org.clojure/clojure {:mvn/version "1.11.2"}
+        org.postgresql/postgresql {:mvn/version "42.3.1"}}
+ :paths [... "resources"]
+ :aliases 
+ {:migrations {:extra-deps {net.clojars.abogoyavlensky/automigrate {:mvn/version "<VERSION>"}}
+               :ns-default automigrate.core}}}
+```
+
+Now we can update `resources/db/models.edn` file and run commands:
+
+```shell
+$ clojure -X:migrations list
+$ clojure -X:migrations list
+$ clojure -X:migrations make
+$ clojure -X:migrations migrate
+$ clojure -X:migrations explain :number 1
+$ clojure -X:migrations help
+```
+
 #### Leiningen
 
-:construction: *Leiningen support is planned.*
+*project.clj*
+```clojure
+(defproject myprj "0.1.0-SNAPSHOT"
+  :dependencies [[org.clojure/clojure "1.11.2"]
+                 [org.postgresql/postgresql "42.7.3"]]
+  :resource-paths ["resources"]
+  :profiles {:migrations
+             {:dependencies [[net.clojars.abogoyavlensky/automigrate "<VERSION>"]]
+              :main automigrate.core}}
+  :aliases {"migrations" ["with-profile" "+migrations" "run"]})
+```
+
+Usage example:
+```clojure
+$ lein migrations list
+$ lein migrations make
+$ lein migrations migrate
+$ lein migrations explain --number 1
+$ lein migrations help
+```
+***Note:** For lein there is the same CLI-interface with same comamnds and options, but
+instead of keywords (e.g.`:number`) for option names you should use  `--...` (e.g. `--number`).*
 
 ### Getting started
 
@@ -689,6 +724,7 @@ $ java -jar target/standalone.jar
 - [x] Partial indexes.
 - [x] Auto-generated backward migration.
 - [x] Field level CHECK constraints.
+- [x] Leiningen support.
 - [ ] Data-migration using Clojure.
 - [ ] Support for SQLite.
 - [ ] Model level constraints.
