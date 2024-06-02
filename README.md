@@ -768,6 +768,14 @@ $ java -jar target/standalone.jar
 
 ## Development
 
+### Install system deps
+
+Install [mise-en-place](https://mise.jdx.dev/getting-started.html#quickstart) and run:
+
+```shell
+mise install
+```
+
 ### Run locally
 
 ```shell

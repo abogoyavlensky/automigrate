@@ -1,0 +1,7 @@
+[tools]
+task = "3.37.2"
+java = "temurin-21.0.2+13.0.LTS"
+clojure = "1.11.3.1463"
+cljstyle = "0.16.626"
+clj-kondo = "2024.05.24"
+lefthook = "1.6.14"
