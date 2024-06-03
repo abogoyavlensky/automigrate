@@ -8,24 +8,15 @@ on:
 
 
 jobs:
-  check:
+  deps:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
 
-      - name: Lint
-        run: docker-compose run --rm check bash -c "make deps && make lint-init > /dev/null 2>&1 || true && make lint"
-
-      - name: Fmt
-        run: docker-compose run --rm check make fmt-check
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Test
-        run: docker-compose run --rm test bash -c "make deps && make test-ci"
+  checks:
+    needs: [ deps ]
+    uses: ./.github/workflows/_checks.yaml
 
 #  deploy:
 #    runs-on: ubuntu-latest

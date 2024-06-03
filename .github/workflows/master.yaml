@@ -2,7 +2,7 @@ name: Checks
 
 
 on:
-  pull_request:
+  push:
     branches: [ master ]
 
 jobs:
@@ -15,12 +15,3 @@ jobs:
   checks:
     needs: [ deps ]
     uses: ./.github/workflows/_checks.yaml
-
-  outdated:
-    runs-on: ubuntu-latest
-    needs: [ deps ]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-deps
-      - name: Outdated deps
-        run: make outdated
