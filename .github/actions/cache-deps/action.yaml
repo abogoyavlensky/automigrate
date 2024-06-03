@@ -10,4 +10,5 @@ runs:
         key: ${{ runner.os }}-clojure-dev-${{ hashFiles('**/deps.edn') }}
         restore-keys: ${{ runner.os }}-clojure-dev
     - name: Install Clojure dev deps
+      shell: bash
       run: make deps
