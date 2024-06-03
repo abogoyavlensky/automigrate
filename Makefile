@@ -52,8 +52,7 @@ lint:
 .PHONY: lint-init  # Linting code with libraries
 lint-init:
 	@$(INFO) "Linting project's classpath..."
-	@clj-kondo --parallel --lint $(shell clj -Spath)
-	@clj-kondo --dependencies --copy-configs --lint $(DIRS)
+	@clj-kondo --parallel --dependencies --copy-configs --lint $(shell clj -Spath)
 
 
 .PHONY: outdated  # Check deps versions
