@@ -1,11 +1,13 @@
-name: Restore deps
+name: Install and cache deps
 runs:
   using: composite
   steps:
     - uses: jdx/mise-action@v2
-    - name: Restore cached clojure dev deps
-      uses: actions/cache/restore@v4
+    - name: Cache Clojure dev dependencies
+      uses: actions/cache@v4
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-clojure-dev-${{ hashFiles('**/deps.edn') }}
         restore-keys: ${{ runner.os }}-clojure-dev
+    - name: Install Clojure dev deps
+      run: make deps
