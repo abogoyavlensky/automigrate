@@ -1,0 +1,17 @@
+name: Checks
+
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/cache-deps
+
+  checks:
+    needs: [ deps ]
+    uses: ./.github/workflows/_checks.yaml

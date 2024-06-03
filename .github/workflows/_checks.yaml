@@ -1,0 +1,34 @@
+name: Checks
+
+
+on:
+  workflow_call:
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: Fmt
+        run: make fmt-check
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - name: Lint
+        run: make lint-init && make lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - name: Run tests
+        env:
+          DATABASE_HOST_PORT: "localhost:5555"
+        run: |
+          docker-compose up -d test-postgres
+          make test-ci

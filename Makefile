@@ -22,7 +22,7 @@ help:
 .PHONY: deps  # Install deps
 deps:
 	@$(INFO) "Install deps..."
-	@clojure -P -X:test:dev
+	@clojure -P -X:test:dev:outdated
 
 
 .PHONY: repl  # Running repl
@@ -52,8 +52,7 @@ lint:
 .PHONY: lint-init  # Linting code with libraries
 lint-init:
 	@$(INFO) "Linting project's classpath..."
-	@clj-kondo --parallel --lint $(shell clj -Spath)
-	@clj-kondo --dependencies --copy-configs --lint $(DIRS)
+	@clj-kondo --parallel --dependencies --copy-configs --lint $(shell clj -Spath)
 
 
 .PHONY: outdated  # Check deps versions
@@ -89,18 +88,6 @@ test-ci:
 up:
 	@$(INFO) "Running db..."
 	@docker-compose up -d db test-postgres
-
-
-.PHONY: ps  # List docker containers
-ps:
-	@$(INFO) "List docker containers..."
-	@docker-compose ps
-
-
-.PHONY: stop  # Stop docker containers
-stop:
-	@$(INFO) "Stopping docker containers..."
-	@docker-compose stop
 
 
 # Testing commands

@@ -1,11 +1,6 @@
 version: "3.8"
 
 services:
-  check:
-    image: abogoyavlensky/clojure-temurin17-build:0.1.1
-    volumes:
-      - .:/app
-
   db:
     image: postgres:14-alpine
     ports:
@@ -25,24 +20,3 @@ services:
       POSTGRES_DB: automigrate
       POSTGRES_USER: automigrate
       POSTGRES_PASSWORD: automigrate
-
-  # For testing in CI
-
-  test:
-    image: abogoyavlensky/clojure-temurin17-build:0.1.1
-    depends_on:
-      - test-postgres
-    environment:
-      DATABASE_HOST_PORT: "test-postgres:5432"
-    volumes:
-      - .:/app
-
-  # Build jar-file in CI
-
-  build:
-    image: abogoyavlensky/clojure-temurin17-build:0.1.1
-    environment:
-      - CLOJARS_PASSWORD
-      - CLOJARS_USERNAME
-    volumes:
-      - .:/app
