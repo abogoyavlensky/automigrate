@@ -2,36 +2,71 @@ name: Checks
 
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
-
+  workflow_call:
 
 jobs:
-  check:
+  deps:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: Cache Clojure dev dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-clojure-dev-${{ hashFiles('**/deps.edn') }}
+          restore-keys: ${{ runner.os }}-clojure-dev
 
-      - name: Lint
-        run: docker-compose run --rm check bash -c "make deps && make lint-init > /dev/null 2>&1 || true && make lint"
+      - name: Install Clojure dev deps
+        run: make deps
 
+  fmt:
+    runs-on: ubuntu-latest
+    needs: [ deps ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
       - name: Fmt
-        run: docker-compose run --rm check make fmt-check
+        run: make fmt-check
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: [ deps ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - name: Lint
+        run: make lint-init && make lint
+
+# TODO: remove!
+#  test:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Test
+#        run: docker-compose run --rm test bash -c "make deps && make test-ci"
 
   test:
     runs-on: ubuntu-latest
+    needs: [ deps ]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Test
-        run: docker-compose run --rm test bash -c "make deps && make test-ci"
+      - uses: ./.github/actions/restore-deps
+      - name: Run tests
+        env:
+          DATABASE_HOST_PORT: "localhost:5555"
+        run: |
+          docker-compose up -d test-postgres
+          make test-ci
 
   outdated:
     runs-on: ubuntu-latest
+    needs: [ deps ]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Check deps
-        run: docker-compose run --rm check make outdated
+      - uses: ./.github/actions/restore-deps
+      - name: Outdated deps
+        run: make outdated

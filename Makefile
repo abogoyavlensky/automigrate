@@ -22,7 +22,7 @@ help:
 .PHONY: deps  # Install deps
 deps:
 	@$(INFO) "Install deps..."
-	@clojure -P -X:test:dev
+	@clojure -P -X:test:dev:outdated
 
 
 .PHONY: repl  # Running repl
@@ -89,18 +89,6 @@ test-ci:
 up:
 	@$(INFO) "Running db..."
 	@docker-compose up -d db test-postgres
-
-
-.PHONY: ps  # List docker containers
-ps:
-	@$(INFO) "List docker containers..."
-	@docker-compose ps
-
-
-.PHONY: stop  # Stop docker containers
-stop:
-	@$(INFO) "Stopping docker containers..."
-	@docker-compose stop
 
 
 # Testing commands
