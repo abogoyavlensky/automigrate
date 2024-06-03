@@ -19,4 +19,3 @@
               (not (contains? all-defined-types (-> field-def :type last))))))
         (mapv #(keyword (name model-name) (-> % key name)))))
     models))
-

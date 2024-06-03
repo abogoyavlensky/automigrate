@@ -47,4 +47,3 @@
     (if (some? cmd)
       (-> public-methods (fn-docstring cmd) (print-out-str))
       (-> public-methods (general-help) (print-out-str)))))
-
