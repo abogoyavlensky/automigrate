@@ -11,7 +11,7 @@ jobs:
 
   outdated:
     runs-on: ubuntu-latest
-    needs: [ deps ]
+    needs: [ checks ]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-deps
