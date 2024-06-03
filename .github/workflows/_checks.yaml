@@ -2,8 +2,6 @@ name: Checks
 
 
 on:
-  pull_request:
-    branches: [ master ]
   workflow_call:
 
 jobs:
@@ -40,15 +38,6 @@ jobs:
       - name: Lint
         run: make lint-init && make lint
 
-# TODO: remove!
-#  test:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      - name: Test
-#        run: docker-compose run --rm test bash -c "make deps && make test-ci"
-
   test:
     runs-on: ubuntu-latest
     needs: [ deps ]
@@ -61,12 +50,3 @@ jobs:
         run: |
           docker-compose up -d test-postgres
           make test-ci
-
-  outdated:
-    runs-on: ubuntu-latest
-    needs: [ deps ]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-deps
-      - name: Outdated deps
-        run: make outdated
