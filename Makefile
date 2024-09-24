@@ -82,12 +82,12 @@ test-ci:
 	@$(INFO) "Running tests..."
 	@clojure -X:dev:test :fail-fast? true
 
-# Docker-compose
+# Docker compose
 
 .PHONY: up  # Run db, testing db and db admin web UI locally for development
 up:
 	@$(INFO) "Running db..."
-	@docker-compose up -d db test-postgres
+	@docker compose up -d db test-postgres
 
 
 # Testing commands

@@ -777,9 +777,9 @@ mise install
 ### Run locally
 
 ```shell
-make up  # run docker-compose with databases for development
+make up  # run docker compose with databases for development
 make repl  # run builtin repl with dev aliases; also you could use any repl you want
-make test  # run whole tests locally against testing database started by docker-compose
+make test  # run whole tests locally against testing database started by docker compose
 make fmt  # run formatting in action mode
 make lint  # run linting
 make outdated  # run checking new versions of deps in force mode
