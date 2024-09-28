@@ -30,5 +30,5 @@ jobs:
         env:
           DATABASE_HOST_PORT: "localhost:5555"
         run: |
-          docker-compose up -d test-postgres
+          docker compose up -d test-postgres
           make test-ci

@@ -726,12 +726,11 @@ $ java -jar target/standalone.jar
 - [x] Auto-generated backward migration.
 - [x] Field level CHECK constraints.
 - [x] Leiningen support.
-- [ ] Data-migration using Clojure.
-- [ ] Support for SQLite.
+- [ ] Support for SQLite/MySQL.
 - [ ] Model level constraints.
 - [ ] Optimized auto-generated SQL queries.
+- [ ] Standalone tool using GraalVM.
 - [ ] Visual representation of DB schema.
-- [ ] Support for MySQL.
 
 
 ### Things still in design
@@ -739,8 +738,7 @@ $ java -jar target/standalone.jar
 - How to handle common configuration conveniently (separated edn file?)?
 - More consistent and helpful messages for users, maybe using `fipp` library.
 - Ability to separate models by multiple files.
-- Move transformations out of clojure spec conformers.
-- Try to replace `spec` with `malli`.
+- Move transformations out of clojure spec conformers or replace `spec` with `malli`.
 - Simplify model definition just as map with key `:type` instead of vector of 3 items. 
 - Disable field types validation at all, or add ability to set arbitrary custom type.
 - Handle of model/field renaming.
@@ -779,9 +777,9 @@ mise install
 ### Run locally
 
 ```shell
-make up  # run docker-compose with databases for development
+make up  # run docker compose with databases for development
 make repl  # run builtin repl with dev aliases; also you could use any repl you want
-make test  # run whole tests locally against testing database started by docker-compose
+make test  # run whole tests locally against testing database started by docker compose
 make fmt  # run formatting in action mode
 make lint  # run linting
 make outdated  # run checking new versions of deps in force mode
