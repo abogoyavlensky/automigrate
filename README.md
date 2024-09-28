@@ -1,6 +1,6 @@
 # Automigrate
 
-[![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/checks.yaml)
+[![CI](https://github.com/abogoyavlensky/automigrate/actions/workflows/master.yaml/badge.svg?branch=master)](https://github.com/abogoyavlensky/automigrate/actions/workflows/master.yaml)
 [![cljdoc badge](https://cljdoc.org/badge/net.clojars.abogoyavlensky/automigrate)](https://cljdoc.org/jump/release/net.clojars.abogoyavlensky/automigrate)
 
 Auto-generated database schema migrations for Clojure. Define models as plain EDN data 
