@@ -118,7 +118,7 @@
     ::fields/collate
     (s/conformer
       (fn [value]
-        [:raw (format "COLLATE %s" value)]))))
+        [:raw (format "COLLATE \"%s\"" value)]))))
 
 
 (def ^:private options-specs
