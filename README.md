@@ -291,7 +291,7 @@ Available options are presented in the table below:
 | `:array`       | Can be added to any field type to make it array.                                              | `false`   | `string?`, examples: `"[]"`, `"[][]"`, `[][10][3]`                                                                             |
 | `:comment`     | Add a comment on the field.                                                                   | `false`   | `string?`                                                                                                                      |
 | `:collate`     | Set collation for text fields.                                                               | `false`   | `string?`, example: `"ko_KR"`                                                                                                  |
-
+| `:generated`   | Set generated value for a field.                                                               | `false`   | `string?`, example: `"deleted_at IS NOT NULL"`                                              |
 
 #### Indexes
 

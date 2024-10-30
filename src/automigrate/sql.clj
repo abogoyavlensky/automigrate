@@ -121,6 +121,13 @@
         [:raw (format "COLLATE \"%s\"" value)]))))
 
 
+(s/def :automigrate.sql.option->sql/generated
+  (s/and
+    ::fields/generated
+    (s/conformer
+      (fn [value]
+        [:raw (format "GENERATED ALWAYS AS (%s) STORED" value)]))))
+
 (def ^:private options-specs
   [:automigrate.sql.option->sql/null
    :automigrate.sql.option->sql/primary-key
@@ -132,7 +139,8 @@
    :automigrate.sql.option->sql/check
    :automigrate.sql.option->sql/array
    :automigrate.sql.option->sql/comment
-   :automigrate.sql.option->sql/collate])
+   :automigrate.sql.option->sql/collate
+   :automigrate.sql.option->sql/generated])
 
 
 (s/def ::->foreign-key-complete
@@ -219,7 +227,8 @@
                                                 (:on-update options :EMPTY)
                                                 (:null options :EMPTY)
                                                 (:default options :EMPTY)
-                                                (:collate options :EMPTY)])]
+                                                (:collate options :EMPTY)
+                                                (:generated options :EMPTY)])]
         (conj acc (concat
                     [field-name]
                     (field-type->sql options)
