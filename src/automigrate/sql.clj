@@ -113,6 +113,14 @@
     (s/conformer identity)))
 
 
+(s/def :automigrate.sql.option->sql/collate
+  (s/and
+    ::fields/collate
+    (s/conformer
+      (fn [value]
+        [:raw (format "COLLATE %s" value)]))))
+
+
 (def ^:private options-specs
   [:automigrate.sql.option->sql/null
    :automigrate.sql.option->sql/primary-key
@@ -123,7 +131,8 @@
    :automigrate.sql.option->sql/on-update
    :automigrate.sql.option->sql/check
    :automigrate.sql.option->sql/array
-   :automigrate.sql.option->sql/comment])
+   :automigrate.sql.option->sql/comment
+   :automigrate.sql.option->sql/collate])
 
 
 (s/def ::->foreign-key-complete
@@ -209,7 +218,8 @@
       (let [rest-options (remove #(= :EMPTY %) [(:on-delete options :EMPTY)
                                                 (:on-update options :EMPTY)
                                                 (:null options :EMPTY)
-                                                (:default options :EMPTY)])]
+                                                (:default options :EMPTY)
+                                                (:collate options :EMPTY)])]
         (conj acc (concat
                     [field-name]
                     (field-type->sql options)

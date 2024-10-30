@@ -322,6 +322,11 @@
   (s/and string? (complement str/blank?)))
 
 
+(s/def ::collate
+  ; Not empty string
+  (s/and string? (complement str/blank?)))
+
+
 (s/def ::options
   (s/keys
     :opt-un [::null
@@ -333,7 +338,8 @@
              ::on-update
              ::check
              ::array
-             ::comment]))
+             ::comment
+             ::collate]))
 
 
 (s/def ::options-strict-keys
@@ -448,6 +454,13 @@
   validate-default-and-type)
 
 
+(s/def ::validate-type-for-collate
+  (fn [{collate :collate
+        column-type :type}]
+    (or (nil? collate)
+      (= (check-type-group column-type) :string))))
+
+
 (s/def ::field-with-type
   (s/merge
     (s/keys
@@ -462,7 +475,8 @@
     ::validate-default-and-null
     ::validate-fk-options-and-null-on-delete
     ::validate-fk-options-and-null-on-update
-    ::validate-default-and-type))
+    ::validate-default-and-type
+    ::validate-type-for-collate))
 
 
 (s/def ::field-name keyword?)

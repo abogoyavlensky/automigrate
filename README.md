@@ -290,6 +290,7 @@ Available options are presented in the table below:
 | `:check`       | Set condition in Honeysql format to create custom CHECK for a column.                         | `false`   | Example: `[:and [:> :month 0] [:<= :month 12]]`                                                                                |
 | `:array`       | Can be added to any field type to make it array.                                              | `false`   | `string?`, examples: `"[]"`, `"[][]"`, `[][10][3]`                                                                             |
 | `:comment`     | Add a comment on the field.                                                                   | `false`   | `string?`                                                                                                                      |
+| `:collate`     | Set collation for text fields.                                                               | `false`   | `string?`, example: `"ko_KR"`                                                                                                  |
 
 
 #### Indexes
