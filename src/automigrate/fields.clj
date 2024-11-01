@@ -327,6 +327,11 @@
   (s/and string? (complement str/blank?)))
 
 
+(s/def ::generated
+  ; Not empty string
+  (s/and string? (complement str/blank?)))
+
+
 (s/def ::options
   (s/keys
     :opt-un [::null
@@ -339,7 +344,8 @@
              ::check
              ::array
              ::comment
-             ::collate]))
+             ::collate
+             ::generated]))
 
 
 (s/def ::options-strict-keys
