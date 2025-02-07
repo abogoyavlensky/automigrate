@@ -7,7 +7,7 @@ INFO := @sh -c '\
     printf $(NC)' VALUE
 
 
-DIRS?=src test build.clj
+DIRS?=src test
 GOALS = $(filter-out $@,$(MAKECMDGOALS))
 
 .SILENT:  # Ignore output of make `echo` command

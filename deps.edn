@@ -33,9 +33,14 @@
                          "--exclude=io.github.seancorfield/build-clj"
                          "--exclude=net.clojars.abogoyavlensky/automigrate"]}
 
-  :build {:deps {io.github.seancorfield/build-clj {:git/tag "v0.6.6"
-                                                   :git/sha "171d5f1"}}
-          :ns-default build}
+  :slim {:deps {io.github.abogoyavlensky/slim {:mvn/version "0.2.1"}
+                slipset/deps-deploy {:mvn/version "0.2.2"}}
+         :ns-default slim.lib
+         :exec-args {:lib net.clojars.abogoyavlensky/automigrate
+                     :version "0.3.4"
+                     :url "https://github.com/abogoyavlensky/automigrate"
+                     :description "Auto-generated database migrations for Clojure. Define models as plain EDN and create schema migrations automatically."
+                     :developer "Andrey Bogoyavlenskiy"}}
 
   :migrations {:ns-default automigrate.core
                :exec-args {:jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}
