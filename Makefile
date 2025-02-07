@@ -101,20 +101,20 @@ migrations:
 
 .PHONY: install-snapshot  # Build and install snapshot of package with next version locally
 install-snapshot:
-	@$(INFO) "Installing a jar locally..."
-	@clojure -T:build install :snapshot? true :bump $(GOALS)
+	@$(INFO) "Installing a SNAPSHOT jar locally..."
+	@clojure -T:slim install :snapshot true
 
 
 .PHONY: deploy-snapshot  # Build and deploy snapshot of package with next version to Clojars from local machine
 deploy-snapshot:
-	@$(INFO) "Deploying jar-file to Clojars..."
-	@clojure -T:build deploy :snapshot? true :bump $(GOALS)
+	@$(INFO) "Deploying SNAPSHOT jar-file to Clojars..."
+	@clojure -T:slim deploy :snapshot true
 
 
-.PHONY: deploy-ci  # Build and deploy latest version of package to Clojars in CI
-deploy-ci:
+.PHONY: deploy-release  # Build and deploy latest version of package to Clojars
+deploy-release:
 	@$(INFO) "Deploying jar-file to Clojars..."
-	@clojure -T:build deploy :release? true
+	@clojure -T:slim deploy
 
 
 .PHONY: next-changelog  # Generate draft of changelog for next release. Need to correct by hand!
@@ -124,5 +124,5 @@ next-changelog:
 
 .PHONY: release  # Bump tag version and push it to remote repo
 release:
-	@$(INFO) "Deploying jar-file to Clojars..."
-	@clojure -T:build release :bump $(GOALS)
+	@$(INFO) "Creating and pushing git tag for latest version..."
+	@clojure -T:slim tag :push true
