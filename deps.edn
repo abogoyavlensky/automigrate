@@ -1,8 +1,8 @@
 {:paths ["src"]
  :deps {org.clojure/spec.alpha {:mvn/version "0.5.238"}
         spec-dict/spec-dict {:mvn/version "0.2.1"}
-        com.github.seancorfield/honeysql {:mvn/version "2.6.1161"}
-        com.github.seancorfield/next.jdbc {:mvn/version "1.3.939"}
+        com.github.seancorfield/honeysql {:mvn/version "2.6.1270"}
+        com.github.seancorfield/next.jdbc {:mvn/version "1.3.994"}
         weavejester/dependency {:mvn/version "0.2.1"}
         differ/differ {:mvn/version "0.3.3"}
         slingshot/slingshot {:mvn/version "0.12.2"}
@@ -17,7 +17,7 @@
         :extra-deps {org.clojure/clojure {:mvn/version "1.12.0"}
                      org.clojure/tools.namespace {:mvn/version "1.5.0"}
                      hashp/hashp {:mvn/version "0.2.2"}
-                     org.postgresql/postgresql {:mvn/version "42.7.4"}}}
+                     org.postgresql/postgresql {:mvn/version "42.7.5"}}}
 
   :test {:extra-paths ["test" "test/resources"]
          :extra-deps {eftest/eftest {:mvn/version "0.6.0"}
@@ -26,16 +26,21 @@
          :exec-args {:multithread? false
                      :test-warn-time 500}}
 
-  :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.9.1232"}
+  :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.11.1264"}
                           ; suppress logger output
                           org.slf4j/slf4j-nop {:mvn/version "2.0.16"}}
              :main-opts ["-m" "antq.core" "--no-diff"
                          "--exclude=io.github.seancorfield/build-clj"
                          "--exclude=net.clojars.abogoyavlensky/automigrate"]}
 
-  :build {:deps {io.github.seancorfield/build-clj {:git/tag "v0.6.6"
-                                                   :git/sha "171d5f1"}}
-          :ns-default build}
+  :slim {:deps {io.github.abogoyavlensky/slim {:mvn/version "0.2.1"}
+                slipset/deps-deploy {:mvn/version "0.2.2"}}
+         :ns-default slim.lib
+         :exec-args {:lib net.clojars.abogoyavlensky/automigrate
+                     :version "0.3.4"
+                     :url "https://github.com/abogoyavlensky/automigrate"
+                     :description "Auto-generated database migrations for Clojure. Define models as plain EDN and create schema migrations automatically."
+                     :developer "Andrey Bogoyavlenskiy"}}
 
   :migrations {:ns-default automigrate.core
                :exec-args {:jdbc-url "jdbc:postgresql://localhost:5432/automigrate?user=automigrate&password=automigrate"}
